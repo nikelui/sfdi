@@ -53,22 +53,26 @@ syntax: gui = expGUI_cvui(cam,[window])
             print('Error setting exposure: %s' % fc2Err)
     def set_blue(self):
         corr = np.ceil(self.correction[int(self.Bb[0])])
-        self.ref[0:self.h,:,0] = corr # BLUE stripe
+        self.ref[self.rowb,:,0] = corr # BLUE stripe
     def set_green(self):
         corr = np.ceil(self.correction[int(self.Bg[0])])
-        self.ref[self.h:2*self.h,:,1] = corr # GREEN stripe
+        self.ref[self.rowg,:,1] = corr # GREEN stripe
     def set_red(self):
         corr = np.ceil(self.correction[int(self.Br[0])])
-        self.ref[2*self.h:3*self.h,:,2] = corr # RED stripe
+        self.ref[self.rowr,:,2] = corr # RED stripe
         
     def reference(self,xRes,yRes):
         """Use this function to control the brightness level of the three channels"""
         ## Triple reference -> 3 horizontal stripes with B,G,R values. Control intensities below
-        self.h = int(yRes/3)
+        ## New approach: multiple stripes
+        self.h = 20
+        self.rowb = [x for x in range(yRes) if x % (self.h*3) < self.h]
+        self.rowg = [x for x in range(yRes) if x % (self.h*3) >= self.h and x % (self.h*3) < self.h*2]
+        self.rowr = [x for x in range(yRes) if x % (self.h*3) >= self.h*2]
         self.ref = np.zeros((yRes,xRes,3),dtype='uint8')
-        self.ref[0:self.h,:,0] = self.Bb[0] # BLUE stripe
-        self.ref[self.h:2*self.h,:,1] = self.Bg[0] # GREEN stripe
-        self.ref[2*self.h:3*self.h,:,2] = self.Br[0] # RED stripe
+        self.ref[self.rowb,:,0] = self.Bb[0] # BLUE stripe
+        self.ref[self.rowg,:,1] = self.Bg[0] # GREEN stripe
+        self.ref[self.rowr,:,2] = self.Br[0] # RED stripe
         
         cvui.imshow(self.wname,self.ref)         
         
