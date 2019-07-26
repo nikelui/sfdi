@@ -235,11 +235,13 @@ syntax: gui = expGUI_cvui(cam,[window])
     
         self.n_acq = 0 # initialize counter
         #TODO: put spatial frequencies in the config file (json can parse lists)
-        f = self.par.fx / np.arange(self.par.nFreq,0,-1) # generate frequencies array
-        f = np.insert(f,0,0) # add DC (zero frequency) at the beginning
+#        f = self.par.fx / np.arange(self.par.nFreq,0,-1) # generate frequencies array
+#        f = np.insert(f,0,0) # add DC (zero frequency) at the beginning
+        f = self.par['fx'] # new version, put the frequencies in the parameters file
         while((self.n_acq < self.n[0] or self.n[0] == 0) and not(self.stop[0]) ):
             ## Acquisition loop
-            acquisitionRoutine(self.cam,self.par.xRes,self.par.yRes,self.par.w,f,self.par.nFreq,
-                               self.par.nPhase,self.par.dt,self.correction,self.par.Bb,self.par.Bg,self.par.Br,
-                               outPath=self.par.outPath,name=self.par.name,n_acq=self.n_acq)
+            acquisitionRoutine(self.cam,self.par['xRes'],self.par['yRes'],self.par['w'],f,len(f)-1,
+                               self.par['nPhase'],self.par['dt'],self.correction,self.par['Bb'],
+                               self.par['Bg'],self.par['Br'],outPath=self.par['outPath'],
+                               name=self.par['name'],n_acq=self.n_acq)
             self.n_acq += 1 # increase counter
