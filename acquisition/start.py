@@ -36,21 +36,22 @@ import cv2 as cv
 sys.path.append('../common') # Add the common folder to path
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
 import sfdi
+from sfdi.readParams2 import readParams
 from mycsv import csvread
 
 ## Read parameters from .cfg file
-par = sfdi.readParams('./parameters.cfg') # .cfg file should be in the same directory
+par = readParams('./parameters.cfg') # .cfg file should be in the same directory
 ## Load gamma correction array
-correction,_ = csvread(par.cPath,True)
+correction,_ = csvread(par['cPath'],True)
 
 ## Check if out folder exist, if not, create it
-if not os.path.exists(par.outPath):
-    os.makedirs(par.outPath)
+if not os.path.exists(par['outPath']):
+    os.makedirs(par['outPath'])
 
 ### Setting up camera ###
-cam = sfdi.setCamera_pg(num=0,res=par.res,fps=par.fps) # Set-up Camera
+cam = sfdi.setCamera_pg(num=0,res=par['res'],fps=par['fps']) # Set-up Camera
 #TODO: automatically detect screen size
-sfdi.setWindow('pattern',size=(par.xRes,par.yRes),pos=(par.W,0)) # Set-up window on second monitor
+sfdi.setWindow('pattern',size=(par['xRes'],par['yRes']),pos=(0,0)) # Set-up window on second monitor
 #TODO: new GUI, with extra functionality
 sfdi.expGUI_cvui(cam,par,'pattern',correction) # Start GUI
 
