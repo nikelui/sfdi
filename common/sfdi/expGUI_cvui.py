@@ -88,14 +88,14 @@ syntax: gui = expGUI_cvui(cam,[window])
 
         ## Get info about exposure time
         info = self.cam.getPropertyInfo(pc.PROPERTY_TYPE.SHUTTER)
-        tstep = (info.absMax - info.absMin)/542
 		
-        ## Set a limit to exposure to 1000ms (to use when you disable fps)
+        ## Set a limit to exposure to 500ms (to use when you disable fps)
         if info.absMax > 500:
             expMax = 500
             tstep = 0.5
         else:
             expMax = info.absMax
+            tstep = (info.absMax - info.absMin)/542
         
         try:
             self.cam.startCapture()
@@ -217,11 +217,11 @@ syntax: gui = expGUI_cvui(cam,[window])
                 raise SystemExit
             ## '+': increase exposure one step
             elif k == 43:
-                self.exposure[0] += (info.absMax-info.absMin)/542
+                self.exposure[0] += tstep
                 self.set_exposure()
             ## '-': decrease exposure one step
             elif k == 45:
-                self.exposure[0] -= (info.absMax-info.absMin)/542
+                self.exposure[0] -= tstep
                 self.set_exposure()
             ## '1': set step to 1
             elif k == 49:

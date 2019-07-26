@@ -22,8 +22,8 @@ prompt: optional string for file dialog"""
     path = getPath(prompt)
     
     if len(path) > 0: # check for empty path
-        intT = float(path.split('/')[-1].split('_')[-2][:-2]) # exposure time
-        #intT = float(path.split('/')[-1].split('_')[-1][:-2]) # exposure time
+        #intT = float(path.split('/')[-1].split('_')[-2][:-2]) # exposure time
+        intT = float(path.split('/')[-1].split('_')[-1][:-2]) # exposure time
     
     files = [x for x in os.listdir(path) if '.bmp' in x]
     files.sort() # This assumes the correct naming convention is used

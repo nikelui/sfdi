@@ -39,7 +39,7 @@ def reflecMCSFD(mua,mus,n,freqs,MC={}):
 #    t_interval - detection time interval for corresponding t_MC
 #    mother R - reflectance array (rho_MC down vs t_MC across)
     if len(MC) == 0: # Trying to implement persistence
-        path = os.path.abspath('common/models/')
+        path = os.path.abspath('../common/models/')
         #TODO: this will only work if the working directory is the "start" one
         temp = loadmat(os.path.join(path,mc_sim_type)) # if the Monte Carlo has not been loaded
         MC.update(temp) # Append values to the dictionary containing MC variables

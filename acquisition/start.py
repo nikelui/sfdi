@@ -51,7 +51,7 @@ if not os.path.exists(par['outPath']):
 ### Setting up camera ###
 cam = sfdi.setCamera_pg(num=0,res=par['res'],fps=par['fps']) # Set-up Camera
 #TODO: automatically detect screen size
-sfdi.setWindow('pattern',size=(par['xRes'],par['yRes']),pos=(0,0)) # Set-up window on second monitor
+sfdi.setWindow('pattern',size=(par['xRes'],par['yRes']),pos=(par['W'],0)) # Set-up window on second monitor
 #TODO: new GUI, with extra functionality
 sfdi.expGUI_cvui(cam,par,'pattern',correction) # Start GUI
 
