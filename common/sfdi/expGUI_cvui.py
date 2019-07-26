@@ -243,5 +243,5 @@ syntax: gui = expGUI_cvui(cam,[window])
             acquisitionRoutine(self.cam,self.par['xRes'],self.par['yRes'],self.par['w'],f,len(f)-1,
                                self.par['nPhase'],self.par['dt'],self.correction,self.par['Bb'],
                                self.par['Bg'],self.par['Br'],outPath=self.par['outPath'],
-                               name=self.par['name'],n_acq=self.n_acq)
+                               name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq)
             self.n_acq += 1 # increase counter

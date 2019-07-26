@@ -36,8 +36,8 @@ def debugPrint(xRes,yRes,text):
     
 
 def acquisitionRoutine(cam,xRes,yRes,w,f,nFreq,nPhase=3,dt=100.,correction=[],Bb=255,Bg=255,Br=255,
-                       outPath='./',name='im',n_acq=1):
-    """Routine to acquire a full SFDI image set and save data.
+                       outPath='./',name='im',fname='test',n_acq=1):
+    """Routine to acquire a full SFDI image set and save data, now with threading.
 
 NOTE: to work correctly, you need to have an OpenCV window called 'pattern' showing fullscreen on your projector
 
@@ -164,7 +164,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     expt = int(info.absValue) # get exposure time, to normalize RAW data
     
     # for loop to save on file
-    curr_path = (outPath + '/%d_%dms' % (t_stamp,expt)) # create one folder for each timestamp
+    curr_path = (outPath + '/%d_%s_%dms' % (t_stamp,fname,expt)) # create one folder for each timestamp
     if not os.path.exists(curr_path):
         os.makedirs(curr_path)
     
