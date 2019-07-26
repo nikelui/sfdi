@@ -39,35 +39,58 @@ NOTE: for now, most camera configurations are hard-coded in this module
             print('Error connecting camera: %s' % fc2Err)
             raise SystemExit(-1)
 
-    ## Here set camera properties (like disabling auto-exposure)
-    ## Exposure time should be controlled in a GUI
-    cam.setProperty(type=pc.PROPERTY_TYPE.BRIGHTNESS,absValue=0.0)
-    cam.setProperty(type=pc.PROPERTY_TYPE.GAIN,absValue=0.0)
-    cam.setProperty(type=pc.PROPERTY_TYPE.GAIN,onOff=False) # Turn all features off, except for exp time
-    cam.setProperty(type=pc.PROPERTY_TYPE.AUTO_EXPOSURE,onOff=False)
-    cam.setProperty(type=pc.PROPERTY_TYPE.FRAME_RATE,autoManualMode=False)
-    cam.setProperty(type=pc.PROPERTY_TYPE.SHUTTER,autoManualMode=False)
-    cam.setProperty(type=pc.PROPERTY_TYPE.SHUTTER,absControl=True) # set real world unit (ms)
-    cam.setProperty(type=pc.PROPERTY_TYPE.WHITE_BALANCE,onOff=False) # turn white balance off
-
     ## Here set the acquisition properties (look at the manual for supported values)
     if res == '1280p':
         vMode = pc.VIDEO_MODE.VM_1280x960Y8 # 1280x960 pixels, RAW 8bit
     elif res == '640p':
         vMode = pc.VIDEO_MODE.VM_640x480Y8 # 640x480 pixels, RAW 8bit
+    else:
+        vMode = pc.VIDEO_MODE.VM_640x480Y8 # default to 640x480 pixels, RAW 8bit
 
     if fps == 60:
         fRate = pc.FRAMERATE.FR_60 # 60fps. This limits the exposure to 16ms
-    if fps == 30:
+    elif fps == 30:
         fRate = pc.FRAMERATE.FR_30 # 30fps. This limits the exposure to 33ms
-    if fps == 15:
+    elif fps == 15:
         fRate = pc.FRAMERATE.FR_15 # 15fps. This limits the exposure to 66ms
     else:
         fRate = pc.FRAMERATE.FR_7_5 # Default to 7.5fps. This limits the exposure to 133ms
-    cam.setVideoModeAndFrameRate(vMode,fRate)
     
+    try:
+        cam.setVideoModeAndFrameRate(vMode,fRate)
+    except pc.Fc2error as fc2Err:
+         print('Error setting video mode and framerate: %s' % fc2Err)
+         
+    ## Here set camera properties (like disabling auto-exposure)
+    ## Exposure time should be controlled in a GUI
+    ## setProperty does not work properly if you don't pass a Property object
+    prop = pc.Property(pc.PROPERTY_TYPE.BRIGHTNESS,present=True,absControl=False,valueA=0)
+    cam.setProperty(prop) # DONE
+    prop = pc.Property(pc.PROPERTY_TYPE.AUTO_EXPOSURE,absControl=True,autoManualMode=False,onOff=False)
+    cam.setProperty(prop) # DONE
+    prop = pc.Property(pc.PROPERTY_TYPE.GAMMA,absControl=True,absValue=1.0,onOff=False)
+    cam.setProperty(prop) # DONE
+    prop = pc.Property(pc.PROPERTY_TYPE.SHUTTER,absControl=True,absValue=10.0,autoManualMode=False)
+    cam.setProperty(prop) # DONE
+    prop = pc.Property(pc.PROPERTY_TYPE.GAIN,absControl=True,absValue=0.0,autoManualMode=False)
+    cam.setProperty(prop) # DONE
+    prop = pc.Property(pc.PROPERTY_TYPE.FRAME_RATE,absControl=True,absValue=fps,autoManualMode=False,onOff=True)
     if fps == 0:
-        cam.setProperty(type=pc.PROPERTY_TYPE.FRAME_RATE,onOff=False) # Disable fps, to get longer exposure time
+        prop = pc.Property(pc.PROPERTY_TYPE.FRAME_RATE,onOff=False) # Disable fps, to get longer exposure time
+    cam.setProperty(prop) # DONE
+    prop = pc.Property(pc.PROPERTY_TYPE.WHITE_BALANCE,onOff=False)
+    cam.setProperty(prop) # DONE
+
+# This does not work properly
+#    cam.setProperty(type=pc.PROPERTY_TYPE.BRIGHTNESS,absValue=0.0,onOff=False)
+#    cam.setProperty(type=pc.PROPERTY_TYPE.GAIN,absValue=0.0,onOff=False)
+#    
+#    cam.setProperty(type=pc.PROPERTY_TYPE.GAIN,onOff=False) # Turn all features off, except for exp time
+#    cam.setProperty(type=pc.PROPERTY_TYPE.AUTO_EXPOSURE,onOff=False)
+#    cam.setProperty(type=pc.PROPERTY_TYPE.FRAME_RATE,autoManualMode=False)
+#    cam.setProperty(type=pc.PROPERTY_TYPE.SHUTTER,autoManualMode=False)
+#    cam.setProperty(type=pc.PROPERTY_TYPE.SHUTTER,absControl=True) # set real world unit (ms)
+#    cam.setProperty(type=pc.PROPERTY_TYPE.WHITE_BALANCE,onOff=False) # turn white balance off
 
     cam.setConfiguration(
         numBuffers=10,
