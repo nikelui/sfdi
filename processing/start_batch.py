@@ -70,5 +70,6 @@ for op in op_fit_maps:
 #print('Done!')
 
 op_ave,op_std = opticalSpectra(op_fit_maps,par,names)
+
 for cm,name in zip(chrom_map,names):
     chromPlot(cm,name,par)

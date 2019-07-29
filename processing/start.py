@@ -19,6 +19,7 @@ from calibrate import calibrate
 from stackPlot import stackPlot
 from fitOps import fitOps
 from chromFit import chromFit
+from chromPlot import chromPlot
 from opticalSpectra import opticalSpectra
 
 
@@ -28,7 +29,7 @@ if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
 
 # Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-AC,_ = rawDataLoad(par,'Select tissue data folder')
+AC,name = rawDataLoad(par,'Select tissue data folder')
 
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 ACph,_ = rawDataLoad(par,'Select calibration phantom data folder')
@@ -54,3 +55,4 @@ chrom_map = chromFit(op_fit_maps,par) # linear fitting for chromofores
 #print('Done!')
 
 op_ave,op_std = opticalSpectra(crop(cal_R[:,:,0,0],ROI),op_fit_maps,par)
+chromPlot(chrom_map,name.split('/')[-1],par)
