@@ -32,7 +32,7 @@ def opticalSpectra(op_fit_maps,par,names,save=False):
     ax[0].set_title('Absorption coefficient ($\mu_A$)')
     ax[0].grid(True,which='both',linestyle=':')
     ax[0].set_xlabel('wavelength (nm)')
-    ax[0].set_ylim(-0.01,0.01)
+    #ax[0].set_ylim(-0.01,0.01)
     #ax[0].legend()
 
     for i in range(len(opt_ave)):
@@ -41,7 +41,7 @@ def opticalSpectra(op_fit_maps,par,names,save=False):
     ax[1].set_title('Scattering coefficient ($\mu_S´$)')
     ax[1].grid(True,which='both',linestyle=':')
     ax[1].set_xlabel('wavelength (nm)')
-    ax[1].set_ylim(0,10)
+    #ax[1].set_ylim(0,10)
     ax[1].legend()
 
     plt.tight_layout()

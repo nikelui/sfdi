@@ -18,7 +18,8 @@ from rawDataLoad import rawDataLoad
 from calibrate import calibrate
 from stackPlot import stackPlot
 from fitOps import fitOps
-#from chromFit import chromFit
+from chromFit import chromFit
+from chromPlot import chromPlot
 from opticalSpectra_batch import opticalSpectra
 
 
@@ -60,10 +61,14 @@ op_fit_maps = []
 for cal in cal_R:
     op_fit_maps.append(fitOps(crop(cal,ROI),par))
 
-#chrom_map = chromFit(op_fit_maps,par) # linear fitting for chromofores
+chrom_map = []
+for op in op_fit_maps:
+    chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
 
 #print('Saving data...')
 #np.savez(par['savefile'],op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI) # save important results
 #print('Done!')
 
 op_ave,op_std = opticalSpectra(op_fit_maps,par,names)
+for cm,name in zip(chrom_map,names):
+    chromPlot(cm,name,par)

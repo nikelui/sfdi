@@ -34,7 +34,7 @@ prompt: optional string for file dialog"""
         
         spec = temp['s'] # Spectrum
         wv = temp['w'] # wavelengths
-        intT = float(fname.split('/')[-1].split('_')[-2][:-2]) # exposure time in ms, assuming the name
+        intT = float(fname.split('/')[-1].split('_')[-1][:-5]) # exposure time in ms, assuming the name
                                                           # convention is correct
         
         idx = np.where(np.all([wv >= 450,wv <= 750],axis=0))[0] # Limit the spatial range

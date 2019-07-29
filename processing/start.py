@@ -53,4 +53,4 @@ chrom_map = chromFit(op_fit_maps,par) # linear fitting for chromofores
 #np.savez(par['savefile'],op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI,chrom_map=chrom_map) # save important results
 #print('Done!')
 
-opticalSpectra(crop(cal_R[:,:,0,0],ROI),op_fit_maps,par)
+op_ave,op_std = opticalSpectra(crop(cal_R[:,:,0,0],ROI),op_fit_maps,par)
