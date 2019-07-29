@@ -44,8 +44,9 @@ op_fit_sfds = []
 for cal in cal_R:
     op_fit_sfds.append(fitOps_sfds(cal,par))
 
-# TODO: fit for chromophores in sfds
-#chrom_map = chromFit(op_fit_sfds,par) # linear fitting for chromofores
+chrom_map = []
+for op in op_fit_sfds:
+    chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
 
 ## Saving results
 #print('Saving data...')
@@ -76,3 +77,16 @@ plt.legend()
 
 plt.tight_layout()
 plt.show(block=False)
+
+# Since the sfds only probes in on point, the chromophores map is actually a single value
+titles = ['','HbO2','Hb','H2O','lipid','melanin'] # chromophores names. the first is empty to
+                                                              # respect the naming convention
+titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
+if len(chrom_map) > 0:
+    for i,cm in enumerate(chrom_map):
+        print('\n%s'%names[i].split('/')[-1])
+        try:
+            for j,x in enumerate(cm):
+                print('%10s: %f' % (titles[j],x))
+        except TypeError:
+            print('%10s: %f' % (titles[0],cm))
