@@ -65,7 +65,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         """Use this function to control the brightness level of the three channels"""
         ## Triple reference -> 3 horizontal stripes with B,G,R values. Control intensities below
         ## New approach: multiple stripes
-        self.h = 20
+        self.h = 50
         self.rowb = [x for x in range(yRes) if x % (self.h*3) < self.h]
         self.rowg = [x for x in range(yRes) if x % (self.h*3) >= self.h and x % (self.h*3) < self.h*2]
         self.rowr = [x for x in range(yRes) if x % (self.h*3) >= self.h*2]
