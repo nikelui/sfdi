@@ -68,7 +68,7 @@ NOTE: for now, most camera configurations are hard-coded in this module
     cam.setProperty(prop) # DONE
     prop = pc.Property(pc.PROPERTY_TYPE.AUTO_EXPOSURE,absControl=True,autoManualMode=False,onOff=False)
     cam.setProperty(prop) # DONE
-    prop = pc.Property(pc.PROPERTY_TYPE.GAMMA,absControl=True,absValue=1.0,onOff=False)
+    prop = pc.Property(pc.PROPERTY_TYPE.GAMMA,absControl=True,absValue=1.0,onOff=True)
     cam.setProperty(prop) # DONE
     prop = pc.Property(pc.PROPERTY_TYPE.SHUTTER,absControl=True,absValue=10.0,autoManualMode=False)
     cam.setProperty(prop) # DONE
