@@ -12,7 +12,7 @@ from mycsv import csvread
 import numpy as np
 from scipy.interpolate import interp1d
 
-def chromFit(op_fit_maps,par,cfile=[]):
+def chromFit(op_fit_maps,par,cfile=[],old=False):
     """A function to do linear fitting of absorption to known chromophores.
     - op_fit_maps: map of (mua,mus) at all wavelenghs. Should have shape = (x,y,w,2)
             (but only mua will be fitted)
@@ -27,8 +27,26 @@ def chromFit(op_fit_maps,par,cfile=[]):
         chromophores,_ = csvread(cfile[0],arr=True,delimiter='\t') # remember that cfile is a list
         
         # Interpolate at the used wavelengths
-        f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='cubic',axis=0)
-        E = np.matrix(f(par['wv']))
+        ## OLD method: central wavelengths
+        if old:
+            f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',axis=0,fill_value='extrapolate')
+            E = np.matrix(f(par['wv']))
+        
+        ## NEW method: weighted average
+        else:
+            data,_ = csvread('common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
+            wv = data[0,:] # wavelength axis
+            spec = data[(9,6,5,4,1),:] # 5 channels [380-720]nm
+            f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',axis=0,fill_value='extrapolate')
+            chrom = f(wv).T # chromophores used [380-720]nm
+            
+            E = np.zeros((len(spec),len(chrom))) # initialize
+            
+            # TODO: Double for loop, very inefficient. Try to optimize
+            for i,band in enumerate(spec):
+                for j,cr in enumerate(chrom):
+                    E[i,j] = np.sum(cr*band) / np.sum(band)
+            
         if (len(par['chrom_used']) == 1):
             E = E.T # This way is forced to be a column matrix
         
@@ -45,7 +63,9 @@ def chromFit(op_fit_maps,par,cfile=[]):
     return np.squeeze(chrom_map) # remove extra dimension at the end
     
 if __name__ == '__main__':
-    #chrom_map = chromFit(op_fit_maps,par)
-    chrom_map = []
-    for op in op_fit_sfds:
-        chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
+#    op_fit_maps = [1]
+#    par = {'wv':[458,520,536,556,626],'chrom_used':[1,2,5]}
+    chrom_map = chromFit(op_fit_maps,par)
+#    chrom_map = []
+#    for op in op_fit_sfds:
+#        chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
