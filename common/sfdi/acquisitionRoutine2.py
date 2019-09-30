@@ -89,7 +89,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             Ib = (Ib*255).astype('uint8')             
             cv.imshow('pattern',Ib[...,::-1])
             t3 = cv.getTickCount()
-            cv.waitKey(1)
+            k = cv.waitKey(1)
             t4 = cv.getTickCount()
             time.sleep(dt/1000)
             t5 = cv.getTickCount()
@@ -116,7 +116,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             Ig = (Ig*255).astype('uint8')  
             cv.imshow('pattern',Ig[...,::-1])
             t3 = cv.getTickCount()
-            cv.waitKey(1)
+            k = cv.waitKey(1)
             t4 = cv.getTickCount()
             time.sleep(dt/1000)
             t5 = cv.getTickCount()
@@ -145,7 +145,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             Ir = (Ir*255).astype('uint8')  
             cv.imshow('pattern',Ir[...,::-1])
             t3 = cv.getTickCount()
-            cv.waitKey(1)
+            k = cv.waitKey(1)
             t4 = cv.getTickCount()
             time.sleep(dt/1000)
             t5 = cv.getTickCount()
@@ -179,6 +179,10 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     ## This is a bottleneck (especially if saving at full resolution)
     ## TODO: might consider putting it on a separate thread for speed
     #saveFunc(nFreq,nPhase,curr_path,name,dataMat)
+    if k & 0xff == '27': # if press 'ESCAPE', return True to break loop
+        return True
+    else:
+        return False     # this is the normal return value
     ## End
 if (__name__ == '__main__'):
     xRes,yRes = (640,480)

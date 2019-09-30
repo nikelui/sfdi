@@ -237,8 +237,10 @@ syntax: gui = expGUI_cvui(cam,[window])
         f = self.par['fx'] # new version, put the frequencies in the parameters file
         while((self.n_acq < self.n[0] or self.n[0] == 0) and not(self.stop[0]) ):
             ## Acquisition loop
-            acquisitionRoutine(self.cam,self.par['xRes'],self.par['yRes'],self.par['w'],f,len(f)-1,
+            ## TODO: break from infinite loop using the return value from acquisitionRoutine
+            ret = acquisitionRoutine(self.cam,self.par['xRes'],self.par['yRes'],self.par['w'],f,len(f)-1,
                                self.par['nPhase'],self.par['dt'],self.correction,self.par['Bb'],
                                self.par['Bg'],self.par['Br'],outPath=self.par['outPath'],
                                name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq)
             self.n_acq += 1 # increase counter
+            self.stop[0] = ret # use return value to break from loop
