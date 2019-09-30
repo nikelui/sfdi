@@ -69,6 +69,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             t1 = cv.getTickCount()
             _,_,_,Ib = sinPattern(xRes,yRes,w,f[i],2./3*np.pi*p,Bb,correction,'b')
             t2 = cv.getTickCount()
+            ## fix: opencv 4.0.0 does not like float images, so convert to uint8
+            Ib = (Ib*255).astype('uint8')  
             cv.imshow('pattern',Ib[...,::-1])
             t3 = cv.getTickCount()
             cv.waitKey(1)
@@ -93,6 +95,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             t1 = cv.getTickCount()
             _,_,Ig,_ = sinPattern(xRes,yRes,w,f[i],2./3*np.pi*p,Bg,correction,'g')
             t2 = cv.getTickCount()
+            ## fix: opencv 4.0.0 does not like float images, so convert to uint8
+            Ig = (Ig*255).astype('uint8')
             cv.imshow('pattern',Ig[...,::-1])
             t3 = cv.getTickCount()
             cv.waitKey(1)
@@ -119,6 +123,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             t1 = cv.getTickCount()
             _,Ir,_,_ = sinPattern(xRes,yRes,w,f[i],2./3*np.pi*p,Br,correction,'r')
             t2 = cv.getTickCount()
+            ## fix: opencv 4.0.0 does not like float images, so convert to uint8
+            Ir = (Ir*255).astype('uint8')
             cv.imshow('pattern',Ir[...,::-1])
             t3 = cv.getTickCount()
             cv.waitKey(1)

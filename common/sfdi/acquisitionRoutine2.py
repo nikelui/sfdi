@@ -85,6 +85,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             # DEBUG
             #Ib = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,0,i,p))
             t2 = cv.getTickCount()
+            ## fix: opencv 4.0.0 does not like float images, so convert to uint8
+            Ib = (Ib*255).astype('uint8')             
             cv.imshow('pattern',Ib[...,::-1])
             t3 = cv.getTickCount()
             cv.waitKey(1)
@@ -110,6 +112,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             _,_,Ig,_ = sinPattern(xRes,yRes,w,f[i],2./3*np.pi*p,Bg,correction,'g')
             #Ig = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,1,i,p))
             t2 = cv.getTickCount()
+            ## fix: opencv 4.0.0 does not like float images, so convert to uint8
+            Ig = (Ig*255).astype('uint8')  
             cv.imshow('pattern',Ig[...,::-1])
             t3 = cv.getTickCount()
             cv.waitKey(1)
@@ -137,6 +141,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             _,Ir,_,_ = sinPattern(xRes,yRes,w,f[i],2./3*np.pi*p,Br,correction,'r')
             #Ir = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,2,i,p))
             t2 = cv.getTickCount()
+            ## fix: opencv 4.0.0 does not like float images, so convert to uint8
+            Ir = (Ir*255).astype('uint8')  
             cv.imshow('pattern',Ir[...,::-1])
             t3 = cv.getTickCount()
             cv.waitKey(1)
