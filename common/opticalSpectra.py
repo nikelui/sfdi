@@ -13,7 +13,18 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.widgets import RadioButtons
 import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sfdi.crop import crop
+
+def colourbar(mappable):
+    if (mappable.colorbar is not None):
+        mappable.colorbar.remove()
+    ax = mappable.axes
+    fig = ax.figure
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    return fig.colorbar(mappable, cax=cax)
+    
 
 def opticalSpectra(Im,op_fit_maps,par,save=False):
     """Select multiple ROI on the reflectance map and calculate an average of the optical properties to plot.
@@ -24,12 +35,20 @@ def opticalSpectra(Im,op_fit_maps,par,save=False):
         data_a = op_fit_maps[:,:,label_dict[label],0]
         data_s = op_fit_maps[:,:,label_dict[label],1]
         im1.set_data(data_a)
-        if(np.max(op_fit_maps[:,:,:,0]) > 0.5):
-            im1.set_clim(vmax=0.5)
-        vmax = np.max(op_fit_maps[:,:,:,0])
-        if vmax > 0.5:
-            vmax = 0.4 # If there are some outlier values, limit the range
+        #cbar1.remove()
+        if(np.max(op_fit_maps[:,:,label_dict[label],0]) > 1):
+            im1.set_clim(vmin=0,vmax=1)
+            cbar1 = colourbar(im1)
+        else:
+            im1.set_clim(vmin=0,vmax=np.max(op_fit_maps[:,:,label_dict[label],0]))
+            cbar1 = colourbar(im1)
         im2.set_data(data_s)
+        if(np.max(op_fit_maps[:,:,label_dict[label],1]) > 10):
+            im2.set_clim(vmin=0,vmax=10)
+            cbar2 = colourbar(im2)
+        else:
+            im2.set_clim(vmin=0,vmax=np.max(op_fit_maps[:,:,label_dict[label],1]))
+            cbar2 = colourbar(im2)
         plt.draw()
     
 #    def call_mus(label):
@@ -54,8 +73,8 @@ def opticalSpectra(Im,op_fit_maps,par,save=False):
         opt_std[i,:,:] = np.std(crop(op_fit_maps,ROIs[i,:]//par['binsize']),axis=(0,1))
     
     # manually define axis
-    fig = plt.figure(constrained_layout=True,figsize=(10,6.5))
-    spec = gridspec(ncols=3,nrows=2,width_ratios=[1,0.5,1])
+    fig = plt.figure(constrained_layout=False,figsize=(10,6.5))
+    spec = gridspec.GridSpec(ncols=3,nrows=2,width_ratios=[1,0.3,1],figure=fig)
     
     ax1 = fig.add_subplot(spec[0,0])
     ax2 = fig.add_subplot(spec[0,1])
@@ -69,13 +88,14 @@ def opticalSpectra(Im,op_fit_maps,par,save=False):
     #fig,ax = plt.subplots(2,3,figsize=(10,6.5))
     
     vmax = np.max(op_fit_maps[:,:,:,0])
-    if vmax > 0.5:
-        vmax = 0.4 # If there are some outlier values, limit the range    
+    if vmax > 1:
+        vmax = 1 # If there are some outlier values, limit the range    
     im1 = ax[0,0].imshow(op_fit_maps[:,:,0,0],cmap='magma',vmin=0,vmax=vmax)
     ax[0,0].set_title('Absorption coefficient ($\mu_A$)')
     ax[0,0].get_xaxis().set_visible(False)
     ax[0,0].get_yaxis().set_visible(False)
-    fig.colorbar(im1,ax=ax[0,0])
+    cbar1 = colourbar(im1)
+    #fig.colorbar(im1,ax=ax[0,0])
     
     radio1 = RadioButtons(ax[0,1], labels=('B','GB','G','GR','R'))
     radio1.on_clicked(call_mua)
@@ -87,7 +107,8 @@ def opticalSpectra(Im,op_fit_maps,par,save=False):
     ax[0,2].set_title('Scattering coefficient ($\mu_S´$)')
     ax[0,2].get_xaxis().set_visible(False)
     ax[0,2].get_yaxis().set_visible(False)
-    fig.colorbar(im2,ax=ax[0,2])
+    cbar2 = colourbar(im2)
+    #fig.colorbar(im2,ax=ax[0,2])
 
     ax[1,1].axis('off')
     
@@ -117,7 +138,7 @@ def opticalSpectra(Im,op_fit_maps,par,save=False):
         ax[1,2].set_xlabel('wavelength (nm)')
         ax[1,2].grid(True,which='both',linestyle=':')
         
-    #plt.tight_layout()
+    plt.tight_layout()
     
     if save:
         plt.savefig('figure%d.png'%save, )
