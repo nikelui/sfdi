@@ -34,13 +34,13 @@ def chromFit(op_fit_maps,par,cfile=[],old=False):
         
         ## NEW method: weighted average
         else:
-            data,_ = csvread('common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
+            data,_ = csvread('../common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
             wv = data[0,:] # wavelength axis
             spec = data[(9,6,5,4,1),:] # 5 channels [380-720]nm
             f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',axis=0,fill_value='extrapolate')
             chrom = f(wv).T # chromophores used [380-720]nm
             
-            E = np.zeros((len(spec),len(chrom))) # initialize
+            E = np.matrix(np.zeros((len(spec),len(chrom)))) # initialize
             
             # TODO: Double for loop, very inefficient. Try to optimize
             for i,band in enumerate(spec):
