@@ -46,7 +46,8 @@ prompt: optional string for file dialog"""
                     (temp[:,:,2]-temp[:,:,0])**2 ) / intT # normalize by exposure time
             #DC(:,:,i,j) = np.mean(temp,3);
             if par['ker'] > 1: # apply gaussian smoothing
-                AC[:,:,i,j] = cv.GaussianBlur(AC[:,:,i,j],(9,9),1.5) # Gaussian smoothing, radius 3px, sigma=1.5
+                AC[:,:,i,j] = cv.GaussianBlur(AC[:,:,i,j],(par['ker'],par['ker']),par['sig'])
+                # Gaussian smoothing, radius 3px, sigma=1.5
     return AC,path
 
 
