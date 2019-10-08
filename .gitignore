@@ -106,3 +106,4 @@ venv.bak/
 # Other files to ignore
 parameters.cfg
 *.npy
+*.npz

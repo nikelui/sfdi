@@ -67,4 +67,5 @@ def chromPlot(chrom_map,name,par):
 if __name__ == '__main__':  
 #    for cm,name in zip(chrom_map,names):
 #        chromPlot(cm,name,par)
-    chromPlot(chrom_map,name.split('/')[-1],par)
+    #chromPlot(chrom_map,name.split('/')[-1],par)
+    chromPlot(chrom_map,'aaa',par)

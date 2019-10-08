@@ -45,27 +45,28 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
         data_s = op_fit_maps[:,:,label_dict[label],1]
         im1.set_data(data_a)
         #cbar1.remove()
-        if(np.nanmax(op_fit_maps[:,:,label_dict[label],0]) > 1):
-            im1.set_clim(vmin=0,vmax=1)
-            cbar1 = colourbar(im1)
-        else:
-            im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],0]))
-            cbar1 = colourbar(im1)
+##      Since outlier are masked, this is not necessary
+#        if(np.nanmax(op_fit_maps[:,:,label_dict[label],0]) > 1):
+#            im1.set_clim(vmin=0,vmax=1)
+#            cbar1 = colourbar(im1)
+#        else:
+#            im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],0]))
+#            cbar1 = colourbar(im1)
+        im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],0]))
+        cbar1 = colourbar(im1)
+
         im2.set_data(data_s)
-        if(np.nanmax(op_fit_maps[:,:,label_dict[label],1]) > 10):
-            im2.set_clim(vmin=0,vmax=10)
-            cbar2 = colourbar(im2)
-        else:
-            im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],1]))
-            cbar2 = colourbar(im2)
+##      Same here
+#        if(np.nanmax(op_fit_maps[:,:,label_dict[label],1]) > 10):
+#            im2.set_clim(vmin=0,vmax=10)
+#            cbar2 = colourbar(im2)
+#        else:
+#            im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],1]))
+#            cbar2 = colourbar(im2)
+        im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],1]))
+        cbar2 = colourbar(im2)
         plt.draw()
-    
-#    def call_mus(label):
-#        label_dict = {'B':0,'GB':1,'G':2,'GR':3,'R':4}
-#        data = op_fit_maps[:,:,label_dict[label],1]
-#        im2.set_data(data)
-#        plt.draw()
-    
+       
     cv.namedWindow('Select ROIs',cv.WINDOW_NORMAL)
     cv.resizeWindow('Select ROIs',(Im.shape[1],Im.shape[0]))
     ROIs = cv.selectROIs('Select ROIs',Im,False,False) # press enter to save the ROI, esc to terminate
@@ -83,9 +84,10 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
         # loop over wavelength and OP axis
         for wv in range(len(MAD)):
             for i in range(len(MAD[0])):
-                # mask if the distance from the medianvalue is higher than 10*MAD
-                idx = np.where(op_fit_maps[:,:,wv,i] - med[wv,i] > 10*MAD[wv,i])
-                op_fit_maps[:,:,wv,i][idx] = mask.masked
+                # mask if the distance from the median value is higher than 10*MAD
+                idx = np.where(op_fit_maps[:,:,wv,i] - med[wv,i] > 15*MAD[wv,i])
+                for x in range(len(idx[0])):
+                    op_fit_maps[idx[0],idx[1],wv,i] = mask.masked
     
     colours=['b','r',(0,1,0),'k',(0,1,1),(1,0,1),(0.9,0.9,0)] # colour scheme to draw lines
     if len(ROIs) > 7:
@@ -115,6 +117,7 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     
     #fig,ax = plt.subplots(2,3,figsize=(10,6.5))
     
+    # TODO: change the limit based on max values
     vmax = np.nanmax(op_fit_maps[:,:,:,0])
     if vmax > 1:
         vmax = 1 # If there are some outlier values, limit the range    
@@ -135,8 +138,9 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     ax[0,2].set_title('Scattering coefficient ($\mu_S´$)')
     ax[0,2].get_xaxis().set_visible(False)
     ax[0,2].get_yaxis().set_visible(False)
+    
     current_cmap = cm.get_cmap('magma')
-    current_cmap.set_bad(color='cyan')
+    current_cmap.set_bad(color='cyan') # masked values colour
     cbar2 = colourbar(im2)
     #fig.colorbar(im2,ax=ax[0,2])
 
@@ -173,12 +177,15 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     if save:
         plt.savefig('figure%d.png'%save, bbox_inches=None)
     
-    return opt_ave,opt_std,radio1
+    return op_fit_maps,opt_ave,opt_std,radio1
 
 
 if __name__ == '__main__':
-    #op_fit_maps = np.load('../processing/test_data.npy')
-    #cal_R = np.load('../processing/test_cal.npy')
-    #par = {'binsize':5, 'wv':[458,520,536,556,626]}
+    asd = np.load('../processing/test_data.npz')
+    op_fit_maps = asd['op_fit_maps']
+    cal_R = asd['cal_R']
+    ROI = asd['ROI']
+    
+    par = {'binsize':4, 'wv':[458,520,536,556,626]}
     cropped = crop(cal_R[:,:,0,0],ROI)
-    opt_ave,opt_std,radio = opticalSpectra(cropped,op_fit_maps,par,outliers=True)
+    op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(cropped,op_fit_maps,par,outliers=True)
