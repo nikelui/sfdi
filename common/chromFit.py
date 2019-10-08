@@ -37,6 +37,7 @@ def chromFit(op_fit_maps,par,cfile=[],old=False):
             data,_ = csvread('../common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
             wv = data[0,:] # wavelength axis
             spec = data[(9,6,5,4,1),:] # 5 channels [380-720]nm
+            #spec = data[(6,5,4,1),:] # 4 channels [380-720]nm
             f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',axis=0,fill_value='extrapolate')
             chrom = f(wv).T # chromophores used [380-720]nm
             

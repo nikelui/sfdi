@@ -55,4 +55,4 @@ chrom_map = chromFit(op_fit_maps,par) # linear fitting for chromofores
 #print('Done!')
 
 op_fit_maps,op_ave,op_std,radio = opticalSpectra(crop(cal_R[:,:,0,0],ROI),op_fit_maps,par,outliers=False)
-chromPlot(chrom_map,name.split('/')[-1],par)
+chrom_map = chromPlot(chrom_map,name.split('/')[-1],par)

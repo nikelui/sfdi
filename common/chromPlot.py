@@ -8,10 +8,19 @@ email: luigi.belcastro@liu.se
 from matplotlib import pyplot as plt
 import numpy as np
 
+def mad(x,scale=1.4826,axis=None):
+    """Median assoulte difference (since Scipy does not implement it anymore).
+    This is preferred as a measure of dispersion, since it is more robust to outliers.
+    The scale factor is to mate it comparable with standar deviation (for normal distribution)"""
+    med = np.nanmedian(x,axis=axis)
+    return np.nanmedian(np.abs(x-med),axis=axis)*scale
 
 def chromPlot(chrom_map,name,par):
     """"A function to plot the chromophores distribution map"""
     # TODO: fix doc
+    
+    ## First: remove outliers
+    
     
     titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
                                                               # respect the naming convention
@@ -62,10 +71,12 @@ def chromPlot(chrom_map,name,par):
         if (chrom_map.shape[-1] % 2 == 1 and chrom_map.shape[-1] > 1):
             ax[-1,-1].axis('off') # Delete empty axis if chrom. number is odd and > 1   
         plt.tight_layout()
+        
+    return chrom_map
 
 
 if __name__ == '__main__':  
 #    for cm,name in zip(chrom_map,names):
 #        chromPlot(cm,name,par)
     #chromPlot(chrom_map,name.split('/')[-1],par)
-    chromPlot(chrom_map,'aaa',par)
+    chrom_map = chromPlot(chrom_map,'aaa',par)
