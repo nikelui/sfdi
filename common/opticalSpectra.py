@@ -20,12 +20,14 @@ from sfdi.crop import crop
 
 def mad(x,scale=1.4826,axis=None):
     """Median assoulte difference (since Scipy does not implement it anymore).
-    This is preferred as a measure of dispersion, since it is more robust to outliers.
-    The scale factor is to mate it comparable with standar deviation (for normal distribution)"""
+    This is preferred as a measure of dispersion, since it is more robust to
+    outliers. The scale factor is to make it comparable with standard deviation
+    (for normal distribution)"""
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
 
 def colourbar(mappable):
+    """Improved colorbar function. Fits well to the axis dimension."""
     if (mappable.colorbar is not None):
         mappable.colorbar.remove()
     ax = mappable.axes
@@ -36,36 +38,41 @@ def colourbar(mappable):
     
 
 def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
-    """Select multiple ROI on the reflectance map and calculate an average of the optical properties to plot.
-    """
+    """Select ROIs and calculate average optical properties on each one.
+
+@Inputs
+    - Im: (cropped) Reflectance map to selet ROIs
+    - op_fit_maps: (binned) map of optical properties, given by fitOps
+    - par: dictionary containing processng parameters
+    - save: if True, it will save the plot
+    - outliers: if True, mask outlier values (detected using median and Median
+                Absolute Deviation)
+@Return
+    - op_fit_maps: if outlier is True, it will be a MaskedArray, otherwise
+                   return the original data
+    - opt_ave: array containing average of optical properties in the ROIs
+    - opt_std: array containing standard deviation of optical properties
+               in the ROIs
+    - radio1: need a reference to the widget in order to be interactive
+@Instructions:
+    - select multiple ROIs on the reflectance map (confirm each one with ENTER)
+    - end selection with ESCAPE
+    - [interactive]: use the radio buttons to show different wavelengths colormap    
+"""
     ## Put callbacks here
     def call_mua(label):
         label_dict = {'B':0,'GB':1,'G':2,'GR':3,'R':4}
         data_a = op_fit_maps[:,:,label_dict[label],0]
         data_s = op_fit_maps[:,:,label_dict[label],1]
         im1.set_data(data_a)
-        #cbar1.remove()
-##      Since outlier are masked, this is not necessary
-#        if(np.nanmax(op_fit_maps[:,:,label_dict[label],0]) > 1):
-#            im1.set_clim(vmin=0,vmax=1)
-#            cbar1 = colourbar(im1)
-#        else:
-#            im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],0]))
-#            cbar1 = colourbar(im1)
         im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],0]))
         cbar1 = colourbar(im1)
 
         im2.set_data(data_s)
-##      Same here
-#        if(np.nanmax(op_fit_maps[:,:,label_dict[label],1]) > 10):
-#            im2.set_clim(vmin=0,vmax=10)
-#            cbar2 = colourbar(im2)
-#        else:
-#            im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],1]))
-#            cbar2 = colourbar(im2)
         im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],1]))
         cbar2 = colourbar(im2)
         plt.draw()
+        plt.tight_layout()
        
     cv.namedWindow('Select ROIs',cv.WINDOW_NORMAL)
     cv.resizeWindow('Select ROIs',(Im.shape[1],Im.shape[0]))
@@ -85,7 +92,7 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
         for wv in range(len(MAD)):
             for i in range(len(MAD[0])):
                 # mask if the distance from the median value is higher than 10*MAD
-                idx = np.where(op_fit_maps[:,:,wv,i] - med[wv,i] > 15*MAD[wv,i])
+                idx = np.where(abs(op_fit_maps[:,:,wv,i] - med[wv,i]) > 15*MAD[wv,i])
                 for x in range(len(idx[0])):
                     op_fit_maps[idx[0],idx[1],wv,i] = mask.masked
     
@@ -102,8 +109,8 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
         opt_ave[i,:,:] = np.nanmean(crop(op_fit_maps,ROIs[i,:]//par['binsize']),axis=(0,1))
         opt_std[i,:,:] = np.nanstd(crop(op_fit_maps,ROIs[i,:]//par['binsize']),axis=(0,1))
     
-    # manually define axis
-    fig = plt.figure(constrained_layout=False,figsize=(10,6.5))
+    # New: manually define axis using gridspec
+    fig = plt.figure(constrained_layout=False,figsize=(10,6))
     spec = gridspec.GridSpec(ncols=3,nrows=2,width_ratios=[1,0.3,1],figure=fig)
     
     ax1 = fig.add_subplot(spec[0,0])
@@ -114,26 +121,18 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     ax6 = fig.add_subplot(spec[1,2])
     
     ax = np.array([[ax1,ax2,ax3],[ax4,ax5,ax6]]) # this way the old scheme is kept
-    
-    #fig,ax = plt.subplots(2,3,figsize=(10,6.5))
-    
-    # TODO: change the limit based on max values
+        
     vmax = np.nanmax(op_fit_maps[:,:,:,0])
-    if vmax > 1:
-        vmax = 1 # If there are some outlier values, limit the range    
     im1 = ax[0,0].imshow(op_fit_maps[:,:,0,0],cmap='magma',vmin=0,vmax=vmax)
     ax[0,0].set_title('Absorption coefficient ($\mu_A$)')
     ax[0,0].get_xaxis().set_visible(False)
     ax[0,0].get_yaxis().set_visible(False)
     cbar1 = colourbar(im1)
-    #fig.colorbar(im1,ax=ax[0,0])
     
     radio1 = RadioButtons(ax[0,1], labels=('B','GB','G','GR','R'))
     radio1.on_clicked(call_mua)
     
     vmax = np.nanmax(op_fit_maps[:,:,:,1])
-    if vmax > 10:
-        vmax = 10 # If there are some outlier values, limit the range    
     im2 = ax[0,2].imshow(op_fit_maps[:,:,0,1],cmap='magma',vmin=0,vmax=vmax)
     ax[0,2].set_title('Scattering coefficient ($\mu_S´$)')
     ax[0,2].get_xaxis().set_visible(False)
@@ -142,7 +141,6 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     current_cmap = cm.get_cmap('magma')
     current_cmap.set_bad(color='cyan') # masked values colour
     cbar2 = colourbar(im2)
-    #fig.colorbar(im2,ax=ax[0,2])
 
     ax[1,1].axis('off')
     
@@ -181,11 +179,11 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
 
 
 if __name__ == '__main__':
-    asd = np.load('../processing/test_data.npz')
-    op_fit_maps = asd['op_fit_maps']
-    cal_R = asd['cal_R']
-    ROI = asd['ROI']
-    
-    par = {'binsize':4, 'wv':[458,520,536,556,626]}
+#    asd = np.load('../processing/test_data.npz')
+#    op_fit_maps = asd['op_fit_maps']
+#    cal_R = asd['cal_R']
+#    ROI = asd['ROI']
+#    
+#    par = {'binsize':4, 'wv':[458,520,536,556,626]}
     cropped = crop(cal_R[:,:,0,0],ROI)
     op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(cropped,op_fit_maps,par,outliers=True)
