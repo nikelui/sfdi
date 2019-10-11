@@ -36,7 +36,7 @@ def debugPrint(xRes,yRes,text):
     
 
 def acquisitionRoutine(cam,xRes,yRes,w,f,nFreq,nPhase=3,dt=100.,correction=[],Bb=255,Bg=255,Br=255,
-                       outPath='./',name='im',fname='test',n_acq=1):
+                       outPath='./',name='im',fname='test',n_acq=1,blueBoost=False):
     """Routine to acquire a full SFDI image set and save data, now with threading.
 
 NOTE: to work correctly, you need to have an OpenCV window called 'pattern' showing fullscreen on your projector
@@ -54,6 +54,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     - outPath: path where to save output images (default: current folder)
     - name: name to prepend to saved images before the _xyz tag.
     - n_acq: acquisition n. (Debug puposes)
+    - blueBoost: flag to increase exposure time for blue
 """
     ## Timing tests
     start = cv.getTickCount()
@@ -79,6 +80,22 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     
     stop = False # Insert a flag for stopping
     
+    ## New: increase the exposure time for blue channel (SNR is very low on tissues)
+    ## consider to use a slightly longer pause between patterns
+    if (blueBoost):
+        # first save old value
+        try:
+            prop = cam.getProperty(pc.PROPERTY_TYPE.SHUTTER)
+            expT = float(prop.absValue)
+        except pc.Fc2error as fc2Err:
+            print('Error getting exposure property: %s' % fc2Err)
+        # Increase exposure by a multiple of 16.67ms (projector framerate is 60Hz)
+        try:
+            prop = pc.Property(pc.PROPERTY_TYPE.SHUTTER,absControl=True,absValue=expT+33.3,autoManualMode=False)
+            cam.setProperty(prop) # DONE
+        except pc.Fc2error as fc2Err:
+            print('Error setting BLUE exposure time: %s' % fc2Err)
+    
     # Acquire BLUE / BG
     for i in range(nFreq+1):
         for p in range(nPhase):
@@ -95,7 +112,10 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             if k & 0xff == 27: # if press 'ESCAPE', raise flag
                 stop = True
             t4 = cv.getTickCount()
-            time.sleep(dt/1000)
+            if (blueBoost):
+                time.sleep(dt/1000 + 0.05)
+            else:
+                time.sleep(dt/1000)
             t5 = cv.getTickCount()
             frame = camCapt_pg(cam,1,False)
             t6 = cv.getTickCount()
@@ -109,6 +129,14 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             t_capture.append((t6-t5)/cv.getTickFrequency())
     ##time.sleep(dt/2000)
     
+    if (blueBoost):
+        # Here, return exposure to previous value
+        try:
+            prop = pc.Property(pc.PROPERTY_TYPE.SHUTTER,absControl=True,absValue=expT,autoManualMode=False)
+            cam.setProperty(prop) # DONE
+        except pc.Fc2error as fc2Err:
+            print('Error setting exposure time: %s' % fc2Err)
+        
     # Acquire GREEN
     for i in range(nFreq+1):
         for p in range(nPhase):
