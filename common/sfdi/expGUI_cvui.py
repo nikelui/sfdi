@@ -65,7 +65,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         """Use this function to control the brightness level of the three channels"""
         ## Triple reference -> 3 horizontal stripes with B,G,R values. Control intensities below
         ## New approach: multiple stripes
-        self.h = 50
+        self.h = 30
         self.rowb = [x for x in range(yRes) if x % (self.h*3) < self.h]
         self.rowg = [x for x in range(yRes) if x % (self.h*3) >= self.h and x % (self.h*3) < self.h*2]
         self.rowr = [x for x in range(yRes) if x % (self.h*3) >= self.h*2]
@@ -241,6 +241,7 @@ syntax: gui = expGUI_cvui(cam,[window])
             ret = acquisitionRoutine(self.cam,self.par['xRes'],self.par['yRes'],self.par['w'],f,len(f)-1,
                                self.par['nPhase'],self.par['dt'],self.correction,self.par['Bb'],
                                self.par['Bg'],self.par['Br'],outPath=self.par['outPath'],
-                               name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq)
+                               name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq,
+                               blueBoost=bool(self.par['blueBoost']))
             self.n_acq += 1 # increase counter
             self.stop[0] = ret # use return value to break from loop
