@@ -36,7 +36,7 @@ Need a .txt file with the phantom known optical properties."""
     
     ## NEW interpolation (with weighted average over bands)
     else:
-        data,_ = csvread('common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
+        data,_ = csvread('../common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
         wv = data[0,:] # wavelength axis
         spec = data[(9,6,5,4,1),:] # 5 channels
         

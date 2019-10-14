@@ -14,7 +14,7 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 
 from sfdi.readParams2 import readParams
 from sfdi.crop import crop
-from rawDataLoad import rawDataLoad
+from rawDataLoadBatch import rawDataLoad
 from calibrate import calibrate
 from stackPlot import stackPlot
 from fitOps import fitOps
