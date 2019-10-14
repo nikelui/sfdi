@@ -1,4 +1,4 @@
-7# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Tue Jun 18 13:39:08 2019
 
@@ -34,7 +34,7 @@ import sys, os
 import cv2 as cv
 
 sys.path.append('../common') # Add the common folder to path
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
+#sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
 import sfdi
 from sfdi.readParams2 import readParams
 from mycsv import csvread

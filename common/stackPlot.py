@@ -48,6 +48,7 @@ def stackPlot(data,cmap='viridis'):
     plt.colorbar()
     
     plt.tight_layout()
+    plt.show(block=False)
     
 
 if __name__ == '__main__':
