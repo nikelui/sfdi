@@ -119,8 +119,7 @@ def chromPlot(chrom_map,name,par):
         
         if (chrom_map.shape[-1] % 2 == 1 and chrom_map.shape[-1] > 1):
             ax[-1,-1].axis('off') # Delete empty axis if chrom. number is odd and > 1   
-        plt.tight_layout()
-        
+        plt.tight_layout()      
     return chrom_map
 
 

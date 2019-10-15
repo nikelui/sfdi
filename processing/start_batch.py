@@ -7,7 +7,9 @@ email: luigi.belcastro@liu.se
 """
 import sys
 import numpy as np
+import numpy.ma as mask
 import cv2 as cv
+from matplotlib import pyplot as plt
 
 sys.path.append('../common')
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
@@ -62,7 +64,22 @@ for op in op_fit_maps:
 #np.savez(par['savefile'],op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI) # save important results
 #print('Done!')
 
-op_ave,op_std = opticalSpectra(op_fit_maps,par,names)
+op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True)
 
-for cm,name in zip(chrom_map,names):
-    chromPlot(cm,name,par)
+for i in range(len(chrom_map)):
+    chrom_map[i] = chromPlot(chrom_map[i],names[i],par)
+
+## Plot average of chromophores in time
+titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
+                                                              # respect the naming convention
+titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
+
+chroms_ave = mask.masked_array(chrom_map).mean(axis=(1,2)) # collapse dimensions and average
+chroms_std = mask.masked_array(chrom_map).std(axis=(1,2)) # collapse dimensions and std
+plt.figure(100)
+for i in range(np.shape(chroms_ave)[1]):
+    plt.errorbar(np.arange(9),chroms_ave[:,i],fmt='D',yerr=chroms_std[:,i].data,linestyle='solid',
+                 capsize=5,markersize=3)
+plt.legend(titles)
+plt.grid(True)
+plt.show(block=False)

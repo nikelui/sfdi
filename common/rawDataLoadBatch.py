@@ -26,7 +26,7 @@ prompt: optional string for file dialog"""
     if len(path) > 0: # check for empty path
         dirs = [x for x in os.listdir(path) if os.path.isdir(path+'/'+x)] # list of directories
         #toProcess = []
-        toProcess = ['_testhannabase2_','_testhannaocclusion_'] # you could also define the names here manually
+        toProcess = ['_testhannabase2_','_testhannaocclusion_','_testhannarelease_'] # you could also define the names here manually
         
         if(len(toProcess)==0): # In case you define by hand
             regex = input('Input base name to match: ').lower() # only process matching directories
