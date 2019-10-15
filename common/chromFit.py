@@ -46,6 +46,7 @@ def chromFit(op_fit_maps,par,cfile=[],old=False):
             for i,band in enumerate(spec):
                 for j,cr in enumerate(chrom):
                     E[i,j] = np.sum(cr*band) / np.sum(band)
+            E = np.matrix(E)
             
         if (len(par['chrom_used']) == 1):
             E = E.T # This way is forced to be a column matrix

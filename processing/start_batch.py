@@ -14,7 +14,8 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 
 from sfdi.readParams2 import readParams
 from sfdi.crop import crop
-from rawDataLoadBatch import rawDataLoad
+from rawDataLoadBatch import rawDataLoadBatch
+from rawDataLoad import rawDataLoad
 from calibrate import calibrate
 from stackPlot import stackPlot
 from fitOps import fitOps
@@ -29,15 +30,7 @@ if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
 
 # Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-AC,names = [],[] # This approach is a bit rough, but there are no simple solutions
-read = True
-while read:
-    try:
-        data,name = rawDataLoad(par,'Select tissue data folder') # Need to select each folder
-        AC.append(data)
-        names.append(name.split('/')[-1])
-    except FileNotFoundError:
-        read = False
+AC,names,tstamps = rawDataLoadBatch(par,'Select tissue ') # This approach is a bit rough, but there are no simple solutions
 
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 ACph,_ = rawDataLoad(par,'Select calibration phantom data folder')
