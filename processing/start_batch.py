@@ -31,6 +31,9 @@ par = readParams('parameters.cfg')
 if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
 
+if len(par['wv_used']) == 0: # use all wavelengths if empty
+    par['wv_used'] = list(np.arange(len(par['wv'])))
+
 # Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 AC,names,tstamps = rawDataLoadBatch(par,'Select tissue ') # This approach is a bit rough, but there are no simple solutions
 
@@ -76,7 +79,7 @@ titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
 
 chroms_ave = mask.masked_array(chrom_map).mean(axis=(1,2)) # collapse dimensions and average
 chroms_std = mask.masked_array(chrom_map).std(axis=(1,2)) # collapse dimensions and std
-plt.figure(100)
+plt.figure(300)
 for i in range(np.shape(chroms_ave)[1]):
     plt.errorbar(np.arange(9),chroms_ave[:,i],fmt='D',yerr=chroms_std[:,i].data,linestyle='solid',
                  capsize=5,markersize=3)

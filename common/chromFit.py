@@ -35,16 +35,17 @@ def chromFit(op_fit_maps,par,cfile=[],old=False):
         ## NEW method: weighted average
         else:
             data,_ = csvread('../common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
+            spec = data[(9,6,5,4,1),:] # Keep 5 channels in order from BB to RR
             wv = data[0,:] # wavelength axis
-            spec = data[(9,6,5,4,1),:] # 5 channels [380-720]nm
-            #spec = data[(6,5,4,1),:] # 4 channels [380-720]nm
-            f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',axis=0,fill_value='extrapolate')
-            chrom = f(wv).T # chromophores used [380-720]nm
             
-            E = np.matrix(np.zeros((len(spec),len(chrom)))) # initialize
+            f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',
+                         axis=0,fill_value='extrapolate')
+            chrom = f(wv).T # chromophores used, full spectrum [380-720]nm
+            
+            E = np.matrix(np.zeros((len(par['wv_used']),len(chrom)))) # initialize
             
             # TODO: Double for loop, very inefficient. Try to optimize
-            for i,band in enumerate(spec):
+            for i,band in enumerate(spec[par['wv_used'],:]):
                 for j,cr in enumerate(chrom):
                     E[i,j] = np.sum(cr*band) / np.sum(band)
             E = np.matrix(E)
@@ -58,7 +59,7 @@ def chromFit(op_fit_maps,par,cfile=[],old=False):
         
         if op_fit_maps.ndim == 4: # in SFDI is a 4D array
             # Here use reshape() to multiply properly across the last two dimensions
-            chrom_map = np.reshape(inv_E,(1,1,inv_E.shape[0],inv_E.shape[1])) @ op_fit_maps[:,:,:,1:]
+            chrom_map = np.reshape(inv_E,(1,1,inv_E.shape[0],inv_E.shape[1])) @ op_fit_maps[:,:,par['wv_used'],0:1]
         else:
             chrom_map = inv_E @ op_fit_maps[:,0,None] # assuming they are in 2D
         
