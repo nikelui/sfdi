@@ -30,7 +30,8 @@ def chromFit(op_fit_maps,par,cfile=[],old=False):
         ## OLD method: central wavelengths
         if old:
             f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',axis=0,fill_value='extrapolate')
-            E = np.matrix(f(par['wv']))
+            waves = np.array(par['wv'])[par['wv_used']]
+            E = np.array(f(waves))
         
         ## NEW method: weighted average
         else:
@@ -42,20 +43,21 @@ def chromFit(op_fit_maps,par,cfile=[],old=False):
                          axis=0,fill_value='extrapolate')
             chrom = f(wv).T # chromophores used, full spectrum [380-720]nm
             
-            E = np.matrix(np.zeros((len(par['wv_used']),len(chrom)))) # initialize
+            E = np.zeros((len(par['wv_used']),len(chrom))) # initialize
+            # changed: matrix data type is obsolete, try to use only arrays
             
             # TODO: Double for loop, very inefficient. Try to optimize
             for i,band in enumerate(spec[par['wv_used'],:]):
                 for j,cr in enumerate(chrom):
                     E[i,j] = np.sum(cr*band) / np.sum(band)
-            E = np.matrix(E)
+            #E = np.matrix(E)
             
         if (len(par['chrom_used']) == 1):
-            E = E.T # This way is forced to be a column matrix
+            E = E[:,np.newaxis] # This way is forced to be a column matrix
         
         # some linear algebra: inv_E = (E' * E)^-1 * E'
-        #inv_E = np.matmul(np.matmul(E.T,E).I,E.T)
-        inv_E = np.array((E.T @ E).I @ E.T) # try with @ operator (matrix multiplication)
+        #inv_E = np.array((E.T @ E).I @ E.T) # try with @ operator (matrix multiplication)
+        inv_E = np.linalg.pinv(E) # pseudo inverse of E. It is the same as the old code 
         
         if op_fit_maps.ndim == 4: # in SFDI is a 4D array
             # Here use reshape() to multiply properly across the last two dimensions

@@ -30,7 +30,7 @@ def colourbar(mappable):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     return fig.colorbar(mappable, cax=cax)
 
-def chromPlot(chrom_map,name,par):
+def chromPlot(chrom_map,name,par,outliers=True):
     """"A function to plot the chromophores distribution map.
 @Inputs
     - chrom_map: chromophores map, given by chromFit
@@ -39,8 +39,9 @@ def chromPlot(chrom_map,name,par):
 @Return
     - chrom_map: will be a MaskedArray with the outlier values masked
 """
-    # Convert to MaskedArray for convenience
-    chrom_map = mask.masked_array(chrom_map)
+    if outliers:
+        # Convert to MaskedArray for convenience
+        chrom_map = mask.masked_array(chrom_map)
     
     titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
                                                               # respect the naming convention
@@ -56,14 +57,15 @@ def chromPlot(chrom_map,name,par):
         fig.set_size_inches(5,4)
         plt.suptitle(name,fontsize=12) # Title of the entire figure
         
-        # Mask outliers
-        # First: calculate the thresholds using median and MAD:
-        med = np.nanmedian(chrom_map,axis=(0,1))
-        MAD = mad(chrom_map,axis=(0,1))
-        # mask if the distance from the median value is higher than 15*MAD
-        idx = np.where(abs(chrom_map - med) > 15*MAD)
-        for x in range(len(idx[0])):
-            chrom_map[idx[0],idx[1]] = mask.masked
+        if outliers:
+            # Mask outliers
+            # First: calculate the thresholds using median and MAD:
+            med = np.nanmedian(chrom_map,axis=(0,1))
+            MAD = mad(chrom_map,axis=(0,1))
+            # mask if the distance from the median value is higher than 15*MAD
+            idx = np.where(abs(chrom_map - med) > 15*MAD)
+            for x in range(len(idx[0])):
+                chrom_map[idx[0],idx[1]] = mask.masked
         
         mp = ax.imshow(chrom_map,cmap='viridis')
         ax.set_title(titles[0],fontsize=10)
@@ -97,14 +99,15 @@ def chromPlot(chrom_map,name,par):
             j = i//2
             k = i%2
             
-            # Mask outliers
-            # First: calculate the thresholds using median and MAD:
-            med = np.nanmedian(chrom_map[:,:,i],axis=(0,1))
-            MAD = mad(chrom_map[:,:,i],axis=(0,1))
-            # mask if the distance from the median value is higher than 15*MAD
-            idx = np.where(abs(chrom_map[:,:,i] - med) > 15*MAD)
-            for x in range(len(idx[0])):
-                chrom_map[idx[0],idx[1],i] = mask.masked
+            if outliers:
+                # Mask outliers
+                # First: calculate the thresholds using median and MAD:
+                med = np.nanmedian(chrom_map[:,:,i],axis=(0,1))
+                MAD = mad(chrom_map[:,:,i],axis=(0,1))
+                # mask if the distance from the median value is higher than 15*MAD
+                idx = np.where(abs(chrom_map[:,:,i] - med) > 15*MAD)
+                for x in range(len(idx[0])):
+                    chrom_map[idx[0],idx[1],i] = mask.masked
             
             mp = ax[j,k].imshow(chrom_map[:,:,i],cmap='viridis')
             ax[j,k].set_title(titles[i],fontsize=10)
