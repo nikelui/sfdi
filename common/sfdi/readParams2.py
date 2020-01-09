@@ -6,11 +6,12 @@ Created on Mon Jul  1 09:48:49 2019
 email: luigi.belcastro@liu.se
 """
 import json
+from collections import OrderedDict # New: this will keep the parameters ordered
 
 def readParams(filename):
     """A function to read a config file and store parameters in a dict.
 New implememtation, using json to parse values (allows to read lists)"""
-    p = {} # empty dictionary
+    p = OrderedDict() # empty dictionary
     ff = open(filename,'r') # open file
     
     for line in ff: # loop over file
