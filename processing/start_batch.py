@@ -59,30 +59,34 @@ op_fit_maps = []
 for cal in cal_R:
     op_fit_maps.append(fitOps(crop(cal,ROI),par))
 
-chrom_map = []
-for op in op_fit_maps:
-    chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
-
-#print('Saving data...')
-#np.savez(par['savefile'],op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI) # save important results
-#print('Done!')
+if (len(par['chrom_used'])>0):
+    chrom_map = []
+    for op in op_fit_maps:
+        chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
 
 op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True)
 
-for i in range(len(chrom_map)):
-    chrom_map[i] = chromPlot(chrom_map[i],names[i],par)
+print('Saving data...')
+#np.savez(par['savefile'],op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI) # save important results
+np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
+print('Done!')
 
-## Plot average of chromophores in time
-titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
-                                                              # respect the naming convention
-titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
 
-chroms_ave = mask.masked_array(chrom_map).mean(axis=(1,2)) # collapse dimensions and average
-chroms_std = mask.masked_array(chrom_map).std(axis=(1,2)) # collapse dimensions and std
-plt.figure(300)
-for i in range(np.shape(chroms_ave)[1]):
-    plt.errorbar(np.arange(9),chroms_ave[:,i],fmt='D',yerr=chroms_std[:,i].data,linestyle='solid',
-                 capsize=5,markersize=3)
-plt.legend(titles)
-plt.grid(True)
-plt.show(block=False)
+if (len(par['chrom_used'])>0):
+    for i in range(len(chrom_map)):
+        chrom_map[i] = chromPlot(chrom_map[i],names[i],par)
+    
+    ## Plot average of chromophores in time
+    titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
+                                                                  # respect the naming convention
+    titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
+    
+    chroms_ave = mask.masked_array(chrom_map).mean(axis=(1,2)) # collapse dimensions and average
+    chroms_std = mask.masked_array(chrom_map).std(axis=(1,2)) # collapse dimensions and std
+    plt.figure(300)
+    for i in range(np.shape(chroms_ave)[1]):
+        plt.errorbar(np.arange(9),chroms_ave[:,i],fmt='D',yerr=chroms_std[:,i].data,linestyle='solid',
+                     capsize=5,markersize=3)
+    plt.legend(titles)
+    plt.grid(True)
+    plt.show(block=False)

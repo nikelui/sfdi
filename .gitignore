@@ -104,6 +104,7 @@ venv.bak/
 .mypy_cache/
 
 # Other files to ignore
+TSplot.py
 parameters.cfg
 *.npy
 *.npz
