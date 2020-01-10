@@ -11,7 +11,9 @@ from PyQt5.QtWidgets import QApplication,QDesktopWidget
 sys.path.append('../common') # Add the common folder to path
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
 import sfdi
-from sfdi.readParams2 import readParams
+#from sfdi.readParams2 import readParams
+import json
+from collections import OrderedDict
 from mycsv import csvread
 
 from MainWindow import MainWindow
@@ -19,7 +21,14 @@ from MainWindow import MainWindow
 if __name__ == '__main__':
     
     # Read acquisition parameters in a dictionary
-    par = readParams('../acquisition/parameters.cfg')
+    #par = readParams('../acquisition/parameters.cfg')
+    f = open('parameters.json','r')
+    par = json.load(f,object_pairs_hook=OrderedDict)
+    f.close()
+    
+    f = open('documentation.json','r')
+    pdoc = json.load(f,object_pairs_hook=OrderedDict)
+    f.close()
     
     # Automatically set screen resolution
     screen1 = QDesktopWidget().screenGeometry(0) # main screen
@@ -31,5 +40,5 @@ if __name__ == '__main__':
     par['yRes'] = int(screen2.height())
     
     app = QApplication(sys.argv)
-    win = MainWindow(par=par)
-    #app.exec_()
+    win = MainWindow(par=par,pdoc=pdoc)
+    sys.exit(app.exec_())

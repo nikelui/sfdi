@@ -1,0 +1,20 @@
+{
+    "xRes": "Horizontal resolution of projector [px]",
+    "yRes": "Vertical resolution of projector [px]",
+    "w": "Physical width of projection [mm]",
+    "W": "Horizontal resolution of primary display [px]",
+    "H": "Vertical resolution of primary display [px]",
+    "Bb": "Intensity of blue led [obsolete]",
+    "Bg": "Intensity of green led [obsolete]",
+    "Br": "Intensity of red led [obsolete]",
+    "res": "Camera resolution [640p or 1280p]",
+    "fps": "Framerate [0 to deactivate]",
+    "fx": "Spatial frequencies [list]",
+    "nPhase": "Number of phases for demodulation [obsolete]",
+    "dt": "Time interval between acquisitions [ms]",
+    "blueBoost": "Increase exposure time with blue light [True or False]",
+    "name": "Base name of output images [string]",
+    "fname": "Base name of output folder [string]",
+    "cPath": "Gamma correction file [path string]",
+    "outPath": "Output path [path string]"
+}
