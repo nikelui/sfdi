@@ -31,8 +31,15 @@ QPushButton:pressed {
     }
     
 QPushButton#start {
-    margin-top:30px;
+    margin-top:20px;
     padding:5px;
+    background: #DBB;
+    }
+QPushButton#start:hover {
+    background: #B99;
+    }
+QPushButton#start:pressed {
+    background: #ECC;
     }
 
 QTableWidget {
@@ -54,4 +61,16 @@ QTabBar::tab {
     width:20ex;
     padding-left:10px;
     padding-right:10px;
+    }
+    
+QLabel#expLabel {
+    font-family: "calibri", sans-serif;
+    font-size: 20pt;
+    qproperty-alignment: AlignHCenter;
+    }
+    
+QLabel#ltitle {
+    font-family: "calibri", sans-serif;
+    font-size: 14pt;
+    qproperty-alignment: AlignHCenter;
     }

@@ -35,17 +35,23 @@ class Thread(QThread):
         #    print('Error starting capture: %s' % fc2Err)
     
     def run(self):
+        try:
+            self.cam.startCapture()
+        except pc.Fc2error as fc2Err:
+            print('Error starting capture: %s' % fc2Err)
         while True:
-#            try:
-#                im = self.cam.retrieveBuffer()
-#            except pc.Fc2error as fc2Err:
-#                print('Error retrieving buffer: %s' % fc2Err)
-#            #im = im.convert(pc.PIXEL_FORMAT.BGR) # from RAW to color (BGR 8bit)
-#            a = np.array(im.getData())
-            #rawImage = QImage(im.getData(), im.getCols(), im.getRows(), QImage.Format_Indexed8)
-            frame = sfdi.camCapt_pg(self.cam)
-            rawImage = QImage(frame.data,frame.shape[1],frame.shape[0],QImage.Format_RGB888)
-            self.changePixmap.emit(rawImage)
+            try:
+                im = self.cam.retrieveBuffer()
+                im = im.convert(pc.PIXEL_FORMAT.BGR) # from RAW to color (BGR 8bit)
+                a = np.array(im.getData())
+                rawImage = QImage(a.data, im.getCols(), im.getRows(), QImage.Format_RGB888)
+                #frame = sfdi.camCapt_pg(self.cam)
+                #rawImage = QImage(frame.data,frame.shape[1],frame.shape[0],QImage.Format_RGB888)
+                self.changePixmap.emit(rawImage.rgbSwapped())
+            except pc.Fc2error as fc2Err:
+                print('Error retrieving buffer: %s' % fc2Err)
+        self.cam.stopCapture()
+        self.cam.disconnect()
 
 
 class tabLayout(QWidget):
@@ -70,19 +76,24 @@ class tabLayout(QWidget):
         info = parent.cam.getPropertyInfo(pc.PROPERTY_TYPE.SHUTTER)
 		
         ## Set a limit to exposure to 500ms (to use when you disable fps)
+        self.expMin = info.absMin
         if info.absMax > 500:
-            expMax = 500
-            tstep = 0.5
+            self.expMax = 500
+            self.tstep = 0.5
         else:
-            expMax = info.absMax
-            tstep = (info.absMax - info.absMin)/542
+            self.expMax = info.absMax
+            self.tstep = (info.absMax - info.absMin)/542
         self.expbar = QSlider(Qt.Horizontal)
-        self.expbar.setMaximum(expMax)
-        self.expbar.setMinimum(info.absMin)
-        self.expbar.setSingleStep(tstep)
+        
+        # Since the scrollbar only takes int, need to make some calculations
+        self.expbar.setMaximum(543)
+        self.expbar.setMinimum(1)
+        self.expbar.setSingleStep(1)
         self.expbar.setTickPosition(QSlider.NoTicks)
+        self.expbar.valueChanged.connect(lambda: self.expChange(parent))
+
         ## DEBUG
-        print("%f, %f, %f" % (info.absMin,info.absMax,tstep))
+        print("%f, %f, %f" % (self.expMin,self.expMax,self.tstep))
         
         #hlayout.addWidget(self.expbar)
         
@@ -122,9 +133,20 @@ class tabLayout(QWidget):
         vlayout.addWidget(start)
         vlayout.addSpacerItem(vSpacer)
         
+        ## Label to show exposure time
+        ltitle = QLabel()
+        ltitle.setObjectName('ltitle')
+        ltitle.setText('Exp. time')
+        
+        self.expLabel = QLabel() # This needs to be changed dynamically
+        self.expLabel.setObjectName('expLabel')
+        self.expLabel.setText('%.2fms' % (self.expbar.value() * self.tstep))
+        
+        vlayout.addWidget(ltitle)
+        vlayout.addWidget(self.expLabel)
+        
         # Test
         vlayout.addWidget(self.expbar)
-        self.expbar.valueChanged.connect(lambda: self.expChange(parent))
         
         self.tab1.layout.addWidget(self.pix,alignment=Qt.AlignTop)
         self.tab1.layout.addLayout(vlayout)
@@ -172,8 +194,10 @@ class tabLayout(QWidget):
     
     def expChange(self,parent):
         """Slot to update exposure time"""
-        e = self.expbar.value()
-        print("Exposure time: %.1fms" % e)
+        e = self.expbar.value() # This is an int
+        e = float(e * self.tstep) # convert to the proper value
+        #print("Exposure time: %.1fms" % e)
+        self.expLabel.setText("%.2fms" % e)
         try:
             parent.cam.setProperty(type=pc.PROPERTY_TYPE.SHUTTER,absValue=e)
         except pc.Fc2error as fc2Err:
