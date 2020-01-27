@@ -106,5 +106,6 @@ venv.bak/
 # Other files to ignore
 TSplot.py
 parameters.cfg
+temp.py
 *.npy
 *.npz
