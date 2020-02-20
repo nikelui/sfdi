@@ -6,12 +6,12 @@ Created on Mon Jun 24 14:37:05 2019
 """
 import numpy as np
 
-def sinPattern(xRes,yRes,w,f,p,B=255,correction=np.array([]),channels='rgb'):
+def sinPattern(xRes,yRes,width,f,p,B=255,correction=np.array([]),channels='rgb'):
     """Function to generate a 2D sinusoidal pattern in the x direction.
 @Inputs:
 - xRes -> projector horizontal resolution
 - yRes -> projector vertical resolution
-- w -> width of projected screen (in mm)
+- width -> width of projected screen (in mm)
 - f -> spatial frequency of sinusoid (cycles per mm)
 - p -> phase delay of sinusoid (for demodulation use multiples of 2/3 pi)
 - B -> brightness of the pattern (should be B <= 255 to avoid saturation)
@@ -26,7 +26,7 @@ Grayscale is a 2D float array of size (yRes,xRes) with values normalized to [0,1
 Color images are 3D float arrays of size (yRes,xRes,3) with values normalized to [0,1]
 """
     x = np.linspace(0,xRes-1,xRes) # x coordinates from 0 to xRes
-    y = (0.5*np.cos(x/xRes * 2*np.pi * f * w + p) + 0.5) * B # 1D perfect sinusoid
+    y = (0.5*np.cos(x/xRes * 2*np.pi * f * width + p) + 0.5) * B # 1D perfect sinusoid
     
     if not correction.size == 0:
         idx = np.array([int(g) for g in np.ceil(y)]) # indicize

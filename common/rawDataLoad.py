@@ -35,8 +35,8 @@ prompt: optional string for file dialog"""
     for i in range(len(par['wv'])):
         print('loading all frequencies for wavelength: %d nm' % par['wv'][i])
         for j in range(len(par['freqs'])):
-            for p in range(3):
-                fname = files[p + j*3 + i*len(par['freqs'])*3]
+            for p in range(par['nPhase']):
+                fname = files[p + j*par['nPhase'] + i*len(par['freqs'])*3]
                 #print(fname) # debug
                 #continue # debug
                 temp[:,:,p] = cv.imread(path+'/'+fname,cv.IMREAD_GRAYSCALE); # all three channels should be equal, anyways
@@ -44,6 +44,12 @@ prompt: optional string for file dialog"""
             AC[:,:,i,j] = np.sqrt(2)/3 * np.sqrt( (temp[:,:,0]-temp[:,:,1])**2 +
                     (temp[:,:,1]-temp[:,:,2])**2 +
                     (temp[:,:,2]-temp[:,:,0])**2 ) / intT # normalize by exposure time
+            
+            ## New AC demodulation
+            #temp = np.dstack((temp,temp[:,:,0])) # append the first element again at the end
+            #AC[:,:,i,j] = XX * np.sqrt(np.sum(np.diff(temp,axis=-1)**2,axis=-1)) / intT
+            ##TODO: XX is the correct normalization term (depends on nPhase?)
+            
             #DC(:,:,i,j) = np.mean(temp,3);
             if par['ker'] > 1: # apply gaussian smoothing
                 AC[:,:,i,j] = cv.GaussianBlur(AC[:,:,i,j],(par['ker'],par['ker']),par['sig'])

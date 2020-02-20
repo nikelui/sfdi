@@ -96,11 +96,13 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
         except pc.Fc2error as fc2Err:
             print('Error setting BLUE exposure time: %s' % fc2Err)
     
+    pshift = 2*np.pi/nPhase # phase shift for demodulation [default = 2/3 pi]
+    
     # Acquire BLUE / BG
     for i in range(nFreq+1):
         for p in range(nPhase):
             t1 = cv.getTickCount()
-            _,_,_,Ib = sinPattern(xRes,yRes,w,f[i],2./3*np.pi*p,Bb,correction,'b')
+            _,_,_,Ib = sinPattern(xRes,yRes,w,f[i],pshift*p,Bb,correction,'b')
             # DEBUG
             #Ib = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,0,i,p))
             t2 = cv.getTickCount()
@@ -141,7 +143,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     for i in range(nFreq+1):
         for p in range(nPhase):
             t1 = cv.getTickCount()
-            _,_,Ig,_ = sinPattern(xRes,yRes,w,f[i],2./3*np.pi*p,Bg,correction,'g')
+            _,_,Ig,_ = sinPattern(xRes,yRes,w,f[i],pshift*p,Bg,correction,'g')
             #Ig = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,1,i,p))
             t2 = cv.getTickCount()
             ## fix: opencv 4.0.0 does not like float images, so convert to uint8
@@ -172,7 +174,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     for i in range(nFreq+1):
         for p in range(nPhase):
             t1 = cv.getTickCount()
-            _,Ir,_,_ = sinPattern(xRes,yRes,w,f[i],2./3*np.pi*p,Br,correction,'r')
+            _,Ir,_,_ = sinPattern(xRes,yRes,w,f[i],pshift*p,Br,correction,'r')
             #Ir = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,2,i,p))
             t2 = cv.getTickCount()
             ## fix: opencv 4.0.0 does not like float images, so convert to uint8

@@ -238,7 +238,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         while((self.n_acq < self.n[0] or self.n[0] == 0) and not(self.stop[0]) ):
             ## Acquisition loop
             ## TODO: break from infinite loop using the return value from acquisitionRoutine
-            ret = acquisitionRoutine(self.cam,self.par['xRes'],self.par['yRes'],self.par['w'],f,len(f)-1,
+            ret = acquisitionRoutine(self.cam,self.par['xRes'],self.par['yRes'],self.par['width'],f,len(f)-1,
                                self.par['nPhase'],self.par['dt'],self.correction,self.par['Bb'],
                                self.par['Bg'],self.par['Br'],outPath=self.par['outPath'],
                                name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq,

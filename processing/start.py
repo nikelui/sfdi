@@ -12,7 +12,7 @@ import cv2 as cv
 sys.path.append('../common')
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
 
-from sfdi.readParams2 import readParams
+from sfdi.readParams3 import readParams
 from sfdi.crop import crop
 from rawDataLoad import rawDataLoad
 from calibrate import calibrate
@@ -23,7 +23,7 @@ from chromPlot import chromPlot
 from opticalSpectra import opticalSpectra
 
 
-par = readParams('parameters.cfg')
+par = readParams('parameters.ini')
 
 if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
