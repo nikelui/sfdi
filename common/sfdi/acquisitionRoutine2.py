@@ -122,7 +122,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             frame = camCapt_pg(cam,1,False)
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
-            dataMat[:,:, p + (3*i) + 0*(nPhase*(nFreq+1))] = frame[:,:,0] # save blue channel (0)
+            dataMat[:,:, p + (nPhase*i) + 0*(nPhase*(nFreq+1))] = frame[:,:,0] # save blue channel (0)
             #cv.imwrite(outPath + '/' + name + '_%d%d%d.bmp' % (0,i,p),frame[:,:,0].astype('uint8'))
             t_patt.append((t2-t1)/cv.getTickFrequency())
             t_imshow.append((t3-t2)/cv.getTickFrequency())
@@ -159,9 +159,9 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             frame = camCapt_pg(cam,1,False)
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
-            dataMat[:,:, p + (3*i) + 1*(nPhase*(nFreq+1))] = frame[:,:,0] # save GB channel (1)
-            dataMat[:,:, p + (3*i) + 2*(nPhase*(nFreq+1))] = frame[:,:,1] # save green channel (2)
-            dataMat[:,:, p + (3*i) + 3*(nPhase*(nFreq+1))] = frame[:,:,2] # save GR channel (3)
+            dataMat[:,:, p + (nPhase*i) + 1*(nPhase*(nFreq+1))] = frame[:,:,0] # save GB channel (1)
+            dataMat[:,:, p + (nPhase*i) + 2*(nPhase*(nFreq+1))] = frame[:,:,1] # save green channel (2)
+            dataMat[:,:, p + (nPhase*i) + 3*(nPhase*(nFreq+1))] = frame[:,:,2] # save GR channel (3)
             #cv.imwrite(outPath + '/' + name + '_%d%d%d.bmp' % (1,i,p),frame[:,:,1].astype('uint8'))
             t_patt.append((t2-t1)/cv.getTickFrequency())
             t_imshow.append((t3-t2)/cv.getTickFrequency())
@@ -190,7 +190,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             frame = camCapt_pg(cam,1,False)
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
-            dataMat[:,:, p + (3*i) + 4*(nPhase*(nFreq+1))] = frame[:,:,2] # save red channel (4)
+            dataMat[:,:, p + (nPhase*i) + 4*(nPhase*(nFreq+1))] = frame[:,:,2] # save red channel (4)
             t_patt.append((t2-t1)/cv.getTickFrequency())
             t_imshow.append((t3-t2)/cv.getTickFrequency())
             t_wait.append((t4-t3)/cv.getTickFrequency())
