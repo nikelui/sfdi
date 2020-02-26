@@ -39,7 +39,6 @@ cal_R = calibrate(AC,ACph,par)
 
 stackPlot(cal_R,'magma')
 
-
 ## Select ROI on calibration image
 ROI = cv.selectROI('Select ROI',cal_R[:,:,0,0]) # press Enter to confirm selection
 cv.destroyWindow('Select ROI')

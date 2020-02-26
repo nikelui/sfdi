@@ -12,7 +12,7 @@ import cv2 as cv
 sys.path.append('./common')
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
 
-from sfdi.readParams2 import readParams
+from sfdi.readParams3 import readParams
 from sfdi.getPath import getPath
 
 def rawDataLoad(par,prompt='Select folder'):
@@ -41,16 +41,17 @@ prompt: optional string for file dialog"""
                 #continue # debug
                 temp[:,:,p] = cv.imread(path+'/'+fname,cv.IMREAD_GRAYSCALE); # all three channels should be equal, anyways
             
-            #AC[:,:,i,j] = np.sqrt(2)/3 * np.sqrt( (temp[:,:,0]-temp[:,:,1])**2 +
-            #        (temp[:,:,1]-temp[:,:,2])**2 +
-            #        (temp[:,:,2]-temp[:,:,0])**2 ) / intT # normalize by exposure time
+#            AC[:,:,i,j] = np.sqrt(2)/3 * np.sqrt( (temp[:,:,0]-temp[:,:,1])**2 +
+#                    (temp[:,:,1]-temp[:,:,2])**2 +
+#                    (temp[:,:,2]-temp[:,:,0])**2 ) / intT # normalize by exposure time
             
             ## New AC demodulation
             temp = np.dstack((temp,temp[:,:,0])) # append the first element again at the end
-            AC[:,:,i,j] = 1 * np.sqrt(np.sum(np.diff(temp,axis=-1)**2,axis=-1)) / intT
+            AC[:,:,i,j] = np.sqrt(np.sum(np.diff(temp,axis=2)**2,axis=2)) / intT
             ##TODO: XX is the correct normalization term (depends on nPhase?)
             
-            #DC(:,:,i,j) = np.mean(temp,3);
+            temp = np.zeros((par['ylength'],par['xlength'],par['nphase']),dtype='float') # Reset temp
+            #DC(:,:,i,j) = np.mean(temp,2);
             if par['ker'] > 1: # apply gaussian smoothing
                 AC[:,:,i,j] = cv.GaussianBlur(AC[:,:,i,j],(par['ker'],par['ker']),par['sig'])
                 # Gaussian smoothing, radius 3px, sigma=1.5
@@ -58,6 +59,6 @@ prompt: optional string for file dialog"""
 
 
 if __name__ == '__main__':
-    par = readParams('../parameters.cfg')
+    par = readParams('../processing/parameters.ini')
     AC = rawDataLoad(par,'Select dummy folder (TEST)')
     ACph = rawDataLoad(par,'Select phantom folder (TEST)')

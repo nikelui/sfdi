@@ -45,6 +45,12 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.correction = correction # gamma correction array
         self.start()
         
+        # Since bool() does not work very well with strings
+        if self.par['blueboost'] in ['False','false',0,'0','None','none','No','no','']:
+            self.blueboost = False
+        else:
+            self.blueboost = True # Everything else is true
+        
     def set_exposure(self):
         """Control camera exposure."""
         try:
@@ -242,6 +248,6 @@ syntax: gui = expGUI_cvui(cam,[window])
                                self.par['nphase'],self.par['dt'],self.correction,self.par['bb'],
                                self.par['bg'],self.par['br'],outPath=self.par['outpath'],
                                name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq,
-                               blueBoost=bool(self.par['blueboost']))
+                               blueBoost=self.blueboost)
             self.n_acq += 1 # increase counter
             self.stop[0] = ret # use return value to break from loop
