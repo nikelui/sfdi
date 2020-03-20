@@ -43,6 +43,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.wname = wname # name of the pattern window
         self.n_acq = 0 # counter, n. of acquisitions
         self.correction = correction # gamma correction array
+        
         # Since bool() does not work very well with strings
         if self.par['blueboost'] in ['False','false',0,'0','None','none','No','no','']:
             self.blueboost = False
@@ -51,7 +52,6 @@ syntax: gui = expGUI_cvui(cam,[window])
         
         self.start()
 
-        
     def set_exposure(self):
         """Control camera exposure."""
         try:
