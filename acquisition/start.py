@@ -2,7 +2,8 @@
 """
 Created on Tue Jun 18 13:39:08 2019
 
-@author: Luigi Belcastro
+@author: Luigi Belcastro - Linköping University
+email: luigi.belcastro@liu.se
 
 #### edit1: new naming scheme ####
 

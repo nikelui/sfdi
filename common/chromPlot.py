@@ -30,7 +30,7 @@ def colourbar(mappable):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     return fig.colorbar(mappable, cax=cax)
 
-def chromPlot(chrom_map,name,par,outliers=True):
+def chromPlot(chrom_map, name, par, outliers=True):
     """"A function to plot the chromophores distribution map.
 @Inputs
     - chrom_map: chromophores map, given by chromFit
@@ -43,8 +43,8 @@ def chromPlot(chrom_map,name,par,outliers=True):
         # Convert to MaskedArray for convenience
         chrom_map = mask.masked_array(chrom_map)
     
-    titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
-                                                              # respect the naming convention
+    titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty
+                                                              # to respect the naming convention
     titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
     
     # If no chromophore are present, do nothing
@@ -55,7 +55,7 @@ def chromPlot(chrom_map,name,par,outliers=True):
     if len(par['chrom_used']) == 1:
         fig,ax = plt.subplots(1,1)
         fig.set_size_inches(5,4)
-        plt.suptitle(name,fontsize=12) # Title of the entire figure
+        plt.suptitle(name, fontsize=12) # Title of the entire figure
         
         if outliers:
             # Mask outliers

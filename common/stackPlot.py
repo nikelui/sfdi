@@ -49,14 +49,14 @@ def stackPlot(data,cmap='viridis'):
     
     for i in range(dim[2]):
         for j in range(dim[3]):
-            temp[i*dim[0]:(i+1)*dim[0],j*dim[1]:(j+1)*dim[1]] = data[:,:,i,j]
-    plt.figure(num=100,figsize=(7.5,6))
-    plt.imshow(temp,cmap=cmap,vmin=0,vmax=1)
+            temp[i*dim[0]:(i+1)*dim[0], j*dim[1]:(j+1)*dim[1]] = data[:,:,i,j]
+    plt.figure(num=100,figsize=(9,5))
+    im = plt.imshow(temp, cmap=cmap, vmin=0, vmax=1)
     ax = plt.gca()
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     
-    plt.colorbar()
+    colourbar(im)
     
     plt.tight_layout()
     plt.show(block=False)
