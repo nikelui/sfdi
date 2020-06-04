@@ -36,7 +36,7 @@ prompt: optional string for file dialog"""
         print('loading all frequencies for wavelength: %d nm' % par['wv'][i])
         for j in range(len(par['freqs'])):
             for p in range(par['nphase']):
-                fname = files[p + j*par['nphase'] + i*len(par['freqs'])*3]
+                fname = files[p + j*par['nphase'] + i*len(par['freqs'])*par['nphase']]
                 #print(fname) # debug
                 #continue # debug
                 temp[:,:,p] = cv.imread(path+'/'+fname,cv.IMREAD_GRAYSCALE); # all three channels should be equal, anyways

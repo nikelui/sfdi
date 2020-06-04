@@ -7,7 +7,18 @@ email: luigi.belcastro@liu.se
 """
 #import matplotlib as mpl
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
+
+def colourbar(mappable):
+    """Improved colorbar function. Fits well to the axis dimension."""
+    if (mappable.colorbar is not None):
+        mappable.colorbar.remove()
+    ax = mappable.axes
+    fig = ax.figure
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    return fig.colorbar(mappable, cax=cax)
 
 def stackPlot_old(data,cmap='viridis'):
     """Plot Reflectance data in a tabular form (rows: wavelengths, columns: spatial frequencies)"""
@@ -29,7 +40,7 @@ def stackPlot_old(data,cmap='viridis'):
             im = ax[i,j].imshow(data[:,:,i,j]/M,cmap=cmap,vmin=0,vmax=1)
             ax[i,j].get_xaxis().set_visible(False)
             ax[i,j].get_yaxis().set_visible(False)
-    fig.colorbar(im,cax=cbar_ax)
+    cb = colourbar(im)
 
 def stackPlot(data,cmap='viridis'):
     """Plot Reflectance data in a tabular form (rows: wavelengths, columns: spatial frequencies)"""
