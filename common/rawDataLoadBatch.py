@@ -15,10 +15,11 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 from sfdi.readParams2 import readParams
 from sfdi.getPath import getPath
 
-def rawDataLoadBatch(par,prompt='Select base folder'):
+def rawDataLoadBatch(par, prompt='Select base folder'):
     """Select a folder to load the images contained inside.
 par: Dictionary containing all the processing parameters
-prompt: optional string for file dialog"""
+prompt: optional string for file dialog
+"""
     ## New approach: select base path, then input the name(s) that you want to process
     ## in the terminal (process with regex?)
     ## TODO: when reworking the interface in Qt, this will be trivial
