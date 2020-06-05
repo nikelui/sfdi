@@ -32,9 +32,9 @@ syntax: gui = expGUI_cvui(cam,[window])
     def __init__(self,cam,par,wname='pattern',correction=[]):
         self.par = par # container for parameters
         self.cam = cam # camera objects
-        self.Bb = [255] # Define brightness for reference
-        self.Bg = [255]
-        self.Br = [255]
+        #self.Bb = [255] # Define brightness for reference
+        #self.Bg = [255]
+        #self.Br = [255]
         self.n = [1] # number of acquisitions
         self.exposure = [10] # Arbitrary starting value
         self.stop = [False] # Boolean value for stop checkbox
@@ -58,15 +58,15 @@ syntax: gui = expGUI_cvui(cam,[window])
             self.cam.setProperty(type=pc.PROPERTY_TYPE.SHUTTER,absValue=self.exposure[0])
         except pc.Fc2error as fc2Err:
             print('Error setting exposure: %s' % fc2Err)
-    def set_blue(self):
-        corr = np.ceil(self.correction[int(self.Bb[0])])
-        self.ref[self.rowb,:,0] = corr # BLUE stripe
-    def set_green(self):
-        corr = np.ceil(self.correction[int(self.Bg[0])])
-        self.ref[self.rowg,:,1] = corr # GREEN stripe
-    def set_red(self):
-        corr = np.ceil(self.correction[int(self.Br[0])])
-        self.ref[self.rowr,:,2] = corr # RED stripe
+#    def set_blue(self):
+#        corr = np.ceil(self.correction[int(self.Bb[0])])
+#        self.ref[self.rowb,:,0] = corr # BLUE stripe
+#    def set_green(self):
+#        corr = np.ceil(self.correction[int(self.Bg[0])])
+#        self.ref[self.rowg,:,1] = corr # GREEN stripe
+#    def set_red(self):
+#        corr = np.ceil(self.correction[int(self.Br[0])])
+#        self.ref[self.rowr,:,2] = corr # RED stripe
         
     def reference(self,xRes,yRes):
         """Use this function to control the brightness level of the three channels"""
@@ -77,9 +77,9 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.rowg = [x for x in range(yRes) if x % (self.h*3) >= self.h and x % (self.h*3) < self.h*2]
         self.rowr = [x for x in range(yRes) if x % (self.h*3) >= self.h*2]
         self.ref = np.zeros((yRes,xRes,3),dtype='uint8')
-        self.ref[self.rowb,:,0] = self.Bb[0] # BLUE stripe
-        self.ref[self.rowg,:,1] = self.Bg[0] # GREEN stripe
-        self.ref[self.rowr,:,2] = self.Br[0] # RED stripe
+        self.ref[self.rowb,:,0] = 255 # BLUE stripe
+        self.ref[self.rowg,:,1] = 255 # GREEN stripe
+        self.ref[self.rowr,:,2] = 255 # RED stripe
         
         cvui.imshow(self.wname,self.ref)         
         
@@ -147,48 +147,48 @@ syntax: gui = expGUI_cvui(cam,[window])
                 self.set_exposure()
             
             ## Create column to draw counters for RGB
-            cvui.beginColumn(self.bg,700,60,200,-1,20)
-            ## BLUE
-            cvui.text('BLUE')
-            cvui.counter(self.Bb,self.step,"%d")
-            ## Check invalid values
-            if (self.Bb[0] > 255):
-                self.Bb[0] = 255
-            if (self.Bb[0] < 0):
-                self.Bb[0] = 0
-            ## GREEN
-            cvui.text('GREEN')
-            cvui.counter(self.Bg,self.step,"%d")
-            ## Check invalid values
-            if (self.Bg[0] > 255):
-                self.Bg[0] = 255
-            if (self.Bg[0] < 0):
-                self.Bg[0] = 0
-            ## RED
-            cvui.text('RED')
-            cvui.counter(self.Br,self.step,"%d")
-            ## Check invalid values
-            if (self.Br[0] > 255):
-                self.Br[0] = 255
-            if (self.Br[0] < 0):
-                self.Br[0] = 0
+#            cvui.beginColumn(self.bg,700,60,200,-1,20)
+#            ## BLUE
+#            cvui.text('BLUE')
+#            cvui.counter(self.Bb,self.step,"%d")
+#            ## Check invalid values
+#            if (self.Bb[0] > 255):
+#                self.Bb[0] = 255
+#            if (self.Bb[0] < 0):
+#                self.Bb[0] = 0
+#            ## GREEN
+#            cvui.text('GREEN')
+#            cvui.counter(self.Bg,self.step,"%d")
+#            ## Check invalid values
+#            if (self.Bg[0] > 255):
+#                self.Bg[0] = 255
+#            if (self.Bg[0] < 0):
+#                self.Bg[0] = 0
+#            ## RED
+#            cvui.text('RED')
+#            cvui.counter(self.Br,self.step,"%d")
+#            ## Check invalid values
+#            if (self.Br[0] > 255):
+#                self.Br[0] = 255
+#            if (self.Br[0] < 0):
+#                self.Br[0] = 0
             
             ## Number of acquisitions
-            cvui.text('n. of acquisitions')
-            cvui.counter(self.n,self.step,"%d")
+            cvui.text(self.bg,700,60,'n. of acquisitions')
+            cvui.counter(self.bg,700,80,self.n,self.step,"%d")
             ## Check invalid values
             if (self.n[0] < 0):
                 self.n[0] = 0
             
-            cvui.endColumn()
+#            cvui.endColumn()
 
             ## Draw main window
             cvui.imshow('gui',self.bg)
 
-            ## Update pattern
-            self.set_blue()
-            self.set_green()
-            self.set_red()
+#            ## Update pattern
+#            self.set_blue()
+#            self.set_green()
+#            self.set_red()
             cvui.imshow(self.wname,self.ref)
             
 
