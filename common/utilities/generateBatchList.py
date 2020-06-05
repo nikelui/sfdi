@@ -13,15 +13,14 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 from sfdi.getPath import getPath
 
 batchpath = getPath('select directory containing data to batch process')
+temp = os.listdir(batchpath)
+files = [x for x in temp if '.npy' in x] 
 
-with open('{}/batchfile.ini'.format(batchpath), 'w') as bfile:
-    bfile.write('[DEFAULT]\n')
-    bfile.write('# Remember to copy the automatically generated paths under the correct variables\n')
-    bfile.write('# NOTE: you need to put all the values in a single line after the key')
-    bfile.write('ph_data=\n')
-    bfile.write('ph_ref=\n')
-    bfile.write('batch_data=[\n\n]\n')
-    bfile.write('# here is the directories list\n')
-    for dd in [x for x in os.listdir(batchpath) if os.path.isdir('{}/{}'.format(batchpath, x))]:
-        bfile.write('"{}/{}",\n'.format(batchpath, dd))
-    
+with open('{}/batchfile.txt'.format(batchpath), 'w') as bfile:
+    for i, file in enumerate(files):
+        if i == 0:
+            bfile.write('["{}/{}",\n'.format(batchpath, file))
+        elif i == len(files) - 1:
+            bfile.write('"{}/{}"]'.format(batchpath, file)) 
+        else:
+            bfile.write('"{}/{}",\n'.format(batchpath, file))

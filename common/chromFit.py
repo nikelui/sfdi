@@ -12,7 +12,7 @@ from mycsv import csvread
 import numpy as np
 from scipy.interpolate import interp1d
 
-def chromFit(op_fit_maps,par,cfile=[],old=False):
+def chromFit(op_fit_maps, par, cfile=[], old=False):
     """A function to do linear fitting of absorption to known chromophores.
     - op_fit_maps: map of (mua,mus) at all wavelenghs. Should have shape = (x,y,w,2)
             (but only mua will be fitted)

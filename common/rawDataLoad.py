@@ -15,11 +15,16 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 from sfdi.readParams3 import readParams
 from sfdi.getPath import getPath
 
-def rawDataLoad(par,prompt='Select folder'):
+def rawDataLoad(par, prompt='Select folder', batch=False):
     """Select a folder to load the images contained inside.
 par: Dictionary containing all the processing parameters
-prompt: optional string for file dialog"""
-    path = getPath(prompt)
+prompt: optional string for file dialog. If run in batch mode it is the file path instead
+batch: flag to pass if run in batch mode (e.g. from startBatch)
+"""
+    if batch:
+        path = prompt  # TODO: find a less ambiguous variable name
+    else:
+        path = getPath(prompt)
     
     if len(path) > 0: # check for empty path
         intT = float(path.split('/')[-1].split('_')[-1][:-2]) # exposure time

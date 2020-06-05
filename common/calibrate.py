@@ -16,7 +16,7 @@ import numpy as np
 from reflecMCSFD import reflecMCSFD
 from larsSFD import larsSFD
 
-def calibrate(AC,ACph,par,path=[],old=False):
+def calibrate(AC, ACph, par, path=[], old=False):
     """Take the AC measure of the tissue and calibrates against the AC measure on the calibration phantom.
 Need a .txt file with the phantom known optical properties."""
     
