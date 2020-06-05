@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 sys.path.append('../common')
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
 
-from sfdi.readParams2 import readParams
+from sfdi.readParams3 import readParams
 from sfdi.crop import crop
 from rawDataLoadBatch import rawDataLoadBatch
 from rawDataLoad import rawDataLoad
@@ -25,8 +25,7 @@ from chromFit import chromFit
 from chromPlot import chromPlot
 from opticalSpectra_batch import opticalSpectra
 
-
-par = readParams('parameters.cfg')
+par = readParams('parameters.ini')
 
 if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
@@ -35,7 +34,7 @@ if len(par['wv_used']) == 0: # use all wavelengths if empty
     par['wv_used'] = list(np.arange(len(par['wv'])))
 
 # Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-AC,names,tstamps = rawDataLoadBatch(par,'Select tissue ') # This approach is a bit rough, but there are no simple solutions
+AC,names,tstamps = rawDataLoadBatch(par, 'Select tissue') # This approach is a bit rough, but there are no simple solutions
 
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 ACph,_ = rawDataLoad(par,'Select calibration phantom data folder')
