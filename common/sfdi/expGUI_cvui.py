@@ -43,8 +43,15 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.wname = wname # name of the pattern window
         self.n_acq = 0 # counter, n. of acquisitions
         self.correction = correction # gamma correction array
-        self.start()
         
+        # Since bool() does not work very well with strings
+        if self.par['blueboost'] in ['False','false',0,'0','None','none','No','no','']:
+            self.blueboost = False
+        else:
+            self.blueboost = True # Everything else is true
+        
+        self.start()
+
     def set_exposure(self):
         """Control camera exposure."""
         try:
@@ -238,10 +245,10 @@ syntax: gui = expGUI_cvui(cam,[window])
         while((self.n_acq < self.n[0] or self.n[0] == 0) and not(self.stop[0]) ):
             ## Acquisition loop
             ## TODO: break from infinite loop using the return value from acquisitionRoutine
-            ret = acquisitionRoutine(self.cam,self.par['xRes'],self.par['yRes'],self.par['w'],f,len(f)-1,
-                               self.par['nPhase'],self.par['dt'],self.correction,self.par['Bb'],
-                               self.par['Bg'],self.par['Br'],outPath=self.par['outPath'],
+            ret = acquisitionRoutine(self.cam,self.par['xres'],self.par['yres'],self.par['width'],f,len(f)-1,
+                               self.par['nphase'],self.par['dt'],self.correction,self.par['bb'],
+                               self.par['bg'],self.par['br'],outPath=self.par['outpath'],
                                name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq,
-                               blueBoost=bool(self.par['blueBoost']))
+                               blueBoost=self.blueboost)
             self.n_acq += 1 # increase counter
             self.stop[0] = ret # use return value to break from loop

@@ -12,8 +12,8 @@ import sfdi
 
 from rawDataLoad import rawDataLoad
 from stackPlot import stackPlot
-from sfdi.readParams2 import readParams
+from sfdi.readParams3 import readParams
 
-par = readParams('../../processing/parameters.cfg')
+par = readParams('../../processing/parameters.ini')
 AC,_ = rawDataLoad(par,'Select data folder')
 stackPlot(AC)

@@ -11,5 +11,5 @@ from sfdi.setWindow import setWindow
 from sfdi.camCapt_pg import camCapt_pg
 from sfdi.crop import crop
 from sfdi.sinPattern import sinPattern
-from sfdi.acquisitionRoutine import acquisitionRoutine
+from sfdi.acquisitionRoutine2 import acquisitionRoutine
 from sfdi.readParams import readParams
