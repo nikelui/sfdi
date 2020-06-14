@@ -37,17 +37,21 @@ prompt: optional string for file dialog"""
         intT = float(fname.split('/')[-1].split('_')[-1][:-6]) # exposure time in ms, assuming the name
                                                           # convention is correct
         
-        idx = np.where(np.all([wv >= 450,wv <= 750],axis=0))[0] # Limit the spatial range
-        spec = spec[idx,:]
+        idx = np.where(np.all([wv >= 450,wv <= 750], axis=0))[0] # Limit the spatial range
+        spec = spec[idx, :]
         wv = wv[idx]
     
         # initialize 3 phase AC data structure. The "extra" dimensions are inserted for compatibility with SFDI
-        AC = np.zeros((1,1,wv.size,len(par['freqs'])),dtype='float')  #try to adopt this as standard data format
+        AC = np.zeros((1, 1, wv.size, len(par['freqs'])), dtype='float')  #try to adopt this as standard data format
         
-        for i in range(0,spec.shape[1],3): # read data 3 phases at a time
-            AC[0,0,:,i//3] = np.sqrt(2)/3 *np.sqrt((spec[:,i]-spec[:,i+1])**2 + # demodulate
-                        (spec[:,i+1]-spec[:,i+2])**2 +
-                        (spec[:,i+2]-spec[:,i])**2) / intT # Normalize by exposure time
+        for i in range(0,spec.shape[1], par['nphase']): # read data n phases at a time
+#            AC[0,0,:,i//3] = np.sqrt(2)/3 * np.sqrt((spec[:,i]-spec[:,i+1])**2 + # demodulate
+#                        (spec[:,i+1]-spec[:,i+2])**2 +
+#                        (spec[:,i+2]-spec[:,i])**2) / intT # Normalize by exposure time
+            
+            ## New AC demodulation, with vectorialization. Allows to use n-phase instead of 3
+            temp = np.concatenate((spec[:, i:i+par['nphase']], spec[:, i, np.newaxis]), axis=1) # append the first element again at the end
+            AC[0,0,:,i//par['nphase']] = np.sqrt(np.sum(np.diff(temp, axis=1)**2, axis=1)) / intT
         # perform smoothing with a moving average
         for i in range(AC.shape[1]):
             AC[0,0,:,i] = smooth(AC[0,0,:,i],30)
@@ -59,14 +63,14 @@ prompt: optional string for file dialog"""
 if __name__ == '__main__':
     
     from matplotlib import pyplot as plt
-    from sfdi.readParams2 import readParams
+    from sfdi.readParams3 import readParams
     
-    par = readParams('../parameters.cfg')
+    par = readParams('../acquisition/parameters.ini')
     temp,wv = sfdsDataLoad(par,'Select SDFD data file')
 
     fig,ax = plt.subplots(1,1)
     for i in range(temp.shape[1]):
-        ax.plot(wv,temp[:,i],label='line %d'%i)
+        ax.plot(wv, temp[:,i], label='line %d'%i)
     ax.legend()
-    plt.grid(True,which='both')
+    plt.grid(True, which='both')
     plt.show(block=False)
