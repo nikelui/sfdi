@@ -25,7 +25,7 @@ def sfdsDataLoad(par,prompt='Select file'):
 par: Dictionary containing all the processing parameters
 prompt: optional string for file dialog"""
 
-    names = list(getFiles(prompt)) # slect one or more files
+    names = list(getFiles(prompt)) # select one or more files
     names.sort() # sort them
     AC_list = [] # empty container
     

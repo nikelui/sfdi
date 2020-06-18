@@ -34,6 +34,7 @@ par['wv'] = wv # for SFDS
 # Load calibration phantom data. Note: a 30-samples moving average is applied to smooth the data
 ACph,wv,_ = sfdsDataLoad(par,'Select calibration phantom data file')
 
+
 # Calibration step (in a loop)
 cal_R = []
 for ac in AC:
@@ -49,7 +50,7 @@ for ac in AC:
 # TODO: this part is pretty computationally intensive, might be worth to optimize
 op_fit_sfds = []
 for cal in cal_R:
-    op_fit_sfds.append(fitOps_sfds(cal[:,:,:,par['freq_used']], par))
+    op_fit_sfds.append(fitOps_sfds(cal[:,par['freq_used']], par))
 
 chrom_map = []
 for op in op_fit_sfds:
@@ -62,8 +63,8 @@ for name in names:
 ## Saving results
 #print('Saving data...')
 #np.savez(par['savefile']+'sfds',op_fit_sfds=op_fit_sfds,cal_R=cal_R,chrom_map=chrom_map) # save important results
-np.save('{}{}_SFDS_{}fx'.format(par['savefile'], nn, len(par['freq_used'])),
-        np.concatenate((wv[:,np.newaxis], op_fit_sfds[0]), axis=1))
+np.save('{}{}_SFDS_{}fx'.format(par['savefile'], nn[0], len(par['freq_used'])),
+        np.concatenate((wv, op_fit_sfds[0]), axis=1))
 #print('Done!')
 
 ## Plotting (Maybe put this in a function?)
