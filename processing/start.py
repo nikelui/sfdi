@@ -71,7 +71,6 @@ if not os.path.exists(par['savefile']):
 
 ## Fitting for optical properties
 ## TODO: this part is pretty computationally intensive, might be worth to optimize
-## TODO: putting in a loop  to fit for all combination of fx. Remove when not neded
 op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']],ROI),par)  # fit for all fx
 
 ## save optical properties to file. Remember to adjust the filename

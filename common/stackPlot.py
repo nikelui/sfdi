@@ -63,4 +63,4 @@ def stackPlot(data,cmap='viridis'):
     
 
 if __name__ == '__main__':
-    stackPlot(cal_R,'viridis')
+    stackPlot(AC,'viridis')

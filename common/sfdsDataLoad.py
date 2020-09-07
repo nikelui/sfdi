@@ -53,7 +53,7 @@ prompt: optional string for file dialog"""
             temp = np.concatenate((spec[:, i:i+par['nphase']], spec[:, i, np.newaxis]), axis=1) # append the first element again at the end
             AC[0,0,:,i//par['nphase']] = np.sqrt(np.sum(np.diff(temp, axis=1)**2, axis=1)) / intT
         # perform smoothing with a moving average
-        for i in range(AC.shape[1]):
+        for i in range(AC.shape[-1]):
             AC[0,0,:,i] = smooth(AC[0,0,:,i],30)
         AC_list.append(AC)
         

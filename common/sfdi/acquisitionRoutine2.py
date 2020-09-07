@@ -13,9 +13,9 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 import PyCapture2 as pc
 import threading
 
-def saveFunc(nFreq,nPhase,curr_path,name,dataMat):
+def saveFunc(nFreq,nPhase,nchannels,curr_path,name,dataMat):
     """Function to save data, run in a separate thread"""
-    for i in range(5):
+    for i in range(nchannels*3):
         for j in range(nFreq+1):
             for k in range(nPhase):
                 cv.imwrite(curr_path + '/' + name + '_%d%d%d.bmp' % (i,j,k),\
@@ -36,7 +36,7 @@ def debugPrint(xRes,yRes,text):
     
 
 def acquisitionRoutine(cam,xRes,yRes,w,f,nFreq,nPhase=3,dt=100.,correction=[],Bb=255,Bg=255,Br=255,
-                       outPath='./',name='im',fname='test',n_acq=1,blueBoost=False):
+                       outPath='./',name='im',fname='test',n_acq=1,nchannels=3,blueBoost=False):
     """Routine to acquire a full SFDI image set and save data, now with threading.
 
 NOTE: to work correctly, you need to have an OpenCV window called 'pattern' showing fullscreen on your projector
@@ -54,6 +54,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     - outPath: path where to save output images (default: current folder)
     - name: name to prepend to saved images before the _xyz tag.
     - n_acq: acquisition n. (Debug puposes)
+    - nchannels: number of color channels that the camera can acquire (default: 3 for RGB)
     - blueBoost: flag to increase exposure time for blue
 """
     ## Timing tests
@@ -74,9 +75,9 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
         print('Error retrieving videoMode and frameRate: %s' % fc2Err)
     # Matrix to store pictures  
     if vid == pc.VIDEO_MODE.VM_1280x960Y8 or vid == pc.VIDEO_MODE.VM_1280x960Y16:
-        dataMat = np.zeros((960,1280,nPhase*(nFreq+1)*5),dtype=float)
+        dataMat = np.zeros((960,1280,nPhase*(nFreq+1)*nchannels*3),dtype=float)
     elif vid == pc.VIDEO_MODE.VM_640x480Y8 or vid == pc.VIDEO_MODE.VM_640x480Y16:
-        dataMat = np.zeros((480,640,nPhase*(nFreq+1)*5),dtype=float)
+        dataMat = np.zeros((480,640,nPhase*(nFreq+1)*nchannels*3),dtype=float)
     
     stop = False # Insert a flag for stopping
     
@@ -122,8 +123,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             frame = camCapt_pg(cam,1,False)
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
-            dataMat[:,:, p + (nPhase*i) + 0*(nPhase*(nFreq+1))] = frame[:,:,0] # save blue channel (0)
-            #cv.imwrite(outPath + '/' + name + '_%d%d%d.bmp' % (0,i,p),frame[:,:,0].astype('uint8'))
+            for ch in range(nchannels):
+                dataMat[:,:, p + (nPhase*i) + ch*(nPhase*(nFreq+1))] = frame[:,:,ch]
             t_patt.append((t2-t1)/cv.getTickFrequency())
             t_imshow.append((t3-t2)/cv.getTickFrequency())
             t_wait.append((t4-t3)/cv.getTickFrequency())
@@ -159,10 +160,11 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             frame = camCapt_pg(cam,1,False)
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
-            dataMat[:,:, p + (nPhase*i) + 1*(nPhase*(nFreq+1))] = frame[:,:,0] # save GB channel (1)
-            dataMat[:,:, p + (nPhase*i) + 2*(nPhase*(nFreq+1))] = frame[:,:,1] # save green channel (2)
-            dataMat[:,:, p + (nPhase*i) + 3*(nPhase*(nFreq+1))] = frame[:,:,2] # save GR channel (3)
-            #cv.imwrite(outPath + '/' + name + '_%d%d%d.bmp' % (1,i,p),frame[:,:,1].astype('uint8'))
+#            dataMat[:,:, p + (nPhase*i) + 1*(nPhase*(nFreq+1))] = frame[:,:,0] # save GB channel (1)
+#            dataMat[:,:, p + (nPhase*i) + 2*(nPhase*(nFreq+1))] = frame[:,:,1] # save green channel (2)
+#            dataMat[:,:, p + (nPhase*i) + 3*(nPhase*(nFreq+1))] = frame[:,:,2] # save GR channel (3)
+            for ch in range(nchannels):
+                dataMat[:,:, p + (nPhase*i) + (ch + nchannels)*(nPhase*(nFreq+1))] = frame[:,:,ch]
             t_patt.append((t2-t1)/cv.getTickFrequency())
             t_imshow.append((t3-t2)/cv.getTickFrequency())
             t_wait.append((t4-t3)/cv.getTickFrequency())
@@ -190,7 +192,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             frame = camCapt_pg(cam,1,False)
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
-            dataMat[:,:, p + (nPhase*i) + 4*(nPhase*(nFreq+1))] = frame[:,:,2] # save red channel (4)
+            for ch in range(nchannels):
+                dataMat[:,:, p + (nPhase*i) + (ch + nchannels*2)*(nPhase*(nFreq+1))] = frame[:,:,ch]
             t_patt.append((t2-t1)/cv.getTickFrequency())
             t_imshow.append((t3-t2)/cv.getTickFrequency())
             t_wait.append((t4-t3)/cv.getTickFrequency())
@@ -212,7 +215,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     if not os.path.exists(curr_path):
         os.makedirs(curr_path)
     
-    th = threading.Thread(target=saveFunc,args=(nFreq,nPhase,curr_path,name,dataMat,))
+    th = threading.Thread(target=saveFunc,args=(nFreq,nPhase,nchannels,curr_path,name,dataMat,))
     th.start()
     ## This is a bottleneck (especially if saving at full resolution)
     ## TODO: might consider putting it on a separate thread for speed

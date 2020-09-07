@@ -8,6 +8,8 @@ email: luigi.belcastro@liu.se
 
 import sys
 sys.path.append('../')
+sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
+
 import sfdi
 
 from rawDataLoad import rawDataLoad
