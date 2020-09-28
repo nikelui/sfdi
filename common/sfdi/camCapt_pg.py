@@ -52,7 +52,7 @@ syntax: frame = camCapt_pg(cam,[nframes,save,filename])
     ## Add an extra acquisition for synchro?
     #im = cam.retrieveBuffer()
     for _i in range(nframes):
-        for _i in range(10): # number of retries
+        for _i in range(20): # number of retries
             try:
                 im = cam.retrieveBuffer()
                 break # break if image was retrieved successfully
