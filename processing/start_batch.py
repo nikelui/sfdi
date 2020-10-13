@@ -24,6 +24,7 @@ from fitOps import fitOps
 from chromFit import chromFit
 from chromPlot import chromPlot
 from opticalSpectra_batch import opticalSpectra
+from opticalSpectra import opticalSpectra as oss  # DEBUG
 
 par = readParams('parameters.ini')
 
@@ -33,11 +34,11 @@ if len(par['freq_used']) == 0: # use all frequencies if empty
 if len(par['wv_used']) == 0: # use all wavelengths if empty
     par['wv_used'] = list(np.arange(len(par['wv'])))
 
-# Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-AC,names,tstamps = rawDataLoadBatch(par, 'Select tissue') # This approach is a bit rough, but there are no simple solutions
-
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 ACph,_ = rawDataLoad(par,'Select calibration phantom data folder')
+
+# Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
+AC,names,tstamps = rawDataLoadBatch(par, 'Select tissue') # This approach is a bit rough, but there are no simple solutions
 
 # Calibration step
 cal_R = []
@@ -63,11 +64,12 @@ if (len(par['chrom_used'])>0):
     for op in op_fit_maps:
         chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
 
-op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True)
+#op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True,roi=False)
+op_fit_maps[1],opt_ave,opt_std,radio = oss(crop(cal_R[1][:,:,0,0],ROI), op_fit_maps[1],par,outliers=True)
 
 print('Saving data...')
-#np.savez(par['savefile'],op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI) # save important results
-np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
+np.savez('{}processed'.format(par['savefile']),op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI) # save important results
+#np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
 print('Done!')
 
 

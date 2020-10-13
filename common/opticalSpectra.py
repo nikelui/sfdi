@@ -12,11 +12,12 @@ import numpy.ma as mask
 
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
-from matplotlib.widgets import RadioButtons
+from matplotlib.widgets import RadioButtons, AxesWidget
 import matplotlib.gridspec as gridspec
 import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sfdi.crop import crop
+
 
 def mad(x,scale=1.4826,axis=None):
     """Median assoulte difference (since Scipy does not implement it anymore).
@@ -25,6 +26,7 @@ def mad(x,scale=1.4826,axis=None):
     (for normal distribution)"""
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
+
 
 def colourbar(mappable):
     """Improved colorbar function. Fits well to the axis dimension."""
@@ -36,6 +38,70 @@ def colourbar(mappable):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     return fig.colorbar(mappable, cax=cax)
     
+
+class MyRadioButtons(RadioButtons):
+    """Custom radio button class from stackoverflow [https://stackoverflow.com/a/55102639]"""
+    def __init__(self, ax, labels, active=0, activecolor='blue', size=49,
+                 orientation="vertical", **kwargs):
+        """
+        Add radio buttons to an `~.axes.Axes`.
+        Parameters
+        ----------
+        ax : `~matplotlib.axes.Axes`
+            The axes to add the buttons to.
+        labels : list of str
+            The button labels.
+        active : int
+            The index of the initially selected button.
+        activecolor : color
+            The color of the selected button.
+        size : float
+            Size of the radio buttons
+        orientation : str
+            The orientation of the buttons: 'vertical' (default), or 'horizontal'.
+        Further parameters are passed on to `Legend`.
+        """
+        AxesWidget.__init__(self, ax)
+        self.activecolor = activecolor
+        axcolor = ax.get_facecolor()
+        self.value_selected = None
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_navigate(False)
+
+        circles = []
+        for i, label in enumerate(labels):
+            if i == active:
+                self.value_selected = label
+                facecolor = activecolor
+            else:
+                facecolor = axcolor
+            p = ax.scatter([],[], s=size, marker="o", edgecolor='black',
+                           facecolor=facecolor)
+            circles.append(p)
+        if orientation == "horizontal":
+            kwargs.update(ncol=len(labels), mode="expand")
+        kwargs.setdefault("frameon", False)    
+        self.box = ax.legend(circles, labels, loc="center", **kwargs)
+        self.labels = self.box.texts
+        self.circles = self.box.legendHandles
+        for c in self.circles:
+            c.set_picker(5)
+        self.cnt = 0
+        self.observers = {}
+
+        self.connect_event('pick_event', self._clicked)
+
+
+    def _clicked(self, event):
+        if (self.ignore(event) or event.mouseevent.button != 1 or
+            event.mouseevent.inaxes != self.ax):
+            return
+        if event.artist in self.circles:
+            self.set_active(self.circles.index(event.artist))
+
+
 
 def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     """Select ROIs and calculate average optical properties on each one.
@@ -61,15 +127,27 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
 """
     ## Put callbacks here
     def call_mua(label):
-        label_dict = {'B':0,'GB':1,'G':2,'GR':3,'R':4}
-        data_a = op_fit_maps[:,:,label_dict[label],0]
-        data_s = op_fit_maps[:,:,label_dict[label],1]
+#        label_dict = {'B':0,'GB':1,'G':2,'GR':3,'R':4}
+#        data_a = op_fit_maps[:,:,label_dict[label],0]
+#        data_s = op_fit_maps[:,:,label_dict[label],1]
+#        im1.set_data(data_a)
+#        im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],0]))
+#        cbar1 = colourbar(im1)
+#
+#        im2.set_data(data_s)
+#        im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],1]))
+#        cbar2 = colourbar(im2)
+#        plt.draw()
+#        plt.tight_layout()
+        ## new callback
+        data_a = op_fit_maps[:,:,int(label),0]
+        data_s = op_fit_maps[:,:,int(label),1]
         im1.set_data(data_a)
-        im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],0]))
+        im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,int(label),0]))
         cbar1 = colourbar(im1)
 
         im2.set_data(data_s)
-        im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],1]))
+        im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,int(label),1]))
         cbar2 = colourbar(im2)
         plt.draw()
         plt.tight_layout()
@@ -109,19 +187,33 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
         opt_ave[i,:,:] = np.nanmean(crop(op_fit_maps,ROIs[i,:]//par['binsize']),axis=(0,1))
         opt_std[i,:,:] = np.nanstd(crop(op_fit_maps,ROIs[i,:]//par['binsize']),axis=(0,1))
     
-    # New: manually define axis using gridspec
-    fig = plt.figure(constrained_layout=False,figsize=(10,6))
-    spec = gridspec.GridSpec(ncols=3,nrows=2,width_ratios=[1,0.3,1],figure=fig)
+#    # New: manually define axis using gridspec
+#    fig = plt.figure(constrained_layout=False,figsize=(10,6))
+#    spec = gridspec.GridSpec(ncols=3,nrows=2,width_ratios=[1,0.3,1],figure=fig)
+#    
+#    ax1 = fig.add_subplot(spec[0,0])
+#    ax2 = fig.add_subplot(spec[0,1])
+#    ax3 = fig.add_subplot(spec[0,2])
+#    ax4 = fig.add_subplot(spec[1,0])
+#    ax5 = fig.add_subplot(spec[1,1])
+#    ax6 = fig.add_subplot(spec[1,2])
+#    
+#    ax = np.array([[ax1,ax2,ax3],[ax4,ax5,ax6]]) # this way the old scheme is kept
     
-    ax1 = fig.add_subplot(spec[0,0])
-    ax2 = fig.add_subplot(spec[0,1])
-    ax3 = fig.add_subplot(spec[0,2])
-    ax4 = fig.add_subplot(spec[1,0])
-    ax5 = fig.add_subplot(spec[1,1])
-    ax6 = fig.add_subplot(spec[1,2])
+    ## New layout
+    fig = plt.figure(constrained_layout=False,figsize=(10,7))
+    spec = gridspec.GridSpec(ncols=2,nrows=3,height_ratios=[0.2,1,1],figure=fig)
     
-    ax = np.array([[ax1,ax2,ax3],[ax4,ax5,ax6]]) # this way the old scheme is kept
-        
+    # convert coordinates
+    ax1 = fig.add_subplot(spec[1,0])  # 0,0 -> 1,0
+    ax2 = fig.add_subplot(spec[0,:])  # 0,1 -> 0,:
+    ax3 = fig.add_subplot(spec[1,1])  # 0,2 -> 1,1
+    ax4 = fig.add_subplot(spec[2,0])  # 1,0 -> 2,0
+    ax5 = fig.add_subplot(spec[1,1])  # 1,1 -> xx
+    ax6 = fig.add_subplot(spec[2,1])  # 1,2 -> 2,1
+    ax = np.array([[ax1,ax2,ax3],[ax4,None,ax6]]) # this way the old scheme is kept
+    
+    
     vmax = np.nanmax(op_fit_maps[:,:,:,0])
     im1 = ax[0,0].imshow(op_fit_maps[:,:,0,0],cmap='magma',vmin=0,vmax=vmax)
     ax[0,0].set_title('Absorption coefficient ($\mu_A$)')
@@ -129,7 +221,8 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     ax[0,0].get_yaxis().set_visible(False)
     cbar1 = colourbar(im1)
     
-    radio1 = RadioButtons(ax[0,1], labels=('B','GB','G','GR','R'))
+    radio1 = MyRadioButtons(ax[0,1], labels=[str(x) for x in range(op_fit_maps.shape[2])], 
+                            orientation='horizontal', title='wavelength', size=60)
     radio1.on_clicked(call_mua)
     
     vmax = np.nanmax(op_fit_maps[:,:,:,1])
@@ -142,7 +235,7 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     current_cmap.set_bad(color='cyan') # masked values colour
     cbar2 = colourbar(im2)
 
-    ax[1,1].axis('off')
+    #ax[1,1].axis('off')
     
     b = par['binsize'] # to correctly rescale the rectangles
     
@@ -185,5 +278,5 @@ if __name__ == '__main__':
 #    ROI = asd['ROI']
 #    
 #    par = {'binsize':4, 'wv':[458,520,536,556,626]}
-    cropped = crop(cal_R[:,:,0,0],ROI)
-    op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(cropped,op_fit_maps,par,outliers=True)
+    cropped = crop(cal_R[0][:,:,0,0],ROI)
+    op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(cropped,op_fit_maps[0],par,outliers=True)

@@ -29,8 +29,7 @@ prompt: optional string for file dialog
         #toProcess = []
         # you can also define the names here manually
         #toProcess = ['_testhannabase2_','_testhannaocclusion_','_testhannarelease_']
-        toProcess = ['ts2d0','ts2d1','ts2d2','ts2d3','ts2d4','ts2d5',
-                     'ts2d6','ts2d7','ts2d8','ts2d9','ts2d10']
+        toProcess = ['_wound2_']
         
         if(len(toProcess)==0): # In case you define by hand
             regex = input('Input base name to match: ').lower() # only process matching directories
@@ -60,13 +59,13 @@ prompt: optional string for file dialog
                            len(par['freqs'])),dtype='float')  #try to adopt this as standard data format
             
             for i in range(len(par['wv'])):
-                print('loading all frequencies for wavelength: %d nm' % par['wv'][i])
+                print('loading all frequencies for wavelength: {} nm'.format(par['wv'][i]))
                 for j in range(len(par['freqs'])):
-                    for p in range(par['nPhase']):
-                        fname = files[p + j*par['nPhase'] + i*len(par['freqs'])*3]
+                    for p in range(par['nphase']):
+                        fname = files[p + j*par['nphase'] + i*len(par['freqs']) * par['nphase']]
                         #print(fname) # debug
                         #continue # debug
-                        temp[:,:,p] = cv.imread(path+'/'+name+'/'+fname,cv.IMREAD_GRAYSCALE); # all three channels should be equal, anyways
+                        temp[:,:,p] = cv.imread('{}/{}/{}'.format(path, name, fname),cv.IMREAD_GRAYSCALE); # all three channels should be equal, anyways
                     
                     #AC[:,:,i,j] = np.sqrt(2)/3 * np.sqrt( (temp[:,:,0]-temp[:,:,1])**2 +
                     #        (temp[:,:,1]-temp[:,:,2])**2 +
@@ -77,13 +76,16 @@ prompt: optional string for file dialog
                     AC[:,:,i,j] = 1 * np.sqrt(np.sum(np.diff(temp,axis=-1)**2,axis=-1)) / intT
                     ##TODO: XX is the correct normalization term (depends on nPhase?)
                     #DC(:,:,i,j) = np.mean(temp,3);
+                    temp = np.zeros((par['ylength'], par['xlength'], par['nphase']), dtype='float') # Reset temp
                     
                     if par['ker'] > 1: # apply gaussian smoothing
-                        AC[:,:,i,j] = cv.GaussianBlur(AC[:,:,i,j],(9,9),1.5) # Gaussian smoothing, radius 3px, sigma=1.5
+                        AC[:,:,i,j] = cv.GaussianBlur(AC[:,:,i,j], (par['ker'], par['ker']), par['sig']) # Gaussian smoothing, radius 3px, sigma=1.5
             
             ACv.append(AC)
             names.append(name)
             tstamps.append(int(name.split('_')[0]))
+    else:
+        sys.exit()
             
     return ACv,names,tstamps
 

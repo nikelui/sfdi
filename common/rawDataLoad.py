@@ -28,6 +28,8 @@ batch: flag to pass if run in batch mode (e.g. from startBatch)
     
     if len(path) > 0: # check for empty path
         intT = float(path.split('/')[-1].split('_')[-1][:-2]) # exposure time
+    else:
+        sys.exit()
     
     files = [x for x in os.listdir(path) if '.bmp' in x]
     files.sort() # This assumes the correct naming convention is used
@@ -50,7 +52,7 @@ batch: flag to pass if run in batch mode (e.g. from startBatch)
             
             ## New AC demodulation, with vectorialization. Allows to use n-phase instead of 3
             temp = np.dstack((temp,temp[:,:,0])) # append the first element again at the end
-            AC[:,:,i,j] = np.sqrt(np.sum(np.diff(temp,axis=2)**2,axis=2)) / intT
+            AC[:,:,i,j] = 1 * np.sqrt(np.sum(np.diff(temp,axis=2)**2,axis=2)) / intT
             ##TODO: XX is the correct normalization term (depends on nPhase?)
             
             temp = np.zeros((par['ylength'], par['xlength'], par['nphase']), dtype='float') # Reset temp

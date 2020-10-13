@@ -58,10 +58,12 @@ def fitOps(cal_R,par,model='mc'):
     # initial guess for fitting: optimize the average value
     ave_R = np.mean(cal_R,axis=(0,1)) # average reflectance
     print('Initial guess...')
+    # DEBUG
+#    import pdb; pdb.set_trace()
     for w in range(len(mua_guess)): # loop over wavelengths
         temp = minimize(target_fun,
                        x0=(mua_guess[w],mus_guess[w]), # initial guess
-                       args = (par['n_sample'],forward_model,freqs,ave_R[w,:]), # function arguments
+                       args = (par['n_sample'],forward_model,freqs,ave_R[w,np.array(par['freq_used'])]), # function arguments
                        method = 'Nelder-Mead', # TODO: check other methods
                        options = {'maxiter':200, 'xatol':0.001, 'fatol':0.001})
         #res.append(temp) # this is not really used, but contains extra informations (eg. n. of iterations)
@@ -84,7 +86,7 @@ def fitOps(cal_R,par,model='mc'):
             for k in range(cal_Rbin.shape[1]): # loop over columns
                 temp = minimize(target_fun,
                            x0=[mua_guess[i],mus_guess[i]], # initial guess from previous step
-                           args=(par['n_sample'],forward_model,freqs,cal_Rbin[j,k,i,:]),
+                           args=(par['n_sample'],forward_model,freqs,cal_Rbin[j,k,i,np.array(par['freq_used'])]),
                            method = 'Nelder-Mead', # TODO: check other methods
                            options = {'maxiter':200, 'xatol':0.001, 'fatol':0.001})
                 
