@@ -54,6 +54,7 @@ with open('{}{}_ROI.csv'.format(par['savefile'], nn), 'w') as fname:
 
 ## New: plot this after selecting ROI (smaller image)
 stackPlot(crop(cal_R, ROI), 'magma')
+sys.exit()
 
 ## check if save directories exist and create them otherwise
 if not os.path.exists(par['savefile']):
