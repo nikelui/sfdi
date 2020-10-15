@@ -43,7 +43,17 @@ AC,names,tstamps = rawDataLoadBatch(par, 'Select tissue') # This approach is a b
 # Calibration step
 cal_R = []
 for ac in AC:
-    cal_R.append(calibrate(ac,ACph,par))
+    c_R = calibrate(ac,ACph,par)
+
+    ### True here to mask background
+    if False:
+        th = 0.1  # threshold value (calculated on RED wavelength at fx=0)
+        mask = c_R[:,:,-1,0] < th
+        mask = mask.reshape((mask.shape[0], mask.shape[1], 1, 1))  # otherwise np.tile does not work correctly
+        mask = np.tile(mask, (1, 1, c_R.shape[2], c_R.shape[3]))
+        c_R = np.ma.array(c_R, mask=mask)
+    
+    cal_R.append(c_R)
 
 stackPlot(cal_R[0],'magma') # Maybe show all? Or none
 
@@ -65,10 +75,13 @@ if (len(par['chrom_used'])>0):
         chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
 
 #op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True,roi=False)
-op_fit_maps[1],opt_ave,opt_std,radio = oss(crop(cal_R[1][:,:,0,0],ROI), op_fit_maps[1],par,outliers=True)
+op_fit_maps[0],opt_ave,opt_std,radio = oss(crop(cal_R[0][:,:,0,0],ROI), op_fit_maps[0],par,outliers=False)
 
 print('Saving data...')
-np.savez('{}processed'.format(par['savefile']),op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI) # save important results
+for _i,name in enumerate(names):  # save individual files
+    np.savez('{}{}'.format(par['savefile'], name),op_fit_maps=op_fit_maps[_i].data,cal_R=cal_R[_i],ROI=ROI)
+    print('{} saved'.format(name))
+    #np.savez('{}processed'.format(par['savefile']),op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI)
 #np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
 print('Done!')
 
