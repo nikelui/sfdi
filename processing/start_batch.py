@@ -65,31 +65,35 @@ cv.destroyWindow('Select ROI')
 
 ## Fitting for optical properties
 # TODO: this part is pretty computationally intensive, might be worth to optimize
-op_fit_maps = []
-for cal in cal_R:
-    op_fit_maps.append(fitOps(crop(cal,ROI),par))
+# Loop through different spatial frequencies
+FX = ([0,1,2,3], [3,4,5,6], [5,6,7,8])
+for _f,fx in enumerate(FX):
+    par['freq_used'] = fx
+    op_fit_maps = []
+    for cal in cal_R:
+        op_fit_maps.append(fitOps(crop(cal,ROI),par))
+    
+    if (len(par['chrom_used'])>0):
+        chrom_map = []
+        for op in op_fit_maps:
+            chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
 
-if (len(par['chrom_used'])>0):
-    chrom_map = []
-    for op in op_fit_maps:
-        chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
+#    op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True,roi=False)
+#    op_fit_maps[0],opt_ave,opt_std,radio = oss(crop(cal_R[0][:,:,0,0],ROI), op_fit_maps[0],par,outliers=False)
 
-#op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True,roi=False)
-op_fit_maps[0],opt_ave,opt_std,radio = oss(crop(cal_R[0][:,:,0,0],ROI), op_fit_maps[0],par,outliers=False)
-
-print('Saving data...')
-for _i,name in enumerate(names):  # save individual files
-    np.savez('{}{}'.format(par['savefile'], name),op_fit_maps=op_fit_maps[_i].data,cal_R=cal_R[_i],ROI=ROI)
-    print('{} saved'.format(name))
-    #np.savez('{}processed'.format(par['savefile']),op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI)
-#np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
-print('Done!')
+    print('Saving data...')
+    for _i,name in enumerate(names):  # save individual files
+        np.savez('{}{}_f{}'.format(par['savefile'], name, _f), op_fit_maps=op_fit_maps[_i].data,
+                 cal_R=cal_R[_i], ROI=ROI)
+        print('{} saved'.format(name))
+        #np.savez('{}processed'.format(par['savefile']),op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI)
+    #np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
+    print('Done!')
 
 
 if (len(par['chrom_used'])>0):
     for i in range(len(chrom_map)):
         chrom_map[i] = chromPlot(chrom_map[i],names[i],par)
-    
     ## Plot average of chromophores in time
     titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
                                                                   # respect the naming convention

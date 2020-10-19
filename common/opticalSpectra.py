@@ -178,8 +178,8 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     if len(ROIs) > 7:
         colours = colours*2 # we assume no more than 14 ROIs
     
-    opt_ave = np.zeros((len(ROIs),len(par['wv']),2),dtype=float)
-    opt_std = np.zeros((len(ROIs),len(par['wv']),2),dtype=float)
+    opt_ave = np.zeros((len(ROIs),len(par['wv_used']),2),dtype=float)
+    opt_std = np.zeros((len(ROIs),len(par['wv_used']),2),dtype=float)
 
     # Before calculating average, put the 
 
@@ -253,12 +253,12 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
         ax[0,1].add_patch(rect)
         
         
-        ax[1,0].errorbar(par['wv'],opt_ave[i,:,0],yerr=opt_std[i,:,0],
+        ax[1,0].errorbar(np.array(par['wv'])[par['wv_used']],opt_ave[i,:,0],yerr=opt_std[i,:,0],
               fmt='D',linestyle=lin,color=colours[i],capsize=5,markersize=3)
         ax[1,0].set_xlabel('wavelength (nm)')
         ax[1,0].grid(True,which='both',linestyle=':')
         
-        ax[1,2].errorbar(par['wv'],opt_ave[i,:,1],yerr=opt_std[i,:,1],
+        ax[1,2].errorbar(np.array(par['wv'])[par['wv_used']],opt_ave[i,:,1],yerr=opt_std[i,:,1],
               fmt='D',linestyle=lin,color=colours[i],capsize=5,markersize=3)
         ax[1,2].set_xlabel('wavelength (nm)')
         ax[1,2].grid(True,which='both',linestyle=':')
