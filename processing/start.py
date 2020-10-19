@@ -54,12 +54,13 @@ with open('{}{}_ROI.csv'.format(par['savefile'], nn), 'w') as fname:
 
 ## New: plot this after selecting ROI (smaller image)
 stackPlot(crop(cal_R, ROI), 'magma')
+sys.exit()
 
 ## check if save directories exist and create them otherwise
 if not os.path.exists(par['savefile']):
     os.makedirs(par['savefile'])
-if not os.path.exists('{}calR/'.format(par['savefile'])):
-    os.makedirs('{}calR/'.format(par['savefile']))
+#if not os.path.exists('{}calR/'.format(par['savefile'])):
+#    os.makedirs('{}calR/'.format(par['savefile']))
 
 ## save calibrated reflectance data (matlab and npy format)
 #savemat('{}calR/{}'.format(par['savefile'], nn), {'calibrated_R':crop(cal_R, ROI)})  # matlab format
@@ -71,35 +72,36 @@ if not os.path.exists('{}calR/'.format(par['savefile'])):
 
 ## Fitting for optical properties
 ## TODO: this part is pretty computationally intensive, might be worth to optimize
-## TODO: putting in a loop  to fit for all combination of fx. Remove when not neded
 op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']],ROI),par)  # fit for all fx
 
 ## save optical properties to file. Remember to adjust the filename
-print('Saving data...')
-suffix = ''  # no suffix if all wv
-fullpath = '{}{}_OPmap_{}wv{}'.format(par['savefile'], nn, len(par['freq_used']), suffix)
-savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
-np.save(fullpath, op_fit_maps.data)  # numpy format
-print('Done!')
+#print('Saving data...')
+#suffix = ''  # no suffix if all wv
+#fullpath = '{}{}_OPmap_{}fx{}'.format(par['savefile'], nn, len(par['freq_used']), suffix)
+#savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
+#np.save(fullpath, op_fit_maps.data)  # numpy format
+#print('Done!')
 
 chrom_map = chromFit(op_fit_maps, par) # linear fitting for chromophores. This is fast, no need to save
 
-op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par)
+op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)
+#np.save('{}{}_ave_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_ave)
+#np.save('{}{}_std_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_std)
 
 ## Now looop through different fx combinations
-for i in range(5):
-    par['freq_used'] = [i,i+1,i+2,i+3] # select spatial frequencies
-    
-    op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']], ROI), par)  # fit optical properties
-    chrom_map = chromFit(op_fit_maps,par)  # linear fitting for chromofores
-    
-    ## save optical properties to file. Remember to adjust the filename
-    print('Saving data...')
-    suffix = '{}'.format(i)  # suffix = loop iteration
-    fullpath = '{}{}_OPmap_{}wv{}'.format(par['savefile'], nn, len(par['freq_used']), suffix)
-    savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
-    np.save(fullpath, op_fit_maps.data)  # numpy format
-    print('Done!')
+#for i in range(5):
+#    par['freq_used'] = [i,i+1,i+2,i+3] # select spatial frequencies
+#    
+#    op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']], ROI), par)  # fit optical properties
+#    chrom_map = chromFit(op_fit_maps,par)  # linear fitting for chromofores
+#    
+#    ## save optical properties to file. Remember to adjust the filename
+#    print('Saving data...')
+#    suffix = '{}'.format(i)  # suffix = loop iteration
+#    fullpath = '{}{}_OPmap_{}wv{}'.format(par['savefile'], nn, len(par['freq_used']), suffix)
+#    savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
+#    np.save(fullpath, op_fit_maps.data)  # numpy format
+#    print('Done!')
 
 ## Plots
 #op_fit_maps,op_ave,op_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)

@@ -31,14 +31,19 @@ this way multiple time-points can be processed easily.
 
 """
 
-import sys, os
+import os, sys
 import cv2 as cv
 
 sys.path.append('../common') # Add the common folder to path
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
-import sfdi
+from sfdi.setWindow import setWindow
+from sfdi.expGUI_cvui import expGUI_cvui
+#from sfdi.expGUI_cvui_IS import expGUI_cvui
+#from sfdi.IS.IS import ImagingSource
+from sfdi.setCamera_pg import setCamera_pg
 from sfdi.readParams3 import readParams
 from mycsv import csvread
+#import numpy as np
 
 ## Read parameters from .cfg file
 par = readParams('./parameters.ini') # .cfg file should be in the same directory
@@ -50,11 +55,13 @@ if not os.path.exists(par['outpath']):
     os.makedirs(par['outpath'])
 
 ### Setting up camera ###
-cam = sfdi.setCamera_pg(num=0,res=par['res'],fps=par['fps']) # Set-up Camera
+cam = setCamera_pg(num=0,res=par['res'],fps=par['fps']) # Set-up Camera
+#cam = ImagingSource(num=0, res=par['res'], fps=par['fps'])
 #TODO: automatically detect screen size
-sfdi.setWindow('pattern',size=(par['xres'],par['yres']),pos=(par['w'],0)) # Set-up window on second monitor
+setWindow('pattern',size=(par['xres'],par['yres']),pos=(par['w'],0)) # Set-up window on second monitor
 #TODO: new GUI, with extra functionality
-sfdi.expGUI_cvui(cam,par,'pattern',correction) # Start GUI
+expGUI_cvui(cam,par,'pattern',correction) # Start GUI
 
+#cam.close()
 cam.disconnect()
 cv.destroyAllWindows()

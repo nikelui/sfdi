@@ -8,6 +8,7 @@ email: luigi.belcastro@liu.se
 
 import numpy as np
 import numpy.ma as mask
+import cv2 as cv
 
 from matplotlib import pyplot as plt
 from sfdi.crop import crop
@@ -20,7 +21,7 @@ def mad(x,scale=1.4826,axis=None):
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
 
-def opticalSpectra(op_fit_maps,par,names,save=False,outliers=False):
+def opticalSpectra(op_fit_maps,par,names,save=False,outliers=False,roi=False):
     """Plot mean and standard deviation of whole optical properties map (one for file)"""
     
     colours=['orange','red','darkred',
@@ -32,6 +33,12 @@ def opticalSpectra(op_fit_maps,par,names,save=False,outliers=False):
     for opt_map in op_fit_maps: # loop through data
         # Convert to maskedArray for convenience
         opt_map = mask.masked_array(opt_map) # should already be set to nomask
+        # select a ROI in each dataset
+        if roi:
+            ROI = cv.selectROI('Select ROI', opt_map[:,:,-1,0])
+            opt_map = crop(opt_map, ROI)
+            cv.destroyAllWindows()
+        
         ## Remove outliers
         if outliers:
             ## New approach: create a masked array (to not alter original data)

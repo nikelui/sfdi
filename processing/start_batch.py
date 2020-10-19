@@ -24,6 +24,7 @@ from fitOps import fitOps
 from chromFit import chromFit
 from chromPlot import chromPlot
 from opticalSpectra_batch import opticalSpectra
+from opticalSpectra import opticalSpectra as oss  # DEBUG
 
 par = readParams('parameters.ini')
 
@@ -33,16 +34,26 @@ if len(par['freq_used']) == 0: # use all frequencies if empty
 if len(par['wv_used']) == 0: # use all wavelengths if empty
     par['wv_used'] = list(np.arange(len(par['wv'])))
 
-# Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-AC,names,tstamps = rawDataLoadBatch(par, 'Select tissue') # This approach is a bit rough, but there are no simple solutions
-
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 ACph,_ = rawDataLoad(par,'Select calibration phantom data folder')
+
+# Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
+AC,names,tstamps = rawDataLoadBatch(par, 'Select tissue') # This approach is a bit rough, but there are no simple solutions
 
 # Calibration step
 cal_R = []
 for ac in AC:
-    cal_R.append(calibrate(ac,ACph,par))
+    c_R = calibrate(ac,ACph,par)
+
+    ### True here to mask background
+    if False:
+        th = 0.1  # threshold value (calculated on RED wavelength at fx=0)
+        mask = c_R[:,:,-1,0] < th
+        mask = mask.reshape((mask.shape[0], mask.shape[1], 1, 1))  # otherwise np.tile does not work correctly
+        mask = np.tile(mask, (1, 1, c_R.shape[2], c_R.shape[3]))
+        c_R = np.ma.array(c_R, mask=mask)
+    
+    cal_R.append(c_R)
 
 stackPlot(cal_R[0],'magma') # Maybe show all? Or none
 
@@ -54,27 +65,35 @@ cv.destroyWindow('Select ROI')
 
 ## Fitting for optical properties
 # TODO: this part is pretty computationally intensive, might be worth to optimize
-op_fit_maps = []
-for cal in cal_R:
-    op_fit_maps.append(fitOps(crop(cal,ROI),par))
+# Loop through different spatial frequencies
+FX = ([0,1,2,3], [3,4,5,6], [5,6,7,8])
+for _f,fx in enumerate(FX):
+    par['freq_used'] = fx
+    op_fit_maps = []
+    for cal in cal_R:
+        op_fit_maps.append(fitOps(crop(cal,ROI),par))
+    
+    if (len(par['chrom_used'])>0):
+        chrom_map = []
+        for op in op_fit_maps:
+            chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
 
-if (len(par['chrom_used'])>0):
-    chrom_map = []
-    for op in op_fit_maps:
-        chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
+#    op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True,roi=False)
+#    op_fit_maps[0],opt_ave,opt_std,radio = oss(crop(cal_R[0][:,:,0,0],ROI), op_fit_maps[0],par,outliers=False)
 
-op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True)
-
-print('Saving data...')
-#np.savez(par['savefile'],op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI) # save important results
-np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
-print('Done!')
+    print('Saving data...')
+    for _i,name in enumerate(names):  # save individual files
+        np.savez('{}{}_f{}'.format(par['savefile'], name, _f), op_fit_maps=op_fit_maps[_i].data,
+                 cal_R=cal_R[_i], ROI=ROI)
+        print('{} saved'.format(name))
+        #np.savez('{}processed'.format(par['savefile']),op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI)
+    #np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
+    print('Done!')
 
 
 if (len(par['chrom_used'])>0):
     for i in range(len(chrom_map)):
         chrom_map[i] = chromPlot(chrom_map[i],names[i],par)
-    
     ## Plot average of chromophores in time
     titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
                                                                   # respect the naming convention

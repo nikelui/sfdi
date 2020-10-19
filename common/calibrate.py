@@ -16,7 +16,7 @@ import numpy as np
 from reflecMCSFD import reflecMCSFD
 from larsSFD import larsSFD
 
-def calibrate(AC,ACph,par,path=[],old=False):
+def calibrate(AC, ACph, par, path=[], old=False):
     """Take the AC measure of the tissue and calibrates against the AC measure on the calibration phantom.
 Need a .txt file with the phantom known optical properties."""
     
@@ -38,7 +38,7 @@ Need a .txt file with the phantom known optical properties."""
     else:
         data,_ = csvread('../common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
         wv = data[0,:] # wavelength axis
-        spec = data[(9,6,5,4,1),:] # 5 channels
+        spec = data[(9,8,7,6,5,4,3,2,1),:] # 9 channels
         
         # Interpolate phantom to whole spectrum
         f = interp1d(test[:,0],test[:,1],kind='cubic',fill_value='extrapolate') # absorption coefficient
@@ -48,9 +48,9 @@ Need a .txt file with the phantom known optical properties."""
         f = interp1d(test[:,0],test[:,3],kind='cubic',fill_value='extrapolate') # refraction index
         N = f(wv)
         
-        mua = np.zeros(5) # initialize
-        mus = np.zeros(5) # initialize
-        n = np.zeros(5) # initialize
+        mua = np.zeros(len(par['wv'])) # initialize
+        mus = np.zeros(len(par['wv'])) # initialize
+        n = np.zeros(len(par['wv'])) # initialize
         
         for i,band in enumerate(spec):
             mua[i] = np.sum(MUA*band) / np.sum(band)

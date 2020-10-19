@@ -48,27 +48,29 @@ def fitOps(cal_R,par,model='mc'):
                       [690.0, 0.0179, 0.8592]])
     # interpolate at used wavelengths
     f = interp1d(guess[:,0],guess[:,1],kind='linear',bounds_error=False,fill_value='extrapolate')
-    mua_guess = f(np.array(par['wv']))
+    mua_guess = f(np.array(par['wv'])[par['wv_used']])
     f = interp1d(guess[:,0],guess[:,2],kind='linear',bounds_error=False,fill_value='extrapolate')
-    mus_guess = f(np.array(par['wv']))
+    mus_guess = f(np.array(par['wv'])[par['wv_used']])
     
     #res = [] # This list will contain the optimization results. Might be redundant
     freqs = np.array([par['freqs']])[:,np.array(par['freq_used'])] # only freq_used
     
     # initial guess for fitting: optimize the average value
-    ave_R = np.mean(cal_R,axis=(0,1)) # average reflectance
+    ave_R = np.mean(cal_R[:,:,par['wv_used'],:],axis=(0,1)) # average reflectance
     print('Initial guess...')
+    # DEBUG
+#    import pdb; pdb.set_trace()
     for w in range(len(mua_guess)): # loop over wavelengths
         temp = minimize(target_fun,
                        x0=(mua_guess[w],mus_guess[w]), # initial guess
-                       args = (par['n_sample'],forward_model,freqs,ave_R[w,:]), # function arguments
+                       args = (par['n_sample'],forward_model,freqs,ave_R[w,np.array(par['freq_used'])]), # function arguments
                        method = 'Nelder-Mead', # TODO: check other methods
                        options = {'maxiter':200, 'xatol':0.001, 'fatol':0.001})
         #res.append(temp) # this is not really used, but contains extra informations (eg. n. of iterations)
         mua_guess[w] = temp.x[0] # update initial guess
         mus_guess[w] = temp.x[1]
     
-    cal_Rbin = rebin(cal_R,par['binsize'])   # data binning
+    cal_Rbin = rebin(cal_R[:,:,par['wv_used'],:], par['binsize'])   # data binning
     print('Done!')
     ## Very heavy optimization algorithm here
     
@@ -77,14 +79,14 @@ def fitOps(cal_R,par,model='mc'):
     #res = [] # store results
     
     start = time.time()
-    for i,w in enumerate(par['wv']):
+    for i,w in enumerate(np.array(par['wv'])[par['wv_used']]):
         print('processing wavelength: %dnm' % w)
         
         for j in range(cal_Rbin.shape[0]): # loop over rows
             for k in range(cal_Rbin.shape[1]): # loop over columns
                 temp = minimize(target_fun,
                            x0=[mua_guess[i],mus_guess[i]], # initial guess from previous step
-                           args=(par['n_sample'],forward_model,freqs,cal_Rbin[j,k,i,:]),
+                           args=(par['n_sample'],forward_model,freqs,cal_Rbin[j,k,i,np.array(par['freq_used'])]),
                            method = 'Nelder-Mead', # TODO: check other methods
                            options = {'maxiter':200, 'xatol':0.001, 'fatol':0.001})
                 

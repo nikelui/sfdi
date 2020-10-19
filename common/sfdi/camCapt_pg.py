@@ -10,7 +10,7 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 import PyCapture2 as pc
 import cv2 as cv
 
-def camCapt_pg(cam,nframes=1,save=False,filename='output.bmp'):
+def camCapt_pg(cam, nframes=1, save=False, filename='output.bmp'):
     """Camera capture with optional averaging over nframes [Point Grey version].
 
 syntax: frame = camCapt_pg(cam,[nframes,save,filename])
@@ -51,8 +51,8 @@ syntax: frame = camCapt_pg(cam,[nframes,save,filename])
 
     ## Add an extra acquisition for synchro?
     #im = cam.retrieveBuffer()
-    for i in range(nframes):
-        for i in range(10): # number of retries
+    for _i in range(nframes):
+        for _i in range(30): # number of retries
             try:
                 im = cam.retrieveBuffer()
                 break # break if image was retrieved successfully

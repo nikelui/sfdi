@@ -14,6 +14,8 @@ from PyQt5.QtCore import Qt,QThread,pyqtSignal,QSize
 from PyQt5.QtGui import (QPixmap,QImage,QFont)
 
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
+sys.path.append('../../../../common') # Add the common folder to path
+
 import sfdi
 import PyCapture2 as pc
 import numpy as np

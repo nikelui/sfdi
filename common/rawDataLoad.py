@@ -15,14 +15,21 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 from sfdi.readParams3 import readParams
 from sfdi.getPath import getPath
 
-def rawDataLoad(par,prompt='Select folder'):
+def rawDataLoad(par, prompt='Select folder', batch=False):
     """Select a folder to load the images contained inside.
 par: Dictionary containing all the processing parameters
-prompt: optional string for file dialog"""
-    path = getPath(prompt)
+prompt: optional string for file dialog. If run in batch mode it is the file path instead
+batch: flag to pass if run in batch mode (e.g. from startBatch)
+"""
+    if batch:
+        path = prompt  # TODO: find a less ambiguous variable name
+    else:
+        path = getPath(prompt)
     
     if len(path) > 0: # check for empty path
         intT = float(path.split('/')[-1].split('_')[-1][:-2]) # exposure time
+    else:
+        sys.exit()
     
     files = [x for x in os.listdir(path) if '.bmp' in x]
     files.sort() # This assumes the correct naming convention is used
@@ -45,7 +52,7 @@ prompt: optional string for file dialog"""
             
             ## New AC demodulation, with vectorialization. Allows to use n-phase instead of 3
             temp = np.dstack((temp,temp[:,:,0])) # append the first element again at the end
-            AC[:,:,i,j] = np.sqrt(np.sum(np.diff(temp,axis=2)**2,axis=2)) / intT
+            AC[:,:,i,j] = 1 * np.sqrt(np.sum(np.diff(temp,axis=2)**2,axis=2)) / intT
             ##TODO: XX is the correct normalization term (depends on nPhase?)
             
             temp = np.zeros((par['ylength'], par['xlength'], par['nphase']), dtype='float') # Reset temp

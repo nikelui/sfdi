@@ -8,9 +8,6 @@ import numpy as np
 import time,os,sys
 import cv2 as cv
 from sfdi.sinPattern import sinPattern
-from sfdi.camCapt_pg import camCapt_pg
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
-import PyCapture2 as pc
 import threading
 
 def saveFunc(nFreq,nPhase,nchannels,curr_path,name,dataMat):
@@ -69,34 +66,21 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     t_stamp = int(time.time()) # get timestamp for the current acquisition
     
     # Retrieve camera resolution
-    try:
-        (vid,_) = cam.getVideoModeAndFrameRate()
-    except pc.Fc2error as fc2Err:
-        print('Error retrieving videoMode and frameRate: %s' % fc2Err)
+    heigth, width = cam.getResolution()
     # Matrix to store pictures  
-    if vid == pc.VIDEO_MODE.VM_1280x960Y8 or vid == pc.VIDEO_MODE.VM_1280x960Y16:
-        dataMat = np.zeros((960,1280,nPhase*(nFreq+1)*nchannels*3),dtype=float)
-    elif vid == pc.VIDEO_MODE.VM_640x480Y8 or vid == pc.VIDEO_MODE.VM_640x480Y16:
-        dataMat = np.zeros((480,640,nPhase*(nFreq+1)*nchannels*3),dtype=float)
+    dataMat = np.zeros((heigth,width,nPhase*(nFreq+1)*nchannels*3),dtype=float)
     
     stop = False # Insert a flag for stopping
     
     ## New: increase the exposure time for blue channel (SNR is very low on tissues)
     ## consider to use a slightly longer pause between patterns
-    if (blueBoost):
-        # first save old value
-        try:
-            prop = cam.getProperty(pc.PROPERTY_TYPE.SHUTTER)
-            expT = float(prop.absValue)
-        except pc.Fc2error as fc2Err:
-            print('Error getting exposure property: %s' % fc2Err)
-        # Increase exposure by a multiple of 16.67ms (projector framerate is 60Hz)
-        try:
-            prop = pc.Property(pc.PROPERTY_TYPE.SHUTTER,absControl=True,absValue=expT+33.3,autoManualMode=False)
-            cam.setProperty(prop) # DONE
-        except pc.Fc2error as fc2Err:
-            print('Error setting BLUE exposure time: %s' % fc2Err)
     
+    # first save old value
+    expT = cam.getExposure()
+    if (blueBoost):
+        # Increase exposure by a multiple of 16.67ms (projector framerate is 60Hz)
+        cam.setExposure(expT + 16.6)
+
     pshift = 2*np.pi/nPhase # phase shift for demodulation [default = 2/3 pi]
     
     # Acquire BLUE / BG
@@ -120,7 +104,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             else:
                 time.sleep(dt/1000)
             t5 = cv.getTickCount()
-            frame = camCapt_pg(cam,1,False)
+            frame = cam.capture()
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
             for ch in range(nchannels):
@@ -134,11 +118,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     
     if (blueBoost):
         # Here, return exposure to previous value
-        try:
-            prop = pc.Property(pc.PROPERTY_TYPE.SHUTTER,absControl=True,absValue=expT,autoManualMode=False)
-            cam.setProperty(prop) # DONE
-        except pc.Fc2error as fc2Err:
-            print('Error setting exposure time: %s' % fc2Err)
+        cam.setExposure(expT)
         
     # Acquire GREEN
     for i in range(nFreq+1):
@@ -157,7 +137,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             t4 = cv.getTickCount()
             time.sleep(dt/1000)
             t5 = cv.getTickCount()
-            frame = camCapt_pg(cam,1,False)
+            frame = cam.capture()
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
 #            dataMat[:,:, p + (nPhase*i) + 1*(nPhase*(nFreq+1))] = frame[:,:,0] # save GB channel (1)
@@ -189,7 +169,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             t4 = cv.getTickCount()
             time.sleep(dt/1000)
             t5 = cv.getTickCount()
-            frame = camCapt_pg(cam,1,False)
+            frame = cam.capture()
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
             for ch in range(nchannels):
@@ -207,11 +187,8 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     
     print("Capture time: %.2f seconds\n" % (float(end-start)/cv.getTickFrequency()))
     
-    info = cam.getProperty(pc.PROPERTY_TYPE.SHUTTER)
-    expt = int(info.absValue) # get exposure time, to normalize RAW data
-    
     # for loop to save on file
-    curr_path = (outPath + '/%d_%s_%dms' % (t_stamp,fname,expt)) # create one folder for each timestamp
+    curr_path = (outPath + '/%d_%s_%dms' % (t_stamp,fname,int(expT))) # create one folder for each timestamp
     if not os.path.exists(curr_path):
         os.makedirs(curr_path)
     

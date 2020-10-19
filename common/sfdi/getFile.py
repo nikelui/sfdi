@@ -15,8 +15,8 @@ def getFile(title='Select file'):
     root.withdraw()
     root.lift()
     ## open dialog to select file
-    path = filedialog.askopenfilename(initialdir='./',title=title,filetype=[('text files','*.txt'),
-                                      ('Matlab files','*.mat'),('all files','*.*')])
+    path = filedialog.askopenfilename(initialdir='./', title=title, filetype=[('text files','*.txt'),
+                                      ('Matlab files','*.mat'), ('all files','*.*')])
     
     return path
 
@@ -27,7 +27,7 @@ def getFiles(title='Select files'):
     root.withdraw()
     root.lift()
     ## open dialog to select file
-    path = filedialog.askopenfilenames(initialdir='./',title=title,filetype=[('text files','*.txt'),
+    path = filedialog.askopenfilenames(initialdir='./', title=title,filetype=[('text files','*.txt'),
                                       ('Matlab files','*.mat'),('all files','*.*')])
     
     return path
