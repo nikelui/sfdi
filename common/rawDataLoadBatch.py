@@ -29,7 +29,7 @@ prompt: optional string for file dialog
         #toProcess = []
         # you can also define the names here manually
         #toProcess = ['_testhannabase2_','_testhannaocclusion_','_testhannarelease_']
-        toProcess = ['1601804851', '1601805014', '1601805130', '1601805243']
+        toProcess = ['1602827129', '1602827266', '1602827398', '1602827532', '1602827667']
         
         if(len(toProcess)==0): # In case you define by hand
             regex = input('Input base name to match: ').lower() # only process matching directories

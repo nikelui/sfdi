@@ -43,9 +43,10 @@ def chromPlot(chrom_map, name, par, outliers=True):
         # Convert to MaskedArray for convenience
         chrom_map = mask.masked_array(chrom_map)
     
-    titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty
+    # chromophores names. the first is empty
+    titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin', 'MetHb', 'residuals']
                                                               # to respect the naming convention
-    titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
+    titles = [titles[i] for i in par['chrom_used'] + [len(titles)-1]] # Only keep used chromophores
     
     # If no chromophore are present, do nothing
     if len(par['chrom_used']) == 0:
