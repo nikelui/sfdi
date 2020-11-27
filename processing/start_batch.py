@@ -83,8 +83,9 @@ for _f,fx in enumerate(FX):
 
     print('Saving data...')
     for _i,name in enumerate(names):  # save individual files
-        np.savez('{}{}_f{}'.format(par['savefile'], name, _f), op_fit_maps=op_fit_maps[_i].data,
-                 cal_R=cal_R[_i], ROI=ROI)
+        if _f == 0:  # need to save only once
+            np.savez('{}{}_calR'.format(par['savefile'], name), cal_R=cal_R[_i], ROI=ROI)
+        np.savez('{}{}_f{}'.format(par['savefile'], name, _f), op_fit_maps=op_fit_maps[_i].data)
         print('{} saved'.format(name))
         #np.savez('{}processed'.format(par['savefile']),op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI)
     #np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)

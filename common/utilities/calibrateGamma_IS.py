@@ -30,20 +30,22 @@ if True:
     
     ######## First part: acquire data ########
     cam = ImagingSource(num=0,res=par['res'],fps=par['fps'])
-    cam.setExposure(8.3)
+    cam.setExposure(333.33)
     win = setWindow('light',size=(par['xres'],par['yres']),pos=(par['w'],0)) # create window
     curve = np.zeros((10,26,3), dtype=float)
     cap = setWindow('capture',size=(640,480),pos=(0,0)) # create window
+    time.sleep(0.5)
     
     snap = cam.capture()
     ROI = cv.selectROI('ROI', snap)
     
     ## loop
     for _n in range(3):
-        for _i in range(10): # do some average
+        if _n > 0:
+            cam.setExposure(1000)
+        for _i in range(1): # do some average
             temp = []
             for B in range(0,256,10):
-#                Im = np.ones((par['xres'],par['yres'],3), dtype='uint8') * B
                 Im = np.zeros((par['xres'],par['yres'],3), dtype='uint8')
                 Im[:,:,_n] = np.ones((par['xres'],par['yres']), dtype='uint8') * B
                 cv.imshow('light', Im)
@@ -55,7 +57,7 @@ if True:
                 temp.insert(-1,I)
                 cv.imshow('capture', frame)
                 cv.waitKey(1)
-                time.sleep(0.2)
+                time.sleep(0.5)
             curve[_i,:,_n] = np.array(temp)
     cam.close()
     
@@ -66,6 +68,8 @@ if True:
 else:
     curve = np.load('gamma.npy')
     curve = np.mean(curve, axis=0)
+
+sys.exit()
 
 x = np.array(range(0,256,10))
 curve = np.array(curve) - curve[0]
