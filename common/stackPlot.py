@@ -42,7 +42,7 @@ def stackPlot_old(data,cmap='viridis'):
             ax[i,j].get_yaxis().set_visible(False)
     cb = colourbar(im)
 
-def stackPlot(data,cmap='viridis'):
+def stackPlot(data,cmap='viridis',num=100):
     """Plot Reflectance data in a tabular form (rows: wavelengths, columns: spatial frequencies)"""
     dim = data.shape
     temp = np.zeros((dim[0]*dim[2],dim[1]*dim[3]),dtype='float')
@@ -50,7 +50,7 @@ def stackPlot(data,cmap='viridis'):
     for i in range(dim[2]):
         for j in range(dim[3]):
             temp[i*dim[0]:(i+1)*dim[0], j*dim[1]:(j+1)*dim[1]] = data[:,:,i,j]
-    plt.figure(num=100,figsize=(9,5))
+    plt.figure(num=num,figsize=(9,5))
     im = plt.imshow(temp, cmap=cmap, vmin=0, vmax=1)
     ax = plt.gca()
     ax.get_xaxis().set_visible(False)
