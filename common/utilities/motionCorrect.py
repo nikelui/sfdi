@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 sys.path.append('../')  # common folder
 from stackPlot import stackPlot
 
-def motionCorrect(AC, par, edge='laplacian', con=1):
+def motionCorrect(AC, par, edge='laplacian', con=1, gauss=(0,0)):
     """A function to perform motion correction
 
 The function will apply motion correction algorithms to the data set.
@@ -26,6 +26,7 @@ better results if applied to raw data (instead of calibrated reflectance)
     - par: processing parameters
     - edge: edge detection algorithm to use ('sobel', 'laplacian')
     - con: coefficient to increase contrast [default = 1]
+    - gauss: gaussian filter strength [default = 0]
 
 @output:
     - AC_aligned: re-aligned data-set
@@ -34,11 +35,14 @@ better results if applied to raw data (instead of calibrated reflectance)
     edges = np.zeros(AC.shape, dtype=float)
     for _i in range(AC.shape[2]):
         for _j in range(AC.shape[3]):
+            image = AC[:,:,_i,_j]
+            if gauss != (0,0):
+                image = cv.GaussianBlur(image,(gauss[0],gauss[0]),gauss[1])
             if edge == 'sobel':
-                edges[:,:,_i,_j] = cv.Sobel(AC[:,:,_i,_j] / np.max(AC[20:-20,20:-20,_i,_j],
+                edges[:,:,_i,_j] = cv.Sobel(image / np.max(image[20:-20,20:-20],
                                  axis=(0,1)), cv.CV_64FC1, ksize=3, dx=1, dy=0)
             elif edge == 'laplacian':
-                edges[:,:,_i,_j] = cv.Laplacian(AC[:,:,_i,_j] / np.max(AC[20:-20,20:-20,_i,_j],
+                edges[:,:,_i,_j] = cv.Laplacian(image / np.max(image[20:-20,20:-20],
                                  axis=(0,1)), cv.CV_64FC1, ksize=5)
             # NOTE: the edges are normalized to the max value, in a central region
             #       cropped 20px from the borders (to avoid edge artifacts)
@@ -83,8 +87,17 @@ better results if applied to raw data (instead of calibrated reflectance)
     stackPlot(AC, num=200)
     stackPlot(AC_aligned, num=201)
     fig, ax = plt.subplots(1,2, num=301)
-    ax[0].imshow(AC[:,:,[8,4,0],0] / np.max(AC))
-    ax[1].imshow(AC_aligned[:,:,[8,4,0],0] / np.max(AC_aligned))
+    im = np.stack([AC[:,:,8,0] / np.max(AC[:,:,8,0]),  # BLUE channel
+                   AC[:,:,4,0] / np.max(AC[:,:,4,0]),  # GREEN channel
+                   AC[:,:,0,0] / np.max(AC[:,:,0,0])   # RED channel
+            ], axis=-1)
+    ax[0].imshow(im)
+    
+    im_aligned = np.stack([AC_aligned[:,:,8,0] / np.max(AC_aligned[:,:,8,0]),  # BLUE channel
+                           AC_aligned[:,:,4,0] / np.max(AC_aligned[:,:,4,0]),  # GREEN channel
+                           AC_aligned[:,:,0,0] / np.max(AC_aligned[:,:,0,0])   # RED channel
+        ], axis=-1)
+    ax[1].imshow(im_aligned)
 
     return AC_aligned
 
@@ -109,5 +122,5 @@ if __name__ == '__main__':
     ## Calibration step
     cal_R = calibrate(AC, ACph, par)
     
-    AC_aligned = motionCorrect(AC, par, edge='laplacian', con=2)
-    C_aligned = motionCorrect(cal_R, par, edge='sobel', con=1)
+    AC_aligned = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5))
+#    C_aligned = motionCorrect(cal_R, par, edge='sobel', con=1)
