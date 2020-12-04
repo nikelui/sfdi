@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 sys.path.append('../')  # common folder
 from stackPlot import stackPlot
 
-def motionCorrect(AC, par, edge='laplacian', con=1, gauss=(0,0)):
+def motionCorrect(AC, par, edge='laplacian', con=1, gauss=(0,0), debug=False):
     """A function to perform motion correction
 
 The function will apply motion correction algorithms to the data set.
@@ -24,9 +24,10 @@ better results if applied to raw data (instead of calibrated reflectance)
 @input:
     - AC: demodulated data set
     - par: processing parameters
-    - edge: edge detection algorithm to use ('sobel', 'laplacian')
+    - edge: edge detection algorithm to use ('sobel', 'laplacian'[default])
     - con: coefficient to increase contrast [default = 1]
-    - gauss: gaussian filter strength [default = 0]
+    - gauss: gaussian filter params (ksize, stdev) [default = (0,0)]
+    - debug: debugging flag [default = False]
 
 @output:
     - AC_aligned: re-aligned data-set
@@ -39,15 +40,20 @@ better results if applied to raw data (instead of calibrated reflectance)
             if gauss != (0,0):
                 image = cv.GaussianBlur(image,(gauss[0],gauss[0]),gauss[1])
             if edge == 'sobel':
-                edges[:,:,_i,_j] = cv.Sobel(image / np.max(image[20:-20,20:-20],
-                                 axis=(0,1)), cv.CV_64FC1, ksize=3, dx=1, dy=0)
+                dx = cv.Sobel(image / np.max(image[20:-20,20:-20], axis=(0,1)),
+                              cv.CV_32FC1, ksize=3, dx=1, dy=0)
+                dy = cv.Sobel(image / np.max(image[20:-20,20:-20], axis=(0,1)),
+                              cv.CV_32FC1, ksize=3, dx=0, dy=1)
+                edges[:,:,_i,_j] = cv.addWeighted(src1=np.abs(dx), src2=np.abs(dy),
+                                                  alpha=0.5, beta=0.5, gamma=0)
             elif edge == 'laplacian':
                 edges[:,:,_i,_j] = cv.Laplacian(image / np.max(image[20:-20,20:-20],
-                                 axis=(0,1)), cv.CV_64FC1, ksize=5)
+                                 axis=(0,1)), cv.CV_32FC1, ksize=5)
             # NOTE: the edges are normalized to the max value, in a central region
             #       cropped 20px from the borders (to avoid edge artifacts)
             edges[:,:,_i,_j] *= con  # adjust contrast
-    stackPlot(edges[:,:,par['wv_used'],:], cmap='Greys_r', num=102)
+    if debug:
+        stackPlot(edges[:,:,par['wv_used'],:], cmap='Greys_r', num=102)
     
     #TODO: adjust this code to work with dataset
     ### FindTransformEEC
@@ -82,22 +88,23 @@ better results if applied to raw data (instead of calibrated reflectance)
                                           flags=cv.INTER_LINEAR + cv.WARP_INVERSE_MAP,
                                           borderMode=cv.BORDER_CONSTANT, 
                                           borderValue=0)
-    # DEBUG plots
-#    import pdb; pdb.set_trace()
-    stackPlot(AC, num=200)
-    stackPlot(AC_aligned, num=201)
-    fig, ax = plt.subplots(1,2, num=301)
-    im = np.stack([AC[:,:,8,0] / np.max(AC[:,:,8,0]),  # BLUE channel
-                   AC[:,:,4,0] / np.max(AC[:,:,4,0]),  # GREEN channel
-                   AC[:,:,0,0] / np.max(AC[:,:,0,0])   # RED channel
+    if debug:
+        # DEBUG plots
+        #import pdb; pdb.set_trace()
+        stackPlot(AC, num=200)
+        stackPlot(AC_aligned, num=201)
+        fig, ax = plt.subplots(1,2, num=301)
+        im = np.stack([AC[:,:,8,0] / np.max(AC[:,:,8,0]),  # BLUE channel
+                       AC[:,:,4,0] / np.max(AC[:,:,4,0]),  # GREEN channel
+                       AC[:,:,0,0] / np.max(AC[:,:,0,0])   # RED channel
+                ], axis=-1)
+        ax[0].imshow(im)
+        
+        im_aligned = np.stack([AC_aligned[:,:,8,0] / np.max(AC_aligned[:,:,8,0]),  # BLUE channel
+                               AC_aligned[:,:,4,0] / np.max(AC_aligned[:,:,4,0]),  # GREEN channel
+                               AC_aligned[:,:,0,0] / np.max(AC_aligned[:,:,0,0])   # RED channel
             ], axis=-1)
-    ax[0].imshow(im)
-    
-    im_aligned = np.stack([AC_aligned[:,:,8,0] / np.max(AC_aligned[:,:,8,0]),  # BLUE channel
-                           AC_aligned[:,:,4,0] / np.max(AC_aligned[:,:,4,0]),  # GREEN channel
-                           AC_aligned[:,:,0,0] / np.max(AC_aligned[:,:,0,0])   # RED channel
-        ], axis=-1)
-    ax[1].imshow(im_aligned)
+        ax[1].imshow(im_aligned)
 
     return AC_aligned
 
