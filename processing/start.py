@@ -85,6 +85,9 @@ op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']],ROI),par)  # fit for all
 chrom_map = chromFit(op_fit_maps, par) # linear fitting for chromophores. This is fast, no need to save
 
 op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)
+
+#if not os.path.exists(par['savefile']):
+#        os.mkdir(par['savefile'])
 #np.save('{}{}_ave_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_ave)
 #np.save('{}{}_std_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_std)
 

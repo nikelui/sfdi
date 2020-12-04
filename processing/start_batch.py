@@ -5,7 +5,7 @@ Created on Mon Jul  1 11:16:24 2019
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
-import sys
+import sys, os
 import numpy as np
 import numpy.ma as mask
 import cv2 as cv
@@ -82,6 +82,10 @@ for _f,fx in enumerate(FX):
 #    op_fit_maps[0],opt_ave,opt_std,radio = oss(crop(cal_R[0][:,:,0,0],ROI), op_fit_maps[0],par,outliers=False)
 
     print('Saving data...')
+    # check if path exists and create it
+    if not os.path.exists(par['savefile']):
+        os.mkdir(par['savefile'])
+        
     for _i,name in enumerate(names):  # save individual files
         if _f == 0:  # need to save only once
             np.savez('{}{}_calR'.format(par['savefile'], name), cal_R=cal_R[_i], ROI=ROI)
