@@ -41,9 +41,9 @@ better results if applied to raw data (instead of calibrated reflectance)
                 image = cv.GaussianBlur(image,(gauss[0],gauss[0]),gauss[1])
             if edge == 'sobel':
                 dx = cv.Sobel(image / np.max(image[20:-20,20:-20], axis=(0,1)),
-                              cv.CV_32FC1, ksize=3, dx=1, dy=0)
+                              cv.CV_64FC1, ksize=3, dx=1, dy=0)
                 dy = cv.Sobel(image / np.max(image[20:-20,20:-20], axis=(0,1)),
-                              cv.CV_32FC1, ksize=3, dx=0, dy=1)
+                              cv.CV_64FC1, ksize=3, dx=0, dy=1)
                 edges[:,:,_i,_j] = cv.addWeighted(src1=np.abs(dx), src2=np.abs(dy),
                                                   alpha=0.5, beta=0.5, gamma=0)
             elif edge == 'laplacian':
@@ -71,6 +71,9 @@ better results if applied to raw data (instead of calibrated reflectance)
     AC_aligned = np.zeros(AC.shape, dtype=float)
     AC_aligned[:,:,0,0] = AC[:,:,0,0]  # the first is used as reference
     
+    if debug:
+        ff = open('{}transform.txt'.format(par['savefile']), 'w')
+    
     for _i in par['wv_used']:  # only align used wavelengths for speed
         for _j in range(AC.shape[3]):
             if _i == 0 and _j == 0:
@@ -79,6 +82,13 @@ better results if applied to raw data (instead of calibrated reflectance)
                 im2 = edges[:,:,_i,_j].astype('float32')
                 (cc, warp_matrix) = cv.findTransformECC(im1, im2, warp_matrix, 
                                                  warp_mode, criteria)
+                if debug:  # print out to file
+                    print('Frequency: {:4f}  Wavelength: {:d}\nMatrix:'.format(par['freqs'][_j],
+                          par['wv'][_i]), file=ff)
+                    for line in warp_matrix:
+                        print('{:>7.4f} {:>7.4f} {:>5.1f}'.format(*line), file=ff)
+                    print('', file=ff)
+#                    print('Matrix:\n{:4f}\n'.format(np.matrix(warp_matrix)), file=ff)
                 ## Apply transform
                 # Get the target size from the desired image
                 target_shape = im1.shape
@@ -89,6 +99,7 @@ better results if applied to raw data (instead of calibrated reflectance)
                                           borderMode=cv.BORDER_CONSTANT, 
                                           borderValue=0)
     if debug:
+        ff.close()  # close file
         # DEBUG plots
         #import pdb; pdb.set_trace()
         stackPlot(AC, num=200)
@@ -125,9 +136,9 @@ if __name__ == '__main__':
     ## Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
     AC,name = rawDataLoad(par, 'Select tissue data folder')
     ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-    ACph,_ = rawDataLoad(par, 'Select calibration phantom data folder')
-    ## Calibration step
-    cal_R = calibrate(AC, ACph, par)
+#    ACph,_ = rawDataLoad(par, 'Select calibration phantom data folder')
+#    ## Calibration step
+#    cal_R = calibrate(AC, ACph, par)
     
-    AC_aligned = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5))
+    AC_aligned = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=True)
 #    C_aligned = motionCorrect(cal_R, par, edge='sobel', con=1)
