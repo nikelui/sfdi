@@ -25,6 +25,7 @@ from chromFit import chromFit
 from chromPlot import chromPlot
 from opticalSpectra_batch import opticalSpectra
 from opticalSpectra import opticalSpectra as oss  # DEBUG
+from utilities.motionCorrect import motionCorrect
 
 par = readParams('parameters.ini')
 
@@ -43,6 +44,7 @@ AC,names,tstamps = rawDataLoadBatch(par, 'Select tissue') # This approach is a b
 # Calibration step
 cal_R = []
 for ac in AC:
+    ac = motionCorrect(ac, par)  # correct motion artifacts in raw data
     c_R = calibrate(ac,ACph,par)
 
     ### True here to mask background
@@ -55,7 +57,7 @@ for ac in AC:
     
     cal_R.append(c_R)
 
-stackPlot(cal_R[0],'magma') # Maybe show all? Or none
+#stackPlot(cal_R[0],'magma') # Maybe show all? Or none
 
 #sys.exit()
 
