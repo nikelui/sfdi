@@ -7,14 +7,14 @@ email: luigi.belcastro@liu.se
 
 A function to perform motion correction algorithms on demodulated SFDI data
 """
-import sys
+import sys, os
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
 sys.path.append('../')  # common folder
 from stackPlot import stackPlot
 
-def motionCorrect(AC, par, edge='laplacian', con=1, gauss=(0,0), debug=False):
+def motionCorrect(AC, par, edge='sobel', con=1, gauss=(0,0), debug=False):
     """A function to perform motion correction
 
 The function will apply motion correction algorithms to the data set.
@@ -24,7 +24,7 @@ better results if applied to raw data (instead of calibrated reflectance)
 @input:
     - AC: demodulated data set
     - par: processing parameters
-    - edge: edge detection algorithm to use ('sobel', 'laplacian'[default])
+    - edge: edge detection algorithm to use ('sobel'[default], 'laplacian')
     - con: coefficient to increase contrast [default = 1]
     - gauss: gaussian filter params (ksize, stdev) [default = (0,0)]
     - debug: debugging flag [default = False]
@@ -57,13 +57,13 @@ better results if applied to raw data (instead of calibrated reflectance)
     
     #TODO: adjust this code to work with dataset
     ### FindTransformEEC
-    warp_mode = cv.MOTION_AFFINE
+    warp_mode = cv.MOTION_EUCLIDEAN
     warp_matrix = np.eye(2, 3, dtype=np.float32)
     # Specify the number of iterations.
     number_of_iterations = 1000
     # Specify the threshold of the increment in the correlation 
     # coefficient between two iterations
-    termination_eps = 1e-6
+    termination_eps = 1e-5
     criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 
                 number_of_iterations, termination_eps)
     # Run the ECC algorithm. The results are stored in warp_matrix.
@@ -72,7 +72,7 @@ better results if applied to raw data (instead of calibrated reflectance)
     AC_aligned[:,:,0,0] = AC[:,:,0,0]  # the first is used as reference
     
     if debug:
-        ff = open('{}transform.txt'.format(par['savefile']), 'w')
+        ff = open('{}/transform.txt'.format(os.getcwd()), 'w')
     
     for _i in par['wv_used']:  # only align used wavelengths for speed
         for _j in range(AC.shape[3]):

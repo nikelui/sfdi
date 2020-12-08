@@ -23,6 +23,7 @@ from fitOps import fitOps
 from chromFit import chromFit
 from chromPlot import chromPlot
 from opticalSpectra import opticalSpectra
+from utilities.motionCorrect import motionCorrect
 
 
 par = readParams('parameters.ini')
@@ -35,6 +36,7 @@ if len(par['wv_used']) == 0: # use all wavelengths if empty
 
 ## Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 AC,name = rawDataLoad(par, 'Select tissue data folder')
+AC = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=True)
 
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 ACph,_ = rawDataLoad(par, 'Select calibration phantom data folder')
@@ -54,7 +56,6 @@ with open('{}{}_ROI.csv'.format(par['savefile'], nn), 'w') as fname:
 
 ## New: plot this after selecting ROI (smaller image)
 stackPlot(crop(cal_R, ROI), 'magma')
-sys.exit()
 
 ## check if save directories exist and create them otherwise
 if not os.path.exists(par['savefile']):
@@ -76,11 +77,13 @@ op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']],ROI),par)  # fit for all
 
 ## save optical properties to file. Remember to adjust the filename
 #print('Saving data...')
-#suffix = ''  # no suffix if all wv
-#fullpath = '{}{}_OPmap_{}fx{}'.format(par['savefile'], nn, len(par['freq_used']), suffix)
+#fullpath = '{}{}'.format(par['savefile'], nn)
 #savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
-#np.save(fullpath, op_fit_maps.data)  # numpy format
+#np.savez('{}_OPmap_f0'.format(fullpath), op_fit_maps=op_fit_maps.data)  # numpy format
+#np.savez('{}_calR'.format(fullpath), cal_R=cal_R, ROI=ROI)
 #print('Done!')
+
+#sys.exit()
 
 chrom_map = chromFit(op_fit_maps, par) # linear fitting for chromophores. This is fast, no need to save
 
