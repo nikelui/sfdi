@@ -51,10 +51,10 @@ for ac in AC:
     ### True here to mask background
     if False:
         th = 0.1  # threshold value (calculated on RED wavelength at fx=0)
-        mask = c_R[:,:,-1,0] < th
-        mask = mask.reshape((mask.shape[0], mask.shape[1], 1, 1))  # otherwise np.tile does not work correctly
-        mask = np.tile(mask, (1, 1, c_R.shape[2], c_R.shape[3]))
-        c_R = np.ma.array(c_R, mask=mask)
+        MASK = c_R[:,:,-1,0] < th
+        MASK = MASK.reshape((MASK.shape[0], MASK.shape[1], 1, 1))  # otherwise np.tile does not work correctly
+        MASK = np.tile(MASK, (1, 1, c_R.shape[2], c_R.shape[3]))
+        c_R = np.ma.array(c_R, mask=MASK)
     
     cal_R.append(c_R)
 
@@ -102,6 +102,19 @@ for _f,fx in enumerate(FX):
         if len(par['savefmt']) > 0:
             print('{} saved'.format(name))
     print('Done!')
+
+# Save processing parameters on file
+params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
+          'binsize': par['binsize'],  # pixel binning
+          'ROI': ROI,  # processed ROI
+          'fx': par['freqs'],  # all spatial frequencies
+    }
+to_write = ['# Parameters\nbinsize = {binsize}\nROI = {ROI}\nwv = {wv}nm\nfx = {fx}mm^-1']
+for _f, fx in enumerate(FX):
+    params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
+    to_write.append('f{} -> {}mm^-1\n'.format(_f, ))
+with open('{}parameters.txt'.format(par['savefile']), 'w') as par_file:
+    print('\n'.join(to_write), file=par_file)
 
 
 if (len(par['chrom_used'])>0):
