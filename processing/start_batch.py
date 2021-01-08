@@ -10,6 +10,7 @@ import numpy as np
 import numpy.ma as mask
 import cv2 as cv
 from matplotlib import pyplot as plt
+from scipy.io import savemat
 
 sys.path.append('../common')
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
@@ -90,11 +91,16 @@ for _f,fx in enumerate(FX):
         
     for _i,name in enumerate(names):  # save individual files
         if _f == 0:  # need to save only once
-            np.savez('{}{}_calR'.format(par['savefile'], name), cal_R=cal_R[_i], ROI=ROI)
-        np.savez('{}{}_f{}'.format(par['savefile'], name, _f), op_fit_maps=op_fit_maps[_i].data)
-        print('{} saved'.format(name))
-        #np.savez('{}processed'.format(par['savefile']),op_fit_maps=op_fit_maps,cal_R=cal_R,ROI=ROI)
-    #np.savez(par['savefile'],op_ave=op_ave,op_std=op_std)
+            if 'numpy' in par['savefmt']:
+                np.savez('{}{}_calR'.format(par['savefile'], name), cal_R=cal_R[_i], ROI=ROI)
+            if 'matlab' in par['savefmt']:
+                savemat('{}{}_calR'.format(par['savefile'], name), {'cal_R':cal_R[_i], 'ROI':ROI})
+        if 'numpy' in par['savefmt']:
+            np.savez('{}{}_f{}'.format(par['savefile'], name, _f), op_fit_maps=op_fit_maps[_i].data)
+        if 'matlab' in par['savefmt']:
+            savemat('{}{}_f{}'.format(par['savefile'], name, _f), {'op_fit_maps':op_fit_maps[_i].data})
+        if len(par['savefmt']) > 0:
+            print('{} saved'.format(name))
     print('Done!')
 
 
@@ -102,7 +108,7 @@ if (len(par['chrom_used'])>0):
     for i in range(len(chrom_map)):
         chrom_map[i] = chromPlot(chrom_map[i],names[i],par)
     ## Plot average of chromophores in time
-    titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin'] # chromophores names. the first is empty to
+    titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin', 'metHb'] # chromophores names. the first is empty to
                                                                   # respect the naming convention
     titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
     
