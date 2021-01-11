@@ -109,11 +109,12 @@ params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
           'ROI': ROI,  # processed ROI
           'fx': par['freqs'],  # all spatial frequencies
     }
-to_write = ['# Parameters\nbinsize = {binsize}\nROI = {ROI}\nwv = {wv}nm\nfx = {fx}mm^-1']
+to_write = ['# Parameters\nbinsize = {}\nROI = {}\nwv = {}nm\nfx = {}mm^-1'.format(
+             params['binsize'], params['ROI'], params['wv'], params['fx'])]
 for _f, fx in enumerate(FX):
     params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
-    to_write.append('f{} -> {}mm^-1\n'.format(_f, ))
-with open('{}parameters.txt'.format(par['savefile']), 'w') as par_file:
+    to_write.append('f{} -> {}mm^-1\n'.format(_f, params['f{}'.format(_f)]))
+with open('{}processing_parameters.txt'.format(par['savefile']), 'w') as par_file:
     print('\n'.join(to_write), file=par_file)
 
 
