@@ -13,11 +13,14 @@ import datetime
 import pickle
 import itertools
 import numpy as np
+import cv2 as cv
 from scipy.io import loadmat  # new standard: work with Matlab files for compatibility
 from scipy.optimize import curve_fit
 from sfdi.common.sfdi.getPath import getPath
 from sfdi.common.sfdi.readParams3 import readParams
+from sfdi.common.sfdi.crop import crop
 from matplotlib import pyplot as plt
+import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
@@ -61,7 +64,44 @@ class dataDict(dict):
             if _j == 0:
                 ax[_i, _j].set_ylabel('{}'.format(fx[_i]))
         plt.tight_layout()
-        
+    
+    def plot_par(self, key, **kwargs):
+        """Plot fitted A, B parameters of reduced scattering"""
+        column = self[key]['f0']['par_map'].shape[-1]
+        row = len(self[key])
+        fig, ax = plt.subplots(num=200, nrows=row, ncols=column, figsize=(column*3, row*2))
+        fx = list(self[key].keys())
+        for _i in range(row):
+            par = self[key][fx[_i]]['par_map']
+            im = ax[_i, 0].imshow(par[:,:,0], cmap='seismic',
+                                  norm=colors.LogNorm(vmin=1e-5, vmax=1e4))
+            colourbar(im)
+            im = ax[_i, 1].imshow(par[:,:,1], cmap='seismic', vmin=-5, vmax=5)
+            colourbar(im)
+            ax[_i, 0].axes.xaxis.set_ticks([])
+            ax[_i, 0].axes.yaxis.set_ticks([])
+            ax[_i, 1].axes.xaxis.set_ticks([])
+            ax[_i, 1].axes.yaxis.set_ticks([])
+            ax[_i, 0].set_ylabel('{}'.format(fx[_i]))
+            if _i == 0:
+                ax[_i, 0].set_title('A')
+                ax[_i, 1].set_title('B')
+            
+        plt.tight_layout()
+    
+    def singleROI(self, key, **kwargs):
+        zoom = kwargs.pop('zoom', 3)  # defaults to 3
+        im = self[key]['f0']['op_fit_maps'][:,:,0,0]  # reference image
+        cv.namedWindow('select ROI', cv.WINDOW_NORMAL)
+        cv.resizeWindow('select ROI', im.shape[1]*zoom, im.shape[0]*zoom)
+        ROI = cv.selectROI('select ROI', im)
+        cv.destroyAllWindows()
+        # calculate average inside ROI
+        op_ave = np.zeros((len(self[key]), self[key]['f0'].shape[2],
+                           self[key]['f0'].shape[-1]),  dtype=float)
+        fx = list(self[key].keys())  # list of fx ranges
+        for _i in range(len(self[key])):
+            op_ave[_i, :, :] = np.mean(crop(self[key][fx[_i]], ROI), axis=(0,1))
 
 def save_obj(obj, name, path):
     """Utility function to save python objects using pickle module"""
