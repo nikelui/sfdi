@@ -39,11 +39,14 @@ data structure:
     |   |-- f2
     etc...
 """
+import os
 import itertools
 import numpy as np
 import numpy.ma as ma
+from scipy.io import loadmat
 import cv2 as cv
 from sfdi.common.sfdi.crop import crop
+from sfdi.common.stackPlot import stackPlot
 from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
@@ -139,8 +142,16 @@ class dataDict(dict):
         cmap.set_bad(color='limegreen')
         plt.tight_layout()
     
+    def plot_cal(self, key, path=None):
+        fpath = [x for x in os.listdir(path) if 'calR' in x and key in x]
+        calR = loadmat('{}/{}'.format(path, fpath[0]))
+        calR = calR['cal_R']
+        stackPlot(calR, cmap='magma', num=400)
+        del calR  # to save some memory
+    
     def singleROI(self, key, **kwargs):
         zoom = kwargs.pop('zoom', 3)  # defaults to 3
+        norm = kwargs.pop('norm', False)
         im = self[key]['f0']['op_fit_maps'][:,:,0,0]  # reference image
         cv.namedWindow('select ROI', cv.WINDOW_NORMAL)
         cv.resizeWindow('select ROI', im.shape[1]*zoom, im.shape[0]*zoom)
@@ -155,6 +166,9 @@ class dataDict(dict):
         for _i in range(len(self[key])):
             op_ave[_i, :, :] = np.nanmean(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
             op_std[_i, :, :] = np.nanstd(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
+            if norm:  # normalize to 625nm
+                op_ave[_i, :, :] /= op_ave[_i, -1, :]
+                op_std[_i, :, :] /= op_ave[_i, -1, :]
         # Here plot the data points
         fig, ax = plt.subplots(num=300, nrows=1, ncols=2, figsize=(9, 4))
         for _i in range(len(self[key])):
@@ -183,8 +197,9 @@ class dataDict(dict):
                 mask = np.zeros(op_map.shape, dtype=bool)  # initialize
                 for _i, _j in itertools.product(range(op_map.shape[-2]), range(op_map.shape[-1])):
                     # set mask to True if pixel values are outliers
-                    mask[:,:,_i,_j] = op_map[:,:,_i,_j] >= 15*mad(op_map[:,:,_i,_j])
-                    print('{}, {}: {}'.format(_i, _j, mad(op_map[:,:,_i,_j])))  # DEBUG
+                    mask[:,:,_i,_j] = np.logical_or(op_map[:,:,_i,_j] >= 15*mad(op_map[:,:,_i,_j]),
+                                                    op_map[:,:,_i,_j] >= 20)  # hard limit
+#                    print('{}, {}: {}'.format(_i, _j, mad(op_map[:,:,_i,_j])))  # DEBUG
                 self[dataset][fx]['op_fit_maps'] = ma.masked_array(
                           data=op_map, mask=mask, fill_value=np.nan)
     

@@ -81,3 +81,4 @@ else:
 
 # Post- processing
 data.mask_on()  # mask outliers
+#data.plot_cal('K1', data_path)
