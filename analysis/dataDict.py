@@ -44,6 +44,7 @@ import itertools
 import numpy as np
 import numpy.ma as ma
 from scipy.io import loadmat
+from scipy.optimize import curve_fit
 import cv2 as cv
 from sfdi.common.sfdi.crop import crop
 from sfdi.common.stackPlot import stackPlot
@@ -69,6 +70,10 @@ def mad(x,scale=1.4826,axis=None):
     (for normal distribution)"""
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
+
+def fit_fun(lamb, a, b):
+    """Exponential function to fit data to"""
+    return a * np.power(lamb, -b)
 
 
 class dataDict(dict):
@@ -150,8 +155,13 @@ class dataDict(dict):
         del calR  # to save some memory
     
     def singleROI(self, key, **kwargs):
+        """optional arguments:
+ - norm: the index to normalize the mus plot to (default is None). Usually use 0 or -1
+ - fit: plot the fitted mus (default is False)
+        """
         zoom = kwargs.pop('zoom', 3)  # defaults to 3
-        norm = kwargs.pop('norm', False)
+        norm = kwargs.pop('norm', None)
+        fit = kwargs.pop('fit', False)  # wether to plot the raw data or the fitted one
         im = self[key]['f0']['op_fit_maps'][:,:,0,0]  # reference image
         cv.namedWindow('select ROI', cv.WINDOW_NORMAL)
         cv.resizeWindow('select ROI', im.shape[1]*zoom, im.shape[0]*zoom)
@@ -162,20 +172,37 @@ class dataDict(dict):
                            self[key]['f0']['op_fit_maps'].shape[-1]),  dtype=float)
         op_std = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2],
                            self[key]['f0']['op_fit_maps'].shape[-1]),  dtype=float)
+        op_fit = np.zeros((len(self[key]), 100), dtype=float)
         fx = list(self[key].keys())  # list of fx ranges
         for _i in range(len(self[key])):
             op_ave[_i, :, :] = np.nanmean(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
             op_std[_i, :, :] = np.nanstd(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
-            if norm:  # normalize to 625nm
-                op_ave[_i, :, :] /= op_ave[_i, -1, :]
-                op_std[_i, :, :] /= op_ave[_i, -1, :]
+            if norm is not None:  # First, normalize to reference wv
+                op_ave[_i, :, 1] /= op_ave[_i, norm, 1]
+                op_std[_i, :, 1] /= op_ave[_i, norm, 1]
+            if fit: # fit after optional normalization
+                try:
+                    (A, B), _ = curve_fit(fit_fun, self.wv, op_ave[_i,:,1], p0=[100,1],
+                                          method='trf', loss='soft_l1', max_nfev=2000)
+                    op_fit[_i,:] = fit_fun(np.linspace(self.wv[0], self.wv[-1], 100), A, B)
+                except RuntimeError:
+                    continue
         # Here plot the data points
         fig, ax = plt.subplots(num=300, nrows=1, ncols=2, figsize=(9, 4))
-        for _i in range(len(self[key])):
-            ax[0].errorbar(self.wv, op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0],
-                           linestyle='-', linewidth=2, capsize=5, label=fx[_i])
-            ax[1].errorbar(self.wv, op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1],
-                           linestyle='-', linewidth=2, capsize=5, label=fx[_i])
+        if fit:
+            for _i in range(len(self[key])):
+                ax[0].errorbar(self.wv, op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
+                               linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_i))
+                ax[1].errorbar(self.wv, op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle=':',
+                               capsize=5, label=fx[_i], color='C{}'.format(_i))
+                ax[1].plot(np.linspace(self.wv[0], self.wv[-1], 100), op_fit[_i,:], linestyle='-',
+                           linewidth=2, label='{} (fit)'.format(fx[_i]), color='C{}'.format(_i))
+        else:
+            for _i in range(len(self[key])):
+                ax[0].errorbar(self.wv, op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
+                               linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_i))
+                ax[1].errorbar(self.wv, op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='-',
+                               linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_i))
         ax[0].grid(True, linestyle=':')
         ax[0].set_xlabel('nm')
         ax[0].set_ylabel(r'mm$^{-1}$')
