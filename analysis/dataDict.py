@@ -80,7 +80,8 @@ class dataDict(dict):
     """An helper class that expands the dict container"""
     def __init__(self,*arg,**kw):
        super(dataDict, self).__init__(*arg, **kw)
-       self.wv = np.array([458, 520, 536, 556, 626])  # nm
+       parameters = kw.pop('parameters', {'wv':[458, 520, 536, 556, 626]})
+       self.par = parameters
     
     def plot_op(self, key, **kwargs):
         """Plot optical properties of dataset <key>"""
@@ -192,15 +193,18 @@ class dataDict(dict):
         op_std = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2],
                            self[key]['f0']['op_fit_maps'].shape[-1]),  dtype=float)
         op_fit = np.zeros((len(self[key]), 100), dtype=float)
+        depths = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2]),
+                          dtype=float)
         fx = list(self[key].keys())  # list of fx ranges
         for _i in range(len(self[key])):
             op_ave[_i, :, :] = np.nanmean(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
             op_std[_i, :, :] = np.nanstd(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
+            depths[_i,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[fx[_i]]))
             if fit:
                 try:
-                    (A, B), _ = curve_fit(fit_fun, self.wv, op_ave[_i,:,1], p0=[100,1],
+                    (A, B), _ = curve_fit(fit_fun, self.par['wv'], op_ave[_i,:,1], p0=[100,1],
                                           method='trf', loss='soft_l1', max_nfev=2000)
-                    op_fit[_i,:] = fit_fun(np.linspace(self.wv[0], self.wv[-1], 100), A, B)
+                    op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
                 except RuntimeError:
                     continue
             if norm is not None:  # Normalize to reference wv
@@ -209,23 +213,27 @@ class dataDict(dict):
                 if fit:
                     op_fit[_i,:] /= op_fit[_i, norm]
         # Here plot the data points
-        fig, ax = plt.subplots(num=300, nrows=1, ncols=2, figsize=(9, 4))
+        fig, ax = plt.subplots(num=300, nrows=1, ncols=3, figsize=(12, 4))
         if fit:
             for _j in range(len(f_used)):
                 _i = f_used[_j]  # variable change, just for simplicity
-                ax[0].errorbar(self.wv, op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
+                ax[0].errorbar(self.par['wv'], op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
                                linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))
-                ax[1].errorbar(self.wv, op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='none',
+                ax[1].errorbar(self.par['wv'], op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='none',
                                capsize=5, label=fx[_i], color='C{}'.format(_j))
-                ax[1].plot(np.linspace(self.wv[0], self.wv[-1], 100), op_fit[_i,:], linestyle='-',
+                ax[1].plot(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), op_fit[_i,:], linestyle='-',
                            linewidth=2, color='C{}'.format(_j))
+                ax[2].plot(self.par['wv'], depths[_i], 'o', linestyle='-', color='C{}'.format(_j),
+                           label=fx[_i])
         else:
             for _j in range(len(f_used)):
                 _i = f_used[_j]
-                ax[0].errorbar(self.wv, op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
+                ax[0].errorbar(self.par['wv'], op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
                                linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))
-                ax[1].errorbar(self.wv, op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='-',
+                ax[1].errorbar(self.par['wv'], op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='-',
                                linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))
+                ax[2].plot(self.par['wv'], depths[_i], 'o', linestyle='-', color='C{}'.format(_j),
+                           label=fx[_i])
         ax[0].grid(True, linestyle=':')
         ax[0].set_xlabel('nm')
         ax[0].set_ylabel(r'mm$^{-1}$')
@@ -236,9 +244,15 @@ class dataDict(dict):
         ax[1].set_ylabel(r'mm$^{-1}$')
         ax[1].set_title(r"$\mu'_s$")
         ax[1].legend(loc=0)
+        ax[2].grid(True, linestyle=':')
+        ax[2].set_xlabel('nm')
+        ax[2].set_ylabel('mm')
+        ax[2].set_title("penetration depth")
+        ax[2].legend(loc=0)
         cmap = cm.get_cmap('magma')
         cmap.set_bad(color='cyan')
         plt.tight_layout()
+        return op_ave, op_std
         
     def mask_on(self):
         for dataset in self:
@@ -257,3 +271,13 @@ class dataDict(dict):
         for dataset in self:
             for fx in self[dataset]:
                 self[dataset][fx]['op_fit_maps'] = self[dataset][fx]['op_fit_maps'].data
+    
+    def depth(self, mua, mus, fx):
+        """Function to calculate effective penetration depth based on diffusion approximation
+    - mua, mus: vectors (1 x wv)
+    - fx: average fx in range"""
+        mut = mua + mus
+        mueff = np.sqrt(np.abs(3 * mua * mut))
+        mueff1 = np.sqrt(mueff**2 + fx**2)
+        d = 1/mueff1
+        return d
