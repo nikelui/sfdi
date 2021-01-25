@@ -33,7 +33,7 @@ def load_obj(name, path):
     
 
 def fit_fun(lamb, a, b):
-    """Exponential function to fit data to"""
+    """Power law function to fit data to"""
     return a * np.power(lamb, -b)
 
 
@@ -62,6 +62,7 @@ par = read_param('{}/README.txt'.format(data_path))  # optional
 # If the dataset has already been processed, load it
 if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
     data = load_obj('dataset', data_path)
+    data.par = par
 # If you need to process / modify it. NOTE: the old set will be overwritten
 else:
     files = [x for x in os.listdir(data_path) if re.match(regex, x)]
