@@ -179,7 +179,7 @@ class dataDict(dict):
         """
         zoom = kwargs.pop('zoom', 3)  # defaults to 3
         norm = kwargs.pop('norm', None)
-        fit = kwargs.pop('fit', False)  # wether to plot the raw data or the fitted one
+        fit = kwargs.pop('fit', None)  # wether to plot the raw data or the fitted one
         f_used = kwargs.pop('f', list(range(len(self[key]))))  # Default: use all frequencies
         f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
         im = self[key]['f0']['op_fit_maps'][:,:,0,0]  # reference image
@@ -193,18 +193,33 @@ class dataDict(dict):
         op_std = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2],
                            self[key]['f0']['op_fit_maps'].shape[-1]),  dtype=float)
         op_fit = np.zeros((len(self[key]), 100), dtype=float)
+        op_fit_double = np.zeros((len(self[key]), 100, 2), dtype=float)
         depths = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2]),
+                          dtype=float)
+        depths_std = np.zeros((len(self[key]), 2, self[key]['f0']['op_fit_maps'].shape[2]),
                           dtype=float)
         fx = list(self[key].keys())  # list of fx ranges
         for _i in range(len(self[key])):
             op_ave[_i, :, :] = np.nanmean(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
             op_std[_i, :, :] = np.nanstd(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
             depths[_i,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[fx[_i]]))
+            depths_std[_i,0,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], self.par[fx[_i]][-1])
+            depths_std[_i,1,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], self.par[fx[_i]][0])
+            depths_std[_i,:,:] = np.absolute(depths_std[_i,:,:] - depths[_i,np.newaxis,:])  # relative depth
             if fit:
                 try:
-                    (A, B), _ = curve_fit(fit_fun, self.par['wv'], op_ave[_i,:,1], p0=[100,1],
-                                          method='trf', loss='soft_l1', max_nfev=2000)
-                    op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
+                    if fit == 'single':
+                        (A, B), _ = curve_fit(fit_fun, self.par['wv'], op_ave[_i,:,1], p0=[100,1],
+                                              method='trf', loss='soft_l1', max_nfev=2000)
+                        op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
+                    elif fit == 'double':
+                        (A1, B1), _ = curve_fit(fit_fun, self.par['wv'][:3], op_ave[_i,:3,1], p0=[100,1],
+                                              method='trf', loss='soft_l1', max_nfev=2000)
+                        (A2, B2), _ = curve_fit(fit_fun, self.par['wv'][3:], op_ave[_i,3:,1], p0=[100,1],
+                                              method='trf', loss='soft_l1', max_nfev=2000)
+                        # print('{},{}, {},{}'.format(A1,B1,A2,B2))  # DEBUG
+                        op_fit_double[_i,:,0] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A1, B1)
+                        op_fit_double[_i,:,1] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A2, B2)
                 except RuntimeError:
                     continue
             if norm is not None:  # Normalize to reference wv
@@ -213,18 +228,33 @@ class dataDict(dict):
                 if fit:
                     op_fit[_i,:] /= op_fit[_i, norm]
         # Here plot the data points
-        fig, ax = plt.subplots(num=300, nrows=1, ncols=3, figsize=(12, 4))
+        fig, ax = plt.subplots(num=300, nrows=1, ncols=3, figsize=(15, 4))
         if fit:
-            for _j in range(len(f_used)):
-                _i = f_used[_j]  # variable change, just for simplicity
-                ax[0].errorbar(self.par['wv'], op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
-                               linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))
-                ax[1].errorbar(self.par['wv'], op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='none',
-                               capsize=5, label=fx[_i], color='C{}'.format(_j))
-                ax[1].plot(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), op_fit[_i,:], linestyle='-',
-                           linewidth=2, color='C{}'.format(_j))
-                ax[2].plot(self.par['wv'], depths[_i], 'o', linestyle='-', color='C{}'.format(_j),
-                           label=fx[_i])
+            if fit == 'single':
+                for _j in range(len(f_used)):
+                    _i = f_used[_j]  # variable change, just for simplicity
+                    ax[0].errorbar(self.par['wv'], op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
+                                   linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))
+                    ax[1].errorbar(self.par['wv'], op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='none',
+                                   capsize=5, label=fx[_i], color='C{}'.format(_j))
+                    ax[1].plot(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), op_fit[_i,:], linestyle='-',
+                               linewidth=2, color='C{}'.format(_j))
+                    ax[2].errorbar(self.par['wv'], depths[_i], fmt='o', yerr=depths_std[_i,:,:], linestyle='-',
+                                   linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j)) 
+            elif fit == 'double':
+                for _j in range(len(f_used)):
+                    _i = f_used[_j]  # variable change, just for simplicity
+                    ax[0].errorbar(self.par['wv'], op_ave[_i,:,0],fmt='o', yerr=op_std[_i,:,0], linestyle='-',
+                                   linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))
+                    ax[1].errorbar(self.par['wv'], op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='none',
+                                   capsize=5, label=fx[_i], color='C{}'.format(_j))
+                    ax[1].plot(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), op_fit_double[_i,:,0], linestyle='--',
+                               linewidth=2, color='C{}'.format(_j))
+                    ax[1].plot(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), op_fit_double[_i,:,1], linestyle=':',
+                               linewidth=2, color='C{}'.format(_j))
+                    
+                    ax[2].errorbar(self.par['wv'], depths[_i], fmt='o', yerr=depths_std[_i,:,:], linestyle='-',
+                                   linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j)) 
         else:
             for _j in range(len(f_used)):
                 _i = f_used[_j]
@@ -232,8 +262,8 @@ class dataDict(dict):
                                linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))
                 ax[1].errorbar(self.par['wv'], op_ave[_i,:,1],fmt='o', yerr=op_std[_i,:,1], linestyle='-',
                                linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))
-                ax[2].plot(self.par['wv'], depths[_i], 'o', linestyle='-', color='C{}'.format(_j),
-                           label=fx[_i])
+                ax[2].errorbar(self.par['wv'], depths[_i], fmt='o', yerr=depths_std[_i,:,:], linestyle='-',
+                               linewidth=2, capsize=5, label=fx[_i], color='C{}'.format(_j))     
         ax[0].grid(True, linestyle=':')
         ax[0].set_xlabel('nm')
         ax[0].set_ylabel(r'mm$^{-1}$')
@@ -249,10 +279,11 @@ class dataDict(dict):
         ax[2].set_ylabel('mm')
         ax[2].set_title("penetration depth")
         ax[2].legend(loc=0)
+        ax[2].set_ylim([0, None])
         cmap = cm.get_cmap('magma')
         cmap.set_bad(color='cyan')
         plt.tight_layout()
-        return op_ave, op_std
+        return op_ave, op_std, depths
         
     def mask_on(self):
         for dataset in self:
@@ -278,6 +309,6 @@ class dataDict(dict):
     - fx: average fx in range"""
         mut = mua + mus
         mueff = np.sqrt(np.abs(3 * mua * mut))
-        mueff1 = np.sqrt(mueff**2 + fx**2)
+        mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx)**2)
         d = 1/mueff1
         return d

@@ -11,6 +11,7 @@ compare the variation at different fx
 import os, sys, re
 import datetime
 import pickle
+import json
 import numpy as np
 from scipy.io import loadmat  # new standard: work with Matlab files for compatibility
 from scipy.optimize import curve_fit
@@ -32,9 +33,23 @@ def load_obj(name, path):
     
 
 def fit_fun(lamb, a, b):
-    """Exponential function to fit data to"""
+    """Power law function to fit data to"""
     return a * np.power(lamb, -b)
 
+
+def get_par(path):
+    param = {}
+    with open(path, 'r') as f:
+        for line in f.readlines():
+            if line.startswith('#') or len(line.strip()) == 0:
+                pass
+            else:
+                key, item = line.split('=')
+                if item.strip().startswith('['):
+                    end = item.index(']')
+                    item = item[:end+1]
+                param[key.strip()] = json.loads(item)
+        return param
 
 #%%
 
@@ -42,15 +57,18 @@ wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm). Import from params?
 regex = re.compile('.*f\d\.mat')  # regular expression for optical properties
 regex2 = re.compile('.*calR.mat')  # regular expression for calibrated reflectance
 data_path = getPath('Select data path')
+param = get_par('{}/README.txt'.format(data_path))
+
 
 # If the dataset has already been processed, load it
 if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
     data = load_obj('dataset', data_path)
+    data.par = param
 # If you need to process / modify it. NOTE: the old set will be overwritten
 else:
     files = [x for x in os.listdir(data_path) if re.match(regex, x)]
     datasets = set(x.split('_')[1] for x in files)  # sets have unique values
-    data = dataDict()
+    data = dataDict(param)
     # load the data into a custom dictionary
     start = datetime.datetime.now()  # calculate execution time
     for _d, dataset in enumerate(datasets, start=1):
