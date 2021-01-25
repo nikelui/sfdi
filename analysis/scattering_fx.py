@@ -11,6 +11,7 @@ compare the variation at different fx
 import os, sys, re
 import datetime
 import pickle
+import json
 import numpy as np
 from scipy.io import loadmat  # new standard: work with Matlab files for compatibility
 from scipy.optimize import curve_fit
@@ -36,12 +37,27 @@ def fit_fun(lamb, a, b):
     return a * np.power(lamb, -b)
 
 
+def read_param(fpath):
+    params = {}
+    with open(fpath, 'r') as file:
+        for line in file.readlines():
+            if line.startswith('#') or len(line.strip()) == 0:  # ignore comments and newlines
+                pass
+            else:
+                key, item = (x.strip() for x in line.split('='))
+                if item.startswith('['):
+                    end = item.find(']')
+                    item = json.loads(item[:end+1])
+                params[key] = item
+    return params
+
 #%%
 
 wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm). Import from params?
 regex = re.compile('.*f\d\.mat')  # regular expression for optical properties
 regex2 = re.compile('.*calR.mat')  # regular expression for calibrated reflectance
 data_path = getPath('Select data path')
+par = read_param('{}/README.txt'.format(data_path))  # optional
 
 # If the dataset has already been processed, load it
 if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
@@ -50,7 +66,7 @@ if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)
 else:
     files = [x for x in os.listdir(data_path) if re.match(regex, x)]
     datasets = set(x.split('_')[1] for x in files)  # sets have unique values
-    data = dataDict()
+    data = dataDict(parameters=par)
     # load the data into a custom dictionary
     start = datetime.datetime.now()  # calculate execution time
     for _d, dataset in enumerate(datasets, start=1):
