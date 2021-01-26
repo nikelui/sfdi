@@ -209,15 +209,16 @@ class dataDict(dict):
             if fit:
                 try:
                     if fit == 'single':
-                        (A, B), _ = curve_fit(fit_fun, self.par['wv'], op_ave[_i,:,1], p0=[100,1],
+                        (A, B), _ = curve_fit(fit_fun, self.par['wv'][:], op_ave[_i,:,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
                         op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
+                        print('{}\nA: {:.2f}, B: {:.4f}'.format(fx[_i], A, B))  # DEBUG
                     elif fit == 'double':
                         (A1, B1), _ = curve_fit(fit_fun, self.par['wv'][:3], op_ave[_i,:3,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
                         (A2, B2), _ = curve_fit(fit_fun, self.par['wv'][3:], op_ave[_i,3:,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
-                        # print('{},{}, {},{}'.format(A1,B1,A2,B2))  # DEBUG
+                        print('{}\nA1: {:.2f}, A2: {:.2f}\nB1: {:.4f}, B2: {:.4f}'.format(fx[_i], A1, A2, B1, B2))  # DEBUG
                         op_fit_double[_i,:,0] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A1, B1)
                         op_fit_double[_i,:,1] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A2, B2)
                 except RuntimeError:
@@ -225,8 +226,11 @@ class dataDict(dict):
             if norm is not None:  # Normalize to reference wv
                 op_ave[_i, :, 1] /= op_ave[_i, norm, 1]
                 op_std[_i, :, 1] /= op_ave[_i, norm, 1]
-                if fit:
+                if fit == 'single':
                     op_fit[_i,:] /= op_fit[_i, norm]
+                elif fit =='double':
+                    op_fit_double[_i,:,0] /= op_fit_double[_i,norm,0]
+                    op_fit_double[_i,:,1] /= op_fit_double[_i,norm,1]
         # Here plot the data points
         fig, ax = plt.subplots(num=300, nrows=1, ncols=3, figsize=(15, 4))
         if fit:
