@@ -51,6 +51,7 @@ from sfdi.common.stackPlot import stackPlot
 from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
+import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def colourbar(mappable, **kwargs):
@@ -140,17 +141,17 @@ class dataDict(dict):
         f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
         column = self[key]['f0']['par_map'].shape[-1]
         row = len(f_used)
-        fig, ax = plt.subplots(num=200, nrows=row, ncols=column, figsize=(column*3, row*2))
+        fig, ax = plt.subplots(num=300, nrows=row, ncols=column, figsize=(column*3, row*2))
         fx = list(self[key].keys())
         for _i in range(len(self[key])):
             first_column = True
             if _i in f_used:
                 _k = f_used.index(_i)  # change variable for simplicity
                 par = self[key][fx[_i]]['par_map']
-                im = ax[_k, 0].imshow(par[:,:,0], cmap='seismic',
-                                      norm=colors.LogNorm(vmin=1e-5, vmax=1e4))
+                im = ax[_k, 0].imshow(par[:,:,0], cmap='magma',
+                                      norm=colors.LogNorm(vmin=1e-4, vmax=1e5))
                 colourbar(im)
-                im = ax[_k, 1].imshow(par[:,:,1], cmap='seismic', vmin=-5, vmax=5)
+                im = ax[_k, 1].imshow(par[:,:,1], cmap='viridis', vmin=0, vmax=2)
                 colourbar(im)
                 ax[_k, 0].axes.xaxis.set_ticks([])
                 ax[_k, 0].axes.yaxis.set_ticks([])
@@ -182,7 +183,7 @@ class dataDict(dict):
         fit = kwargs.pop('fit', None)  # wether to plot the raw data or the fitted one
         f_used = kwargs.pop('f', list(range(len(self[key]))))  # Default: use all frequencies
         f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
-        im = self[key]['f0']['op_fit_maps'][:,:,0,0]  # reference image
+        im = self[key]['f0']['op_fit_maps'][:,:,2,0]*10  # reference image
         cv.namedWindow('select ROI', cv.WINDOW_NORMAL)
         cv.resizeWindow('select ROI', im.shape[1]*zoom, im.shape[0]*zoom)
         ROI = cv.selectROI('select ROI', im)
@@ -198,6 +199,7 @@ class dataDict(dict):
                           dtype=float)
         depths_std = np.zeros((len(self[key]), 2, self[key]['f0']['op_fit_maps'].shape[2]),
                           dtype=float)
+        depth_phi = np.zeros((len(self[key])), dtype=float)
         fx = list(self[key].keys())  # list of fx ranges
         for _i in range(len(self[key])):
             op_ave[_i, :, :] = np.nanmean(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
@@ -206,19 +208,29 @@ class dataDict(dict):
             depths_std[_i,0,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], self.par[fx[_i]][-1])
             depths_std[_i,1,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], self.par[fx[_i]][0])
             depths_std[_i,:,:] = np.absolute(depths_std[_i,:,:] - depths[_i,np.newaxis,:])  # relative depth
+            
+            z = np.arange(0, 4, 0.001)  # 1um resolution
+            phi = np.mean(self.phi(op_ave[_i,:3,0], op_ave[_i,:3,1], np.mean(self.par[fx[_i]]), z),
+                          axis=1)**2
+            idx = np.where(phi <= (np.max(phi)/ np.e))[0][0]  # where phi < (1/e * phi)
+            depth_phi[_i] = z[idx]
+            
             if fit:
                 try:
                     if fit == 'single':
-                        (A, B), _ = curve_fit(fit_fun, self.par['wv'][:], op_ave[_i,:,1], p0=[100,1],
+                        (A, B), _ = curve_fit(fit_fun, self.par['wv'][:3], op_ave[_i,:3,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
                         op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
-                        print('{}\nA: {:.2f}, B: {:.4f}'.format(fx[_i], A, B))  # DEBUG
+                        # import pdb; pdb.set_trace()  # DEBUG start
+                        print('{}\nA: {:.2f}, B: {:.4f}\nd: {:.4f}, df: {:.3f}'.format(
+                                    fx[_i], A, B, np.mean(depths[_i,:3])/2, depth_phi[_i]))  # DEBUG
                     elif fit == 'double':
                         (A1, B1), _ = curve_fit(fit_fun, self.par['wv'][:3], op_ave[_i,:3,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
                         (A2, B2), _ = curve_fit(fit_fun, self.par['wv'][3:], op_ave[_i,3:,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
-                        print('{}\nA1: {:.2f}, A2: {:.2f}\nB1: {:.4f}, B2: {:.4f}'.format(fx[_i], A1, A2, B1, B2))  # DEBUG
+                        print('{}\nA1: {:.2f}, A2: {:.2f}\nB1: {:.4f}, B2: {:.4f}'.format(
+                            fx[_i], A1, A2, B1, B2))  # DEBUG
                         op_fit_double[_i,:,0] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A1, B1)
                         op_fit_double[_i,:,1] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A2, B2)
                 except RuntimeError:
@@ -232,7 +244,7 @@ class dataDict(dict):
                     op_fit_double[_i,:,0] /= op_fit_double[_i,norm,0]
                     op_fit_double[_i,:,1] /= op_fit_double[_i,norm,1]
         # Here plot the data points
-        fig, ax = plt.subplots(num=300, nrows=1, ncols=3, figsize=(15, 4))
+        fig, ax = plt.subplots(num=500, nrows=1, ncols=3, figsize=(15, 4))
         if fit:
             if fit == 'single':
                 for _j in range(len(f_used)):
@@ -288,7 +300,52 @@ class dataDict(dict):
         cmap.set_bad(color='cyan')
         plt.tight_layout()
         return op_ave, op_std, depths
+    
+    def multiROI(self, key, **kwargs):
+        zoom = kwargs.pop('zoom', 3)  # defaults to 3
+        what = kwargs.pop('what', 'mus')
+        wv = kwargs.pop('wv', 2)
+        f_used = kwargs.pop('f', list(range(len(self[key]))))  # Default: use all frequencies
+        f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
+        im = self[key]['f0']['op_fit_maps'][:,:,0,0]  # reference image
+        cv.namedWindow('select ROI', cv.WINDOW_NORMAL)
+        cv.resizeWindow('select ROI', im.shape[1]*zoom, im.shape[0]*zoom)
+        ROI = cv.selectROIs('select ROI', im)
+        cv.destroyAllWindows()
         
+        fx = list(self[key].keys())  # list of fx ranges
+        fig, ax = plt.subplots(num=600, nrows=2, ncols=len(f_used), figsize=(15, 6))
+        rect_colors = ['cyan', 'lime', 'blue']
+        for _i in range(len(f_used)):
+            _j = f_used[_i]  # for convenience
+            if what == 'mus':
+                im = ax[0,_i].imshow(self[key][fx[_j]]['op_fit_maps'][:,:,wv,1],
+                                     vmin=0.5, vmax=3, cmap='magma')
+                cb = colourbar(im)
+                for _r, roi in enumerate(ROI):
+                    rect = patches.Rectangle((roi[0], roi[1]), roi[2], roi[3], linewidth=1,
+                                             facecolor='none', edgecolor=rect_colors[_r])
+                    ax[0,_i].add_patch(rect)
+                    ax[1,_i].plot(self.wv, np.mean(crop(self[key][fx[_j]]['op_fit_maps'][:,:,:,1], roi), axis=(0,1)),
+                                  '-d', linewidth=1.5, color=rect_colors[_r])
+                ax[0,_i].axis('off')
+                ax[1,_i].grid(True, linestyle=':')
+                ax[1,_i].set_ylim([1.5, 2.7])
+        plt.tight_layout()
+            
+            # elif what == 'par':
+            #     im = ax[0,_i].imshow(self[key][fx[_j]]['par_map'][:,:,1], vmax=2)
+            #     cb = colourbar(im)
+            #     for _r, roi in enumerate(ROI):
+            #         rect = patches.Rectangle((roi[0], roi[1]), roi[2], roi[3], linewidth=1.5,
+            #                                  facecolor='none', edgecolor=rect_colors[_r])
+            #         ax[0,_i].add_patch(rect)
+            #         ax[1,_i].plot(self.wv, np.mean(crop(self[key][fx[_j]]['par_map'][:,:,1], roi), axis=(0,1)),
+            #                       'd', linewidth=1.5, color=rect_colors[_r])
+            #     ax[0,_i].grid(True, linestyle=':')
+            #     ax[1,_i].grid(True, linestyle=':')
+            
+    
     def mask_on(self):
         for dataset in self:
             for fx in self[dataset]:
@@ -316,3 +373,21 @@ class dataDict(dict):
         mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx)**2)
         d = 1/mueff1
         return d
+    
+    def phi(self, mua, mus, fx, z):
+        """Function to calculate effective penetration depth from the fluence formula as 1/e
+    - mua, mus: vectors (1 x wv)
+    - fx: average fx in range
+    - z: depth (array 1 x N)"""
+        mut = mua + mus
+        mueff = np.sqrt(np.abs(3 * mua * mut))
+        mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx)**2)
+        a1 = mus / mut  # albedo
+        # effective reflection coefficient. Assume n = 1.4
+        Reff = 0.0636*1.4 + 0.668 + 0.71/1.4 - 1.44/1.4**2
+        A = (1 - Reff)/(2*(1 + Reff))  # coefficient
+        C = (-3*a1*(1 + 3*A))/((mueff1**2/mut**2 - 1) * (mueff1/mut + 3*A))
+        phi = 3*a1 / (mueff1**2 / mut**2 - 1) * np.exp(-mut[np.newaxis,:] * z[:,np.newaxis]) +\
+              C * np.exp(-mueff1[np.newaxis,:] * z[:,np.newaxis])        
+        return phi
+        
