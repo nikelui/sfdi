@@ -200,6 +200,8 @@ class dataDict(dict):
         depths_std = np.zeros((len(self[key]), 2, self[key]['f0']['op_fit_maps'].shape[2]),
                           dtype=float)
         depth_phi = np.zeros((len(self[key])), dtype=float)
+        par_ave = np.zeros((len(self[key]), 2), dtype=float)
+        
         fx = list(self[key].keys())  # list of fx ranges
         for _i in range(len(self[key])):
             op_ave[_i, :, :] = np.nanmean(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
@@ -220,6 +222,7 @@ class dataDict(dict):
                     if fit == 'single':
                         (A, B), _ = curve_fit(fit_fun, self.par['wv'][:3], op_ave[_i,:3,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
+                        par_ave[_i,:] = (A, B)
                         op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
                         # import pdb; pdb.set_trace()  # DEBUG start
                         print('{}\nA: {:.2f}, B: {:.4f}\nd: {:.4f}, df: {:.3f}'.format(
@@ -299,7 +302,10 @@ class dataDict(dict):
         cmap = cm.get_cmap('magma')
         cmap.set_bad(color='cyan')
         plt.tight_layout()
-        return op_ave, op_std, depths
+        
+        ret_value = {'op_ave': op_ave, 'op_std': op_std, 'depths': depths, 'depths_std': depths_std,
+                     'depth_phi': depth_phi, 'par_ave': par_ave}
+        return ret_value
     
     def multiROI(self, key, **kwargs):
         zoom = kwargs.pop('zoom', 3)  # defaults to 3
@@ -388,6 +394,6 @@ class dataDict(dict):
         A = (1 - Reff)/(2*(1 + Reff))  # coefficient
         C = (-3*a1*(1 + 3*A))/((mueff1**2/mut**2 - 1) * (mueff1/mut + 3*A))
         phi = 3*a1 / (mueff1**2 / mut**2 - 1) * np.exp(-mut[np.newaxis,:] * z[:,np.newaxis]) +\
-              C * np.exp(-mueff1[np.newaxis,:] * z[:,np.newaxis])        
+              C * np.exp(-mueff1[np.newaxis,:] * z[:,np.newaxis])    
         return phi
         
