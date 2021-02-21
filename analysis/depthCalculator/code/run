@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+matlab -nodisplay -nosplash -nosoftwareopengl -r "addpath(genpath('/code')); test_SFD_depth_calculator()"

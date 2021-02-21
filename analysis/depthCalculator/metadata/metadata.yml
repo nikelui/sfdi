@@ -1,0 +1,37 @@
+metadata_version: 1
+name: Spatial Frequency Domain (SFD) Depth Calculator
+description: "SFD_depth_calculator.m determines spatial frequency domain (SFD) penetration
+  depth estimates using a scaled lookup table.  The table is  populated with results
+  from Monte Carlo simulations at incremental mus&#39;/mua and spatial frequency (fx)
+  values. \n\nInputs:\nmus&#39; = reduced scattering coefficient [/mm] of the tissue
+  of interest\nmua  = absorption coefficient [/mm] of the tissue of interest\nfxs
+  \ = spatial frequencies of interest\n\nOutputs:\ndepths = 2D matrix of penetration
+  depth estimates, size [5, length(fxs)]\n         where first index is X (definition
+  below) with values [10 25 50 75 90]\n\nThe penetration depth estimates are determined
+  by calculating the maximum visitation depths of detected photons.  This forms a
+  function P_zmax that when integrated with respect to z to a depth d produces \n
+  \ P_zmax(z&lt;=d) = int_0^d P_zmax(z)dz.\nIf d=positive infinity, then the integration
+  results in total diffuse reflectance, Rd.  Division of P_zmax by Rd\n  X = P_zmax(z&lt;=d)
+  / Rd\nprovides the fraction (X) of the detected light that visited tissue depths
+  d or less. Details are in accompanying manuscript."
+tags:
+- spatial-frequency-domain-biomedical-optics
+authors:
+- name: Carole K. Hayakawa
+  affiliations:
+  - name: University of California, Irvine
+- name: Kavon Karrobi
+  affiliations:
+  - name: Boston University
+- name: Vivian Pera
+  affiliations:
+  - name: Boston University
+- name: Darren Roblyer
+  affiliations:
+  - name: Boston University
+- name: Vasan Venugopalan
+  affiliations:
+  - name: University of California, Irvine
+corresponding_contributor:
+  name: Carole Hayakawa
+  email: hayakawa@uci.edu

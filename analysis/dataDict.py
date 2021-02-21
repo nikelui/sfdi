@@ -125,7 +125,7 @@ class dataDict(dict):
                 
                 # import pdb; pdb.set_trace()
                 
-                im = ax[_k, _j].imshow(mus, cmap='magma', vmin=vmin, vmax=vmax)
+                im = ax[_k, _j].imshow(mus, cmap='viridis', vmin=vmin, vmax=vmax)
                 colourbar(im)
                 ax[_k, _j].axes.xaxis.set_ticks([])
                 ax[_k, _j].axes.yaxis.set_ticks([])

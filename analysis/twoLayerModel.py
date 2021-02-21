@@ -51,11 +51,13 @@ data_path = getPath('select data path')
 par = read_param('{}/README.txt'.format(data_path))  # optional
 data = load_obj('dataset', data_path)
 data.par = par
-ret = data.singleROI('K1', fit='single')
+ret = data.singleROI('CTL2', fit='single')
 
 #%% Least square fit
-d = np.mean(ret['depths'], axis=1)  # delta/2
+d = np.mean(ret['depths'], axis=1)/2  # delta/2
 d2 = ret['depth_phi']**2  # 1/e * phi
 bm = ret['par_ave'][:,1]
-opt = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'li': d2[1:], 'bm': bm[1:]},
-                    bounds=[0, np.inf], method='trf')
+opt = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'li': d[1:], 'bm': bm[1:]},
+                    bounds=[-np.inf, np.inf], method='trf')
+opt2 = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'li': d2[1:], 'bm': bm[1:]},
+                    bounds=[-np.inf, np.inf], method='trf')
