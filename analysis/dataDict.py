@@ -53,6 +53,7 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from depthMC import depthMC
 
 def colourbar(mappable, **kwargs):
     """Improved colorbar function. Fits well to the axis dimension."""
@@ -184,6 +185,7 @@ class dataDict(dict):
         f_used = kwargs.pop('f', list(range(len(self[key]))))  # Default: use all frequencies
         f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
         im = self[key]['f0']['op_fit_maps'][:,:,2,0]*10  # reference image
+        z = np.arange(0, 4, 0.001)  # 1um resolution
         cv.namedWindow('select ROI', cv.WINDOW_NORMAL)
         cv.resizeWindow('select ROI', im.shape[1]*zoom, im.shape[0]*zoom)
         ROI = cv.selectROI('select ROI', im)
@@ -196,27 +198,41 @@ class dataDict(dict):
         op_fit = np.zeros((len(self[key]), 100), dtype=float)
         op_fit_double = np.zeros((len(self[key]), 100, 2), dtype=float)
         depths = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2]),
-                          dtype=float)
+                          dtype=float)  # depth based on diffusion approx.
         depths_std = np.zeros((len(self[key]), 2, self[key]['f0']['op_fit_maps'].shape[2]),
                           dtype=float)
-        depth_phi = np.zeros((len(self[key])), dtype=float)
+        depth_phi = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2]),
+                            dtype=float)  # depth based on phi^2
+        depth_MC = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2]),
+                            dtype=float)  # depth based on Monte Carlo
+        fluence = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2],
+                            len(z)), dtype=float)
         par_ave = np.zeros((len(self[key]), 2), dtype=float)
         
         fx = list(self[key].keys())  # list of fx ranges
+
         for _i in range(len(self[key])):
+            # mean and std of mua, mus over ROI
             op_ave[_i, :, :] = np.nanmean(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
             op_std[_i, :, :] = np.nanstd(crop(self[key][fx[_i]]['op_fit_maps'], ROI), axis=(0,1))
+            #  depths calculated with diffusion approximation
             depths[_i,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[fx[_i]]))
             depths_std[_i,0,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], self.par[fx[_i]][-1])
             depths_std[_i,1,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], self.par[fx[_i]][0])
             depths_std[_i,:,:] = np.absolute(depths_std[_i,:,:] - depths[_i,np.newaxis,:])  # relative depth
-            
-            z = np.arange(0, 4, 0.001)  # 1um resolution
-            phi = np.mean(self.phi(op_ave[_i,:3,0], op_ave[_i,:3,1], np.mean(self.par[fx[_i]]), z),
-                          axis=1)**2
-            idx = np.where(phi <= (np.max(phi)/ np.e))[0][0]  # where phi < (1/e * phi)
-            depth_phi[_i] = z[idx]
-            
+            # import pdb; pdb.set_trace()
+            # fluence, from diffusion approximation
+            phi = self.phi(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[fx[_i]]), z)
+            fluence[_i,:,:] = phi.T
+            # calculate depth from fluence^2
+            for _j, line in enumerate(phi.T):
+                # import pdb; pdb.set_trace()
+                idx = np.argwhere(line**2 <= np.max(line**2)/np.e)[0][0]
+                depth_phi[_i, _j] = z[idx]  # where phi < (1/e * phi)
+            # calculate depth based on Monte Carlo table
+            temp = depthMC(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[fx[_i]]))
+            depth_MC[_i, :] = temp[3,:,:]  # index '3'-> assumes 75% of photons
+
             if fit:
                 try:
                     if fit == 'single':
@@ -304,7 +320,7 @@ class dataDict(dict):
         plt.tight_layout()
         
         ret_value = {'op_ave': op_ave, 'op_std': op_std, 'depths': depths, 'depths_std': depths_std,
-                     'depth_phi': depth_phi, 'par_ave': par_ave}
+                     'depth_phi': depth_phi, 'par_ave': par_ave, 'fluence':fluence, 'depth_MC':depth_MC}
         return ret_value
     
     def multiROI(self, key, **kwargs):
