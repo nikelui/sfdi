@@ -18,7 +18,7 @@ def saveFunc(nFreq,nPhase,nchannels,curr_path,name,dataMat):
     for i in range(nchannels*3):
         for j in range(nFreq+1):
             for k in range(nPhase):
-                cv.imwrite(curr_path + '/' + name + '_%d%d%d.bmp' % (i,j,k),\
+                cv.imwrite(curr_path + '/' + name + '_%d-%d-%d.bmp' % (i,j,k),\
                            dataMat[:,:,k + (nPhase*j) + i*(nPhase*(nFreq+1))].astype('uint8'))
     print("Pictures saved to: %s\n" % curr_path)
     

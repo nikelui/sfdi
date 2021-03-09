@@ -28,8 +28,8 @@ prompt: optional string for file dialog
         dirs = [x for x in os.listdir(path) if os.path.isdir(path+'/'+x)] # list of directories
         #toProcess = []
         # you can also define the names here manually
-        #toProcess = ['_testhannabase2_','_testhannaocclusion_','_testhannarelease_']
-        toProcess = ['1602827129', '1602827266', '1602827398', '1602827532', '1602827667']
+        toProcess = ['1602827129', '1602827187', '1602827266', '1602827325', '1602827398',
+                     '1602827460', '1602827532', '1602827593', '1602827667', '1602827736']
         
         if(len(toProcess)==0): # In case you define by hand
             regex = input('Input base name to match: ').lower() # only process matching directories
@@ -51,7 +51,11 @@ prompt: optional string for file dialog
             intT = float(name.split('_')[-1][:-2]) # exposure time
             
             files = [x for x in os.listdir(path+'/'+name) if '.bmp' in x]
-            files.sort() # This assumes the correct naming convention is used
+            try:  # Old naming convention -> xxx_000.bmp
+                _ = int(files[0].split('_')[-1][:-4])  
+                files.sort()
+            except ValueError:  # New naming convention -> xxx_0-0-0.bmp
+                files.sort(key=lambda x: list(map(int, x.split('_')[-1][:-4].split('-'))))
             
             # initialize 3 phase AC data structure
             temp = np.zeros((par['ylength'],par['xlength'],par['nphase']),dtype='float') # To read each 3-phase image

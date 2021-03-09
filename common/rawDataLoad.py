@@ -32,7 +32,11 @@ batch: flag to pass if run in batch mode (e.g. from startBatch)
         sys.exit()
     
     files = [x for x in os.listdir(path) if '.bmp' in x]
-    files.sort() # This assumes the correct naming convention is used
+    try:  # Old naming convention -> xxx_000.bmp
+        _ = int(files[0].split('_')[-1][:-4])  
+        files.sort()
+    except ValueError:  # New naming convention -> xxx_0-0-0.bmp
+        files.sort(key=lambda x: list(map(int, x.split('_')[-1][:-4].split('-')))) 
     
     # initialize 3 phase AC data structure
     temp = np.zeros((par['ylength'], par['xlength'], par['nphase']), dtype='float')  # To read each n-phase image

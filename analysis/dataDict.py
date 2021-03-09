@@ -220,7 +220,6 @@ class dataDict(dict):
             depths_std[_i,0,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], self.par[fx[_i]][-1])
             depths_std[_i,1,:] = self.depth(op_ave[_i,:,0], op_ave[_i,:,1], self.par[fx[_i]][0])
             depths_std[_i,:,:] = np.absolute(depths_std[_i,:,:] - depths[_i,np.newaxis,:])  # relative depth
-            # import pdb; pdb.set_trace()
             # fluence, from diffusion approximation
             phi = self.phi(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[fx[_i]]), z)
             fluence[_i,:,:] = phi.T
@@ -231,7 +230,7 @@ class dataDict(dict):
                 depth_phi[_i, _j] = z[idx]  # where phi < (1/e * phi)
             # calculate depth based on Monte Carlo table
             temp = depthMC(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[fx[_i]]))
-            depth_MC[_i, :] = temp[3,:,:]  # index '3'-> assumes 75% of photons
+            depth_MC[_i, :] = temp[4,:,:]  # index '3'-> assumes 75% of photons
 
             if fit:
                 try:
@@ -242,7 +241,8 @@ class dataDict(dict):
                         op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
                         # import pdb; pdb.set_trace()  # DEBUG start
                         print('{}\nA: {:.2f}, B: {:.4f}\nd: {:.4f}, df: {:.3f}'.format(
-                                    fx[_i], A, B, np.mean(depths[_i,:3])/2, depth_phi[_i]))  # DEBUG
+                                    fx[_i], A, B, np.mean(depths[_i,:3]), np.mean(depth_phi[_i,:3])) +
+                                    ', dmc: {:.4f}'.format(np.mean(depth_MC[_i,:3])))  # DEBUG
                     elif fit == 'double':
                         (A1, B1), _ = curve_fit(fit_fun, self.par['wv'][:3], op_ave[_i,:3,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
