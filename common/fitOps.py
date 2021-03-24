@@ -80,7 +80,7 @@ def fitOps(cal_R,par,model='mc'):
     
     start = time.time()
     for i,w in enumerate(np.array(par['wv'])[par['wv_used']]):
-        print('processing wavelength: %dnm' % w)
+        print('processing wavelength: {}nm'.format(w))
         
         for j in range(cal_Rbin.shape[0]): # loop over rows
             for k in range(cal_Rbin.shape[1]): # loop over columns
@@ -94,7 +94,7 @@ def fitOps(cal_R,par,model='mc'):
                 #res.append(temp)
         
         end = time.time()
-        print('Elapsed time: %.1fs' % (end-start))
+        print('Elapsed time: {:.1f}s'.format(end-start))
         start = end
     return op_fit_maps#,res
 

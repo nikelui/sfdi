@@ -44,8 +44,9 @@ AC,names,tstamps = rawDataLoadBatch(par, 'Select tissue') # This approach is a b
 
 # Calibration step
 cal_R = []
+print('Calibrating...')
 for ac in AC:
-    ac = motionCorrect(ac, par)  # correct motion artifacts in raw data
+    ac = motionCorrect(ac, par, edge='sobel', con=2, gauss=(7,5), debug=False)  # correct motion artifacts in raw data
     c_R = calibrate(ac,ACph,par)
 
     ### True here to mask background
@@ -57,6 +58,7 @@ for ac in AC:
         c_R = np.ma.array(c_R, mask=MASK)
     
     cal_R.append(c_R)
+print('Calibration done.')
 
 #stackPlot(cal_R[0],'magma') # Maybe show all? Or none
 
@@ -69,41 +71,14 @@ cv.destroyWindow('Select ROI')
 ## Fitting for optical properties
 # TODO: this part is pretty computationally intensive, might be worth to optimize
 # Loop through different spatial frequencies
-FX = ([0,1,2,3], [3,4,5,6], [5,6,7,8])
-for _f,fx in enumerate(FX):
-    par['freq_used'] = fx
-    op_fit_maps = []
-    for cal in cal_R:
-        op_fit_maps.append(fitOps(crop(cal,ROI),par))
-    
-    if (len(par['chrom_used'])>0):
-        chrom_map = []
-        for op in op_fit_maps:
-            chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
-
-#    op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True,roi=False)
-#    op_fit_maps[0],opt_ave,opt_std,radio = oss(crop(cal_R[0][:,:,0,0],ROI), op_fit_maps[0],par,outliers=False)
-
-    print('Saving data...')
-    # check if path exists and create it
-    if not os.path.exists(par['savefile']):
-        os.mkdir(par['savefile'])
-        
-    for _i,name in enumerate(names):  # save individual files
-        if _f == 0:  # need to save only once
-            if 'numpy' in par['savefmt']:
-                np.savez('{}{}_calR'.format(par['savefile'], name), cal_R=cal_R[_i], ROI=ROI)
-            if 'matlab' in par['savefmt']:
-                savemat('{}{}_calR'.format(par['savefile'], name), {'cal_R':cal_R[_i], 'ROI':ROI})
-        if 'numpy' in par['savefmt']:
-            np.savez('{}{}_f{}'.format(par['savefile'], name, _f), op_fit_maps=op_fit_maps[_i].data)
-        if 'matlab' in par['savefmt']:
-            savemat('{}{}_f{}'.format(par['savefile'], name, _f), {'op_fit_maps':op_fit_maps[_i].data})
-        if len(par['savefmt']) > 0:
-            print('{} saved'.format(name))
-    print('Done!')
+#FX = ([0,1,2,3], [3,4,5,6], [5,6,7,8])
+FX = list(list(range(_i, _i+4)) for _i in range(len(par['freqs']) - 3))
 
 # Save processing parameters on file
+# check if path exists and create it
+if not os.path.exists(par['savefile']):
+    os.mkdir(par['savefile'])
+
 params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
           'binsize': par['binsize'],  # pixel binning
           'ROI': ROI,  # processed ROI
@@ -116,6 +91,38 @@ for _f, fx in enumerate(FX):
     to_write.append('f{} -> {}mm^-1\n'.format(_f, params['f{}'.format(_f)]))
 with open('{}processing_parameters.txt'.format(par['savefile']), 'w') as par_file:
     print('\n'.join(to_write), file=par_file)
+print('Parameters saved to file {}processing_parameters.txt'.format(par['savefile']))
+
+# loop through frequencies sub-sets and fit
+for _f,fx in enumerate(FX):
+    print('\nFrequency set {} of {}'.format(_f+1, len(FX)))
+    par['freq_used'] = fx
+    op_fit_maps = []
+    for _c, cal in enumerate(cal_R):
+        print('Dataset {} of {}'.format(_c+1, len(cal)))
+        op_fit_maps.append(fitOps(crop(cal,ROI),par))
+    
+    if (len(par['chrom_used'])>0):
+        chrom_map = []
+        for op in op_fit_maps:
+            chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
+
+#    op_ave,op_std = opticalSpectra(op_fit_maps,par,names,outliers=True,roi=False)
+#    op_fit_maps[0],opt_ave,opt_std,radio = oss(crop(cal_R[0][:,:,0,0],ROI), op_fit_maps[0],par,outliers=False)
+        
+    for _i,name in enumerate(names):  # save individual files
+        if _f == 0:  # need to save cal_R only once
+            if 'numpy' in par['savefmt']:
+                np.savez('{}{}_calR'.format(par['savefile'], name), cal_R=cal_R[_i], ROI=ROI)
+            if 'matlab' in par['savefmt']:
+                savemat('{}{}_calR'.format(par['savefile'], name), {'cal_R':cal_R[_i], 'ROI':ROI})
+        if 'numpy' in par['savefmt']:
+            np.savez('{}{}_f{}'.format(par['savefile'], name, _f), op_fit_maps=op_fit_maps[_i].data)
+        if 'matlab' in par['savefmt']:
+            savemat('{}{}_f{}'.format(par['savefile'], name, _f), {'op_fit_maps':op_fit_maps[_i].data})
+        if len(par['savefmt']) > 0:
+            print('{} saved'.format(name))
+    print('Done!')
 
 
 if (len(par['chrom_used'])>0):
