@@ -35,11 +35,11 @@ if len(par['wv_used']) == 0: # use all wavelengths if empty
     par['wv_used'] = list(np.arange(len(par['wv'])))
 
 ## Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-AC,name = rawDataLoad(par, 'Select tissue data folder')
+AC,name,_ = rawDataLoad(par, 'Select tissue data folder')
 AC = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=True)
 
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-ACph,_ = rawDataLoad(par, 'Select calibration phantom data folder')
+ACph,_,_ = rawDataLoad(par, 'Select calibration phantom data folder')
 
 ## Calibration step
 cal_R = calibrate(AC, ACph, par)

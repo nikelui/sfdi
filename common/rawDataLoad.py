@@ -42,6 +42,8 @@ batch: flag to pass if run in batch mode (e.g. from startBatch)
     temp = np.zeros((par['ylength'], par['xlength'], par['nphase']), dtype='float')  # To read each n-phase image
     AC = np.zeros((int(par['ylength']), int(par['xlength']), len(par['wv']),
                    len(par['freqs'])), dtype='float')  #try to adopt this as standard data format
+    DC = np.zeros((int(par['ylength']), int(par['xlength']), len(par['wv']),
+                   len(par['freqs'])), dtype='float')  #try to adopt this as standard data format
     
     for i in range(len(par['wv'])):
         print('loading all frequencies for wavelength: {} nm'.format(par['wv'][i]))
@@ -58,12 +60,12 @@ batch: flag to pass if run in batch mode (e.g. from startBatch)
             temp = np.dstack((temp,temp[:,:,0])) # append the first element again at the end
             AC[:,:,i,j] = 1 * np.sqrt(np.sum(np.diff(temp,axis=2)**2,axis=2)) / intT
             ##TODO: XX is the correct normalization term (depends on nPhase?)
-            
+            DC[:,:,i,j] = np.mean(temp[:,:,:-1], axis=2)
             temp = np.zeros((par['ylength'], par['xlength'], par['nphase']), dtype='float') # Reset temp
-            #DC(:,:,i,j) = np.mean(temp,2);
+            # DC(:,:,i,j) = np.mean(temp,2)
             if par['ker'] > 1: # apply gaussian smoothing
                 AC[:,:,i,j] = cv.GaussianBlur(AC[:,:,i,j], (par['ker'], par['ker']), par['sig'])
-    return AC, path
+    return AC, path, DC
 
 
 if __name__ == '__main__':
