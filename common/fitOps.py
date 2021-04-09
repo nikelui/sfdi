@@ -7,7 +7,7 @@ email: luigi.belcastro@liu.se
 """
 
 import numpy as np
-import time
+from datetime import datetime
 from scipy.optimize import minimize
 from scipy.interpolate import interp1d
 
@@ -78,7 +78,7 @@ def fitOps(cal_R,par,model='mc'):
     op_fit_maps = np.zeros((cal_Rbin.shape[0],cal_Rbin.shape[1],cal_Rbin.shape[2],2),dtype=float)
     #res = [] # store results
     
-    start = time.time()
+    start = datetime.now()
     for i,w in enumerate(np.array(par['wv'])[par['wv_used']]):
         print('processing wavelength: {}nm'.format(w))
         
@@ -93,8 +93,8 @@ def fitOps(cal_R,par,model='mc'):
                 op_fit_maps[j,k,i,:] = temp.x
                 #res.append(temp)
         
-        end = time.time()
-        print('Elapsed time: {:.1f}s'.format(end-start))
+        end = datetime.now()
+        print('Elapsed time: {}'.format(str(end-start)))
         start = end
     return op_fit_maps#,res
 
