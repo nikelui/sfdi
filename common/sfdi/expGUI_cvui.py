@@ -7,9 +7,12 @@ Created on Mon Jun 24 13:51:14 2019
 import numpy as np
 import cv2 as cv
 import cvui
-import sys
-#sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
-import PyCapture2 as pc
+try:
+    import PyCapture2 as pc
+except ImportError:
+    import sys
+    sys.path.append('C:/PythonX/Lib/site-packages/')
+    import PyCapture2 as pc
 from sfdi.acquisitionRoutine2 import acquisitionRoutine
 
 class expGUI_cvui:
@@ -43,30 +46,16 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.wname = wname # name of the pattern window
         self.n_acq = 0 # counter, n. of acquisitions
         self.correction = correction # gamma correction array
-        
         # Since bool() does not work very well with strings
         if self.par['blueboost'] in ['False','false',0,'0','None','none','No','no','']:
             self.blueboost = False
         else:
             self.blueboost = True # Everything else is true
-        
         self.start()
 
     def set_exposure(self):
         """Control camera exposure."""
-        try:
-            self.cam.setProperty(type=pc.PROPERTY_TYPE.SHUTTER,absValue=self.exposure[0])
-        except pc.Fc2error as fc2Err:
-            print('Error setting exposure: %s' % fc2Err)
-#    def set_blue(self):
-#        corr = np.ceil(self.correction[int(self.Bb[0])])
-#        self.ref[self.rowb,:,0] = corr # BLUE stripe
-#    def set_green(self):
-#        corr = np.ceil(self.correction[int(self.Bg[0])])
-#        self.ref[self.rowg,:,1] = corr # GREEN stripe
-#    def set_red(self):
-#        corr = np.ceil(self.correction[int(self.Br[0])])
-#        self.ref[self.rowr,:,2] = corr # RED stripe
+        self.cam.setExposure(self.exposure[0])  # in ms
         
     def reference(self,xRes,yRes):
         """Use this function to control the brightness level of the three channels"""
@@ -94,20 +83,17 @@ syntax: gui = expGUI_cvui(cam,[window])
         cv.resizeWindow('histogram',512,300)
 
         ## Get info about exposure time
-        info = self.cam.getPropertyInfo(pc.PROPERTY_TYPE.SHUTTER)
+        expMin, expMax, tStep = self.cam.getExposureLim()
 		
         ## Set a limit to exposure to 500ms (to use when you disable fps)
-        if info.absMax > 500:
+        if expMax > 500:
             expMax = 500
             tstep = 0.5
-        else:
-            expMax = info.absMax
-            tstep = (info.absMax - info.absMin)/542
         
-        try:
-            self.cam.startCapture()
-        except pc.Fc2error as fc2Err:
-            print('Error starting capture: %s' % fc2Err)
+#        try:
+#            self.cam.startCapture()
+#        except pc.Fc2error as fc2Err:
+#            print('Error starting capture: %s' % fc2Err)
 
         ## Create and show reference picture
         self.reference(xRes=853,yRes=480)
@@ -116,18 +102,15 @@ syntax: gui = expGUI_cvui(cam,[window])
             ## Calibration loop
             ## Capture image from camera
             for i in range(10): # number of retries
-                try:
-                    im = self.cam.retrieveBuffer()
-                    break # break if image was retrieved successfully
-                except pc.Fc2error as fc2Err:
-                    print('Error retrieving buffer: %s' % fc2Err)
-
+                frame = self.cam.capture(nframes=1, save=False)
+                break # break if image was retrieved successfully
+            height, width = frame.shape[:2]  # image has 3 dimensions
             ## Convert to color and reshape
-            im = im.convert(pc.PIXEL_FORMAT.BGR) # from RAW to color (BGR 8bit)
-            data = im.getData() # a long array of data (python list)
-            width = im.getCols()
-            heigth = im.getRows()
-            frame = np.reshape(data,(heigth,width,3)) # Reshape to 2D color image
+#            im = im.convert(pc.PIXEL_FORMAT.BGR) # from RAW to color (BGR 8bit)
+#            data = im.getData() # a long array of data (python list)
+#            width = im.getCols()
+#            heigth = im.getRows()
+#            frame = np.reshape(data,(heigth,width,3)) # Reshape to 2D color image
 
             ## Clean background
             self.bg[:,:,:] = (20,20,20)
@@ -142,7 +125,7 @@ syntax: gui = expGUI_cvui(cam,[window])
             ## Draw trackbar for exposure and adjust value if changed
             cvui.text(self.bg,20,20,'Exposure(ms)')
             
-            if (cvui.trackbar(self.bg,130,0,700,self.exposure,info.absMin,expMax,1,"%.2Lf",\
+            if (cvui.trackbar(self.bg,130,0,700,self.exposure,expMin,expMax,1,"%.2Lf",\
                               cvui.TRACKBAR_DISCRETE,tstep)):
                 self.set_exposure()
             
@@ -219,8 +202,7 @@ syntax: gui = expGUI_cvui(cam,[window])
             elif k == 27: 
                 print('Quitting...')
                 cv.destroyAllWindows()
-                self.cam.stopCapture()
-                self.cam.disconnect()
+                self.cam.close()
                 raise SystemExit
             ## '+': increase exposure one step
             elif k == 43:
