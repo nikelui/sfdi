@@ -9,9 +9,9 @@ email: luigi.belcastro@liu.se
 
 name_xyz.bmp
 
-x: wavelength(0=B, 1=GB, 2=G, 3=GR, 4=R)
+x: wavelength (0 to n.Wavelengths)
 y: spatial frequency (0 to nFreq)
-z: phase (0,1,2)
+z: phase (0 to nPhase)
 
 #### edit2: reorder spatial frequencies in name ####
 
