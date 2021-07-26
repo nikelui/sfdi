@@ -111,4 +111,3 @@ temp.py
 *.npy
 *.npz
 transform.txt
-*.bmp

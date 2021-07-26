@@ -47,8 +47,8 @@ nPhase = 3 # phases for demodulation
 exptime = 50  # ms, dummy exposure time
 
 basepath = './demo'  # base output path
-dataname = 'test'  # dataset pathname
-phantomname = 'calibration'  # dummy calibration pantom pathname
+dataname = 'normal'  # dataset pathname
+phantomname = 'normalCal'  # dummy calibration pantom pathname
 basename = 'im'  # images base name
 
 ##### END parameters #####
@@ -99,18 +99,24 @@ if False:
         plt.pause(0.5)
 
 # simulate sinusoidal patterns
-out_Rd = Reflectance[:,:,:,:,np.newaxis] * sinpattern
 out_Phantom = Phantom[:,:,:,:,np.newaxis] * sinpattern
+# sinpattern[:,:,1,2,1] = sinpattern[:,:,1,2,0]  # simulate missed frame
+out_Rd = Reflectance[:,:,:,:,np.newaxis] * sinpattern
+# out_Rd[:,:,0,1,:1] += 0.15  # simulate change in background illumination
+# noise = np.random.normal(loc=0.0, scale=0.15, size=out_Rd.shape)  # simulate gaussian noise
+# out_Rd += noise
+# out_Phantom += noise
 
-# create save path if does not exist
-tstamp = int(time())  # timestamp
-datapath = f'{basepath}/{tstamp}_{dataname}_{exptime}ms'
-os.makedirs(datapath, exist_ok=True)
-phantompath = f'{basepath}/{tstamp}_{phantomname}_{exptime}ms'
-os.makedirs(phantompath, exist_ok=True)
 
 # plot output (debug) / save images
 if True:
+    # create save path if does not exist
+    tstamp = int(time())  # timestamp
+    datapath = f'{basepath}/{tstamp}_{dataname}_{exptime}ms'
+    os.makedirs(datapath, exist_ok=True)
+    phantompath = f'{basepath}/{tstamp}_{phantomname}_{exptime}ms'
+    os.makedirs(phantompath, exist_ok=True)
+    
     for i,j,k in product(range(len(wv)),range(len(fx)),range(nPhase)):
         im = PIL.Image.fromarray(out_Rd[:,:,i,j,k] * 255)
         if im.mode == 'F':
@@ -121,11 +127,10 @@ if True:
         if im.mode == 'F':
             im = im.convert('RGB')
         im.save(f'{phantompath}/{basename}_{i}{j}{k}.bmp')
-        # plt.imsave(f'{datapath}/{basename}_{i}{j}{k}.bmp', out_Rd[:,:,i,j,k])
-        # plt.imsave(f'{phantompath}/{basename}_{i}{j}{k}.bmp', out_Rd[:,:,i,j,k])
-        if False:  # Debug plots
+        
+        if True:  # Debug plots
             plt.figure(100)
-            plt.imshow(out_Rd[:,:,i,j,k], vmin=0, vmax=1, cmap='bone')
+            plt.imshow(out_Rd[:,:,i,j,k], vmin=0, vmax=1, cmap='gray')
             if i == 0 and j == 0 and k == 0:
                 plt.colorbar()
             plt.tight_layout()
