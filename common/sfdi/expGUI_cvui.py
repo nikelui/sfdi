@@ -13,7 +13,7 @@ except ImportError:
     import sys
     sys.path.append('C:/PythonX/Lib/site-packages/')
     import PyCapture2 as pc
-from sfdi.acquisitionRoutine2 import acquisitionRoutine
+from sfdi.acquisitionRoutine3 import acquisitionRoutine
 
 class expGUI_cvui:
     """A class to implement a simple GUI in openCV for brightness control (Point Grey version).
@@ -39,7 +39,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         #self.Bg = [255]
         #self.Br = [255]
         self.n = [1] # number of acquisitions
-        self.exposure = [10] # Arbitrary starting value
+        self.exposure = [33] # Arbitrary starting value
         self.stop = [False] # Boolean value for stop checkbox
         self.h = 0
         self.step = 1 # Step to increase counters
@@ -83,7 +83,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         cv.resizeWindow('histogram',512,300)
 
         ## Get info about exposure time
-        expMin, expMax, tStep = self.cam.getExposureLim()
+        expMin, expMax, tstep = self.cam.getExposureLim()
 		
         ## Set a limit to exposure to 500ms (to use when you disable fps)
         if expMax > 500:
@@ -196,7 +196,7 @@ syntax: gui = expGUI_cvui(cam,[window])
             if k == 13:
                 cv.destroyWindow('gui')
                 cv.destroyWindow('histogram')
-                self.cam.stopCapture()
+#                self.cam.stopCapture()
                 break
             ## ESCAPE: quit program
             elif k == 27: 

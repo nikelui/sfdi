@@ -40,6 +40,7 @@ from sfdi.setWindow import setWindow
 from sfdi.expGUI_cvui import expGUI_cvui
 #from sfdi.expGUI_cvui_IS import expGUI_cvui
 #from sfdi.IS.IS import ImagingSource
+from sfdi.camera.pointGrey import PointGrey
 from sfdi.setCamera_pg import setCamera_pg
 from sfdi.readParams3 import readParams
 from mycsv import csvread
@@ -55,13 +56,14 @@ if not os.path.exists(par['outpath']):
     os.makedirs(par['outpath'])
 
 ### Setting up camera ###
-cam = setCamera_pg(num=0,res=par['res'],fps=par['fps']) # Set-up Camera
+#cam = setCamera_pg(num=0,res=par['res'],fps=par['fps']) # Set-up Camera
+cam = PointGrey(num=0, res=par['res'], fps=par['res'])  # set-up camera
 #cam = ImagingSource(num=0, res=par['res'], fps=par['fps'])
 #TODO: automatically detect screen size
 setWindow('pattern',size=(par['xres'],par['yres']),pos=(par['w'],0)) # Set-up window on second monitor
 #TODO: new GUI, with extra functionality
 expGUI_cvui(cam,par,'pattern',correction) # Start GUI
 
-#cam.close()
-cam.disconnect()
+cam.close()
+#cam.disconnect()
 cv.destroyAllWindows()

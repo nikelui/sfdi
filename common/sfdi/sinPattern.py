@@ -25,7 +25,7 @@ def sinPattern(xRes,yRes,width,f,p,B=255,correction=np.array([]),channels='rgb')
 Grayscale is a 2D float array of size (yRes,xRes) with values normalized to [0,1]
 Color images are 3D float arrays of size (yRes,xRes,3) with values normalized to [0,1]
 """
-    x = np.linspace(0,xRes-1,xRes) # x coordinates from 0 to xRes
+    x = np.arange(xRes) # x coordinates from 0 to xRes
     y = (0.5*np.cos(x/xRes * 2*np.pi * f * width + p) + 0.5) * B # 1D perfect sinusoid
     
     if not correction.size == 0:
@@ -46,3 +46,11 @@ Color images are 3D float arrays of size (yRes,xRes,3) with values normalized to
         Ib = np.stack((O,O,I),axis=2) # BLUE channel
     
     return(I,Ir,Ig,Ib)
+
+
+if __name__ == '__main__':
+    from matplotlib import pyplot as plt
+    
+    _,_,_,pattern = sinPattern(720, 480, 110, 0.05, 2/3*np.pi, channels='b')
+    plt.imshow(pattern)
+    

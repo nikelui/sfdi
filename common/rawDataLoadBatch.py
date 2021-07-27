@@ -28,8 +28,7 @@ prompt: optional string for file dialog
         dirs = [x for x in os.listdir(path) if os.path.isdir(path+'/'+x)] # list of directories
         #toProcess = []
         # you can also define the names here manually
-        toProcess = ['1602827129', '1602827187', '1602827266', '1602827325', '1602827398',
-                     '1602827460', '1602827532', '1602827593', '1602827667', '1602827736']
+        toProcess = ['1602827129']
         
         if(len(toProcess)==0): # In case you define by hand
             regex = input('Input base name to match: ').lower() # only process matching directories

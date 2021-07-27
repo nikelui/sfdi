@@ -104,7 +104,7 @@ NOTE: for now, most camera configurations are hard-coded in this module
         prop = pc.Property(pc.PROPERTY_TYPE.FRAME_RATE,absControl=True,absValue=fps,autoManualMode=False,onOff=True)
         if fps == 0:
             prop = pc.Property(pc.PROPERTY_TYPE.FRAME_RATE,onOff=False) # Disable fps, to get longer exposure time
-        self.cam.setProperty(prop) # DONE
+            self.cam.setProperty(prop) # DONE
         prop = pc.Property(pc.PROPERTY_TYPE.WHITE_BALANCE,onOff=False)
         self.cam.setProperty(prop) # DONE
         self.cam.setConfiguration(
@@ -180,7 +180,7 @@ NOTE: for now, most camera configurations are hard-coded in this module
             expT = float(prop.absValue)
         except pc.Fc2error as fc2Err:
             print('Error getting exposure property: %s' % fc2Err)
-        return expT
+        return expT  # should be in ms
     
     
     def getExposureLim(self):
@@ -234,7 +234,11 @@ NOTE: for now, most camera configurations are hard-coded in this module
             prop = pc.Property(pc.PROPERTY_TYPE.FRAME_RATE,absControl=True,
                                absValue=fps,autoManualMode=False,onOff=True)
             self.cam.setProperty(prop)
-    
+
+
+#    def stopCapture(self):
+#        self.cam.stopCapture()
+        
         
     def close(self):
         """Shut down camera"""
