@@ -53,4 +53,3 @@ if __name__ == '__main__':
     
     _,_,_,pattern = sinPattern(720, 480, 110, 0.05, 2/3*np.pi, channels='b')
     plt.imshow(pattern)
-    

@@ -19,7 +19,7 @@ from sfdi.crop import crop
 from stackPlot import stackPlot
 from rawDataLoad import rawDataLoad
 
-par = readParams('parameters.ini')
+par = readParams('../processing/parameters.ini')
 
 if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))

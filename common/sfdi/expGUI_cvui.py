@@ -89,11 +89,6 @@ syntax: gui = expGUI_cvui(cam,[window])
         if expMax > 500:
             expMax = 500
             tstep = 0.5
-        
-#        try:
-#            self.cam.startCapture()
-#        except pc.Fc2error as fc2Err:
-#            print('Error starting capture: %s' % fc2Err)
 
         ## Create and show reference picture
         self.reference(xRes=853,yRes=480)
@@ -105,12 +100,6 @@ syntax: gui = expGUI_cvui(cam,[window])
                 frame = self.cam.capture(nframes=1, save=False)
                 break # break if image was retrieved successfully
             height, width = frame.shape[:2]  # image has 3 dimensions
-            ## Convert to color and reshape
-#            im = im.convert(pc.PIXEL_FORMAT.BGR) # from RAW to color (BGR 8bit)
-#            data = im.getData() # a long array of data (python list)
-#            width = im.getCols()
-#            heigth = im.getRows()
-#            frame = np.reshape(data,(heigth,width,3)) # Reshape to 2D color image
 
             ## Clean background
             self.bg[:,:,:] = (20,20,20)
@@ -128,33 +117,6 @@ syntax: gui = expGUI_cvui(cam,[window])
             if (cvui.trackbar(self.bg,130,0,700,self.exposure,expMin,expMax,1,"%.2Lf",\
                               cvui.TRACKBAR_DISCRETE,tstep)):
                 self.set_exposure()
-            
-            ## Create column to draw counters for RGB
-#            cvui.beginColumn(self.bg,700,60,200,-1,20)
-#            ## BLUE
-#            cvui.text('BLUE')
-#            cvui.counter(self.Bb,self.step,"%d")
-#            ## Check invalid values
-#            if (self.Bb[0] > 255):
-#                self.Bb[0] = 255
-#            if (self.Bb[0] < 0):
-#                self.Bb[0] = 0
-#            ## GREEN
-#            cvui.text('GREEN')
-#            cvui.counter(self.Bg,self.step,"%d")
-#            ## Check invalid values
-#            if (self.Bg[0] > 255):
-#                self.Bg[0] = 255
-#            if (self.Bg[0] < 0):
-#                self.Bg[0] = 0
-#            ## RED
-#            cvui.text('RED')
-#            cvui.counter(self.Br,self.step,"%d")
-#            ## Check invalid values
-#            if (self.Br[0] > 255):
-#                self.Br[0] = 255
-#            if (self.Br[0] < 0):
-#                self.Br[0] = 0
             
             ## Number of acquisitions
             cvui.text(self.bg,700,60,'n. of acquisitions')
@@ -174,7 +136,6 @@ syntax: gui = expGUI_cvui(cam,[window])
 #            self.set_red()
             cvui.imshow(self.wname,self.ref)
             
-
             ## calculate histograms
             hist_im = np.zeros((300,512,3),dtype=np.uint8) # background
             hist_b = cv.calcHist([frame],[0],None,[256],[0,256]) # BLUE histogram
@@ -196,7 +157,6 @@ syntax: gui = expGUI_cvui(cam,[window])
             if k == 13:
                 cv.destroyWindow('gui')
                 cv.destroyWindow('histogram')
-#                self.cam.stopCapture()
                 break
             ## ESCAPE: quit program
             elif k == 27: 
