@@ -121,6 +121,7 @@ NOTE: for now, most camera configurations are hard-coded in this module
         """Shut down camera"""
         self.cam.StopLive()
 
+
 if __name__ == '__main__':
     a = ImagingSource(res='640p', binning=True, Live=True)
     a.setExposure(10)  # should be in ms

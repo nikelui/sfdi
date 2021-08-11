@@ -36,10 +36,12 @@ fx = par['freqs']
 s = []  # sinusoidal signals
 plt.figure(1, figsize=(15,6))
 for _i in range(len(fx)):
-    temp = cv.imread('{}/im_0{}0.bmp'.format(name,_i), cv.IMREAD_GRAYSCALE)
+    temp = cv.imread('{}/im_0-{}-0.bmp'.format(name,_i), cv.IMREAD_GRAYSCALE)
     h = temp.shape[0] // 2
     s.append(np.mean(temp[h-10:h+10,:], axis=0))
     plt.plot(s[-1], label=r'{} mm$^{{-1}}$'.format(fx[_i]))
-plt.legend()
+    if _i == len(fx) - 1:
+        plt.plot(s[-1], '-r', linewidth=2.5)
+plt.legend(loc=2)
 plt.grid(True, linestyle=':')
 plt.tight_layout()

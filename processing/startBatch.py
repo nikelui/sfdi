@@ -5,6 +5,9 @@ Created on Fri Jun  5 11:00:42 2020
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
+
+## NOTE: old batch processing, not developed anymore. Please use start_batch.py instead
+
 import sys, os
 import numpy as np
 import json
