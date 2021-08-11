@@ -1,31 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri May 14 14:50:54 2021
+Created on Wed Aug 11 15:25:07 2021
 
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
 import numpy as np
 from cv2 import imwrite
-try:
-    import PyCapture2 as pc
-except ImportError:
-    import sys
-    sys.path.append('C:/PythonX/Lib/site-packages/')
-    import PyCapture2 as pc
+from picamera import PiCamera  # only works in raspbian system
 
-
-class PointGrey:
+class PiCam:
     #TODO: improve doc
     """Set up and configure a PointGrey camera using proprietary drivers
 
-syntax: cam = PointGrey(*args, **kwargs)
+syntax: cam = Picamera(*args, **kwargs)
 
 @input
 - num -> an integer containing the camera index. Used to select from camera list obtained
          from GetDevices()
-- res -> a string specifying the resolution for acquisition. Accepted values are '1280p' (1280x960)
-         and '640p' (640x480) [default].
+- res -> a string specifying the resolution for acquisition. Accepted values are:
+        - '3280p' (3280x2464)
+        - '1640p' (1640x922)
+        - '1280p' (1280x720) [default]
+        - '640p' (640x480)
 - fps -> framerate (float). Accepted values are XX, XX and XX. Anything else will default to XXfps
          [NOTE]: use 0fps to disable the framerate, for exposure times longer than 133ms.
 - binning -> (Bool) only works with 640p resolution. If True it will rescale the image, if False
@@ -48,70 +45,29 @@ NOTE: for now, most camera configurations are hard-coded in this module
         self.cam.close()
     
     
-    def __init__(self, num=0, res='1280p', fps=15):
+    def __init__(self, num=0, res='1280p', fps=30):
         self.nchannels = 3  # Number of color channels captured
-        ## Set the default algorithm for color processing
-        pc.setDefaultColorProcessing(pc.COLOR_PROCESSING.HQ_LINEAR)
-        bus = pc.BusManager() # constructor
-        try:
-            if num < 10:
-                uid = bus.getCameraFromIndex(num) # this retrieves the address of the camera to connect
-            else:
-                uid = bus.getCameraFromSerialNumber(num)
-        except pc.Fc2error as fc2Err:
-                print('Error retrieving device address: %s' % fc2Err)
-                raise SystemExit(-1)
-        self.cam = pc.Camera() # Camera object
-        try:
-            self.cam.connect(uid) # connect the camera
-        except pc.Fc2error as fc2Err:
-                print('Error connecting camera: %s' % fc2Err)
-                raise SystemExit(-1)
-        ## Here set the acquisition properties (look at the manual for supported values)
-        if res == '1280p':
-            vMode = pc.VIDEO_MODE.VM_1280x960Y8 # 1280x960 pixels, RAW 8bit
+        if res == '3280p':
+            resolution = (3280,2464)
+        elif res == '1640p':
+            resolution = (1640,922)
         elif res == '640p':
-            vMode = pc.VIDEO_MODE.VM_640x480Y8 # 640x480 pixels, RAW 8bit
-        else:
-            vMode = pc.VIDEO_MODE.VM_640x480Y8 # default to 640x480 pixels, RAW 8bit
-    
-        if fps == 60:
-            fRate = pc.FRAMERATE.FR_60 # 60fps. This limits the exposure to 16ms
-        elif fps == 30:
-            fRate = pc.FRAMERATE.FR_30 # 30fps. This limits the exposure to 33ms
-        elif fps == 15:
-            fRate = pc.FRAMERATE.FR_15 # 15fps. This limits the exposure to 66ms
-        else:
-            fRate = pc.FRAMERATE.FR_7_5 # Default to 7.5fps. This limits the exposure to 133ms
+            resolution = (640,480)
+        else:  # default to 1280p
+            resolution = (1280,720)
+            
+        self.cam = PiCamera(camera_num=num, resolution=resolution, framerate=fps)
         
-        try:
-            self.cam.setVideoModeAndFrameRate(vMode,fRate)
-        except pc.Fc2error as fc2Err:
-             print('Error setting video mode and framerate: %s' % fc2Err)
-        ## Here set camera properties (like disabling auto-exposure)
-        ## Exposure time should be controlled in a GUI
-        ## setProperty does not work properly if you don't pass a Property object
-        prop = pc.Property(pc.PROPERTY_TYPE.BRIGHTNESS,present=True,absControl=False,valueA=0)
-        self.cam.setProperty(prop) # DONE
-        prop = pc.Property(pc.PROPERTY_TYPE.AUTO_EXPOSURE,absControl=True,autoManualMode=False,onOff=False)
-        self.cam.setProperty(prop) # DONE
-        prop = pc.Property(pc.PROPERTY_TYPE.GAMMA,absControl=True,absValue=1.0,onOff=True)
-        self.cam.setProperty(prop) # DONE
-        prop = pc.Property(pc.PROPERTY_TYPE.SHUTTER,absControl=True,absValue=50.0,autoManualMode=False)
-        self.cam.setProperty(prop) # DONE
-        prop = pc.Property(pc.PROPERTY_TYPE.GAIN,absControl=True,absValue=0.0,autoManualMode=False)
-        self.cam.setProperty(prop) # DONE
-        prop = pc.Property(pc.PROPERTY_TYPE.FRAME_RATE,absControl=True,absValue=fps,autoManualMode=False,onOff=True)
-        if fps == 0:
-            prop = pc.Property(pc.PROPERTY_TYPE.FRAME_RATE,onOff=False) # Disable fps, to get longer exposure time
-            self.cam.setProperty(prop) # DONE
-        prop = pc.Property(pc.PROPERTY_TYPE.WHITE_BALANCE,onOff=False)
-        self.cam.setProperty(prop) # DONE
-        self.cam.setConfiguration(
-            numBuffers=10,
-            grabMode=pc.GRAB_MODE.BUFFER_FRAMES)
-        print('Camera connected. Remember to call cam.disconnect() in your script.')
+        # Set fixed camera properties
+        self.cam.ISO = 100
+        self.cam.awb_mode = 'off'  # white balance off
+        self.cam.awb_gain = (1.,1.)  # TODO: "calibrate" camera and find appropriate values
+        self.cam.brightness = 50
+        self.cam.exposure_mode = 'off'  # auto exposure off
+        self.cam.exposure_speed = 33 *1000  # exposure time (in microseconds, remember to convert)      
+        
     
+    #TODO: continue from here (camera properties: led)
     
     def capture(self, nframes=1, save=False, filename='output.bmp'):
         ## Try to auto-detect width and heigth to initialize data
