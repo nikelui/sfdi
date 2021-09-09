@@ -111,7 +111,7 @@ class MainWindow(tk.Tk):
         self.expMin = expMin
         self.expMax = expMax
         self.expStep = expStep
-        self.ExpLabel = ttk.Label(self.CommandFrame, text='Exposure (ms):', font=('Calibri', 18))
+        self.ExpLabel = ttk.Label(self.CommandFrame, text='Exposure (ms):')
         self.ExpLabel.grid(row=0, column=0, padx=10)
         
         self.ExpSlider = ttk.Scale(self.CommandFrame, from_=expMin, to=expMax, variable=self.exposure,
@@ -120,7 +120,7 @@ class MainWindow(tk.Tk):
         self.ExpSlider.set(self.exposure.get())  # initial update
         self.ExpSlider.grid(row=0, column=2, padx=10, pady=10)
 
-        self.ExpIndicator = ttk.Label(self.CommandFrame, textvariable=self.exposure, font=('Calibri', 18), width=5)
+        self.ExpIndicator = ttk.Label(self.CommandFrame, textvariable=self.exposure, width=5)
         self.ExpIndicator.grid(row=0, column=1, padx=10)
         
         # Increase / decrease buttons
@@ -132,9 +132,9 @@ class MainWindow(tk.Tk):
         self.downButton = ttk.Button(self.expButtonFrame, text='-', command=self.decreaseExp, width=2)
         self.downButton.pack(padx=1, pady=1)
         
-        # # DEBUG button
-        # self.debug = ttk.Button(self.CommandFrame, text='Debug', command=self.debugButton)
-        # self.debug.grid(row=0, column=4, padx=10)
+        # DEBUG button
+        self.debug = ttk.Button(self.CommandFrame, text='Debug', command=self.debugButton)
+        self.debug.grid(row=2, column=2, padx=10)
         
         # Start button
         self.startButton = ttk.Button(self.CommandFrame, text='START', command=self.sfdiRoutine)
@@ -142,14 +142,12 @@ class MainWindow(tk.Tk):
         
         # number of acquisition
         self.acqNum = ttk.Spinbox(self.CommandFrame, from_=0, to=10, format='%.0f', increment=1,
-                                  textvariable=self.Nacquisition, state='readonly', width=3,
-                                  font=('Calibri',14))
+                                  textvariable=self.Nacquisition, state='readonly', width=3)
         self.acqNum.grid(row=1, column=1, padx=0)
         
         # Select gamma or SFDI routine
         self.routineMenu = ttk.Combobox(self.CommandFrame, state='readonly', width=30,
-                                        values=('Calibrate gamma', 'SFDI acquisition'),
-                                        font=('Calibri', 14))
+                                        values=('Calibrate gamma', 'SFDI acquisition'))
         self.routineMenu.current(1)  # default is SFDI
         self.routineMenu.grid(row=1, column=2, padx=10)
         
@@ -157,10 +155,10 @@ class MainWindow(tk.Tk):
         self.captureButton = ttk.Button(self.CommandFrame, text='Single\ncapture', command=self.capture)
         self.captureButton.grid(row=2, column=0, padx=10, pady=10)
         
-        self.style.configure('TButton', font=('Calibri', 14))
+        self.style.configure('TButton')
         
         # Close button
-        self.closeButton = ttk.Button(self.CommandFrame, text='Quit', command=self.close)
+        self.closeButton = ttk.Button(self.CommandFrame, text='Quit', command=self.close, width=5)
         self.closeButton.grid(row=2, column=3)
         
     ############## Callbacks ################  
@@ -170,7 +168,11 @@ class MainWindow(tk.Tk):
         self.cam.setExposure(self.exposure.get())
     
     def debugButton(self):
-        print(self.exposure.get())
+        print('Exp: {}'.format(self.exposure.get()))
+        print('Mode: {}\nType: {}'.format(self.routineMenu.get(),
+                                          type(self.routineMenu.get())))
+        
+        self.updateHist((np.random.randint(0,15,size=(256,3)).T * np.arange(256)).T)
         
     def increaseExp(self):
         current_exp = self.exposure.get()
@@ -192,9 +194,29 @@ class MainWindow(tk.Tk):
     def close(self):
         self.destroy()
     
+    def updateHist(self, hist):
+        # Assume hist is a (256 x 3) array
+        # first clean the canvas
+        self.HistCanvas.delete('all')
+        # scale x and y coordinates to the canvas size
+        xaxis = np.arange(0, 256) / 255 * (self.par['xres']/2)
+        # loop through 3 color channels
+        color = ['red', 'green', 'blue']
+        for _i in range(3):
+            yaxis = hist[:,_i] / np.max(hist) * (self.par['yres']/2)
+            # print(yaxis)  # debug
+            # note: y coordinates are reversed, zero is at the top
+            coords = [(x, self.par['xres']//4 - y) for x, y in zip(xaxis, yaxis)]
+            self.HistCanvas.create_line(coords, fill=color[_i], width=1.5)
+    
     def sfdiRoutine(self):
         # TODO: import this
-        print('Start SFDI!')
+        if self.routineMenu.get() == 'SFDI acquisition':
+            print('Start SFDI!')
+        elif self.routineMenu.get() == 'Calibrate gamma':
+            print('Start gamma!')
+        else:
+            print('You should not be here!')
         
 # if __name__ == "__main__":
 #     win = MainWindow()

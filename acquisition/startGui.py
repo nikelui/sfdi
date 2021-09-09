@@ -33,19 +33,19 @@ this way multiple time-points can be processed easily.
 
 import os, sys
 
-# sys.path.append('../common') # Add the common folder to path
-# sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
 from gui.mainWindow import MainWindow
 from camera.DummyCam import DummyCam as Camera
 from readParams3 import readParams
 from common.mycsv import csvread
-#import numpy as np
 
-## Read parameters from .cfg file
+## Read parameters from .ini file
 par = readParams('./parameters.ini') # .cfg file should be in the same directory
 ## Load gamma correction array
-correction,_ = csvread(par['cpath'], True)
-
+if par['cpath']:
+    par['gamma'],_ = csvread(par['cpath'], True)
+else:
+    par['gamma'] = None
+    
 ## Check if out folder exist, if not, create it
 if not os.path.exists(par['outpath']):
     os.makedirs(par['outpath'])
