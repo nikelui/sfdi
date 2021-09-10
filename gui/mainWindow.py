@@ -57,6 +57,7 @@ class MainWindow(tk.Tk):
         self.geometry('{}x{}+0+0'.format(self.par['xres'], self.par['yres']*2))
         self.resizable(False,False)
         self.attributes('-topmost', True)
+        self.attributes('-fullscreen', True)
         # self.attributes('-toolwindow', True)
         
 
@@ -193,6 +194,7 @@ class MainWindow(tk.Tk):
         
     def close(self):
         self.destroy()
+        self.cam.close()
     
     def updateHist(self, hist):
         # Assume hist is a (256 x 3) array
