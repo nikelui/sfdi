@@ -32,10 +32,10 @@ this way multiple time-points can be processed easily.
 """
 
 import os, sys
-
+sys.path.append('../')
 from gui.mainWindow import MainWindow
-from camera.DummyCam import DummyCam as Camera
-from readParams3 import readParams
+from common.sfdi.camera.piCam import PiCam as Camera
+from common.sfdi.readParams3 import readParams
 from common.mycsv import csvread
 
 ## Read parameters from .ini file
@@ -51,7 +51,7 @@ if not os.path.exists(par['outpath']):
     os.makedirs(par['outpath'])
 
 ### Setting up camera ###
-cam = Camera(num=0, res=par['res'], fps=par['res'])  # set-up camera
+cam = Camera(num=0, res=par['res'], fps=par['fps'])  # set-up camera
 ### Start main window ###
 win = MainWindow(cam, par)
 win.mainloop()
