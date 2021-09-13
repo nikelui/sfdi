@@ -5,13 +5,10 @@ Created on Wed Aug 11 15:25:07 2021
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
-import io
 import time
 import numpy as np
-from cv2 import imwrite
 from picamera import PiCamera  # only works in raspbian system
-from picamera.array import PiRGBArray # Generates a 3D RGB array
-from PIL import Image
+from PIL import fromarray
 
 class PiCam:
     #TODO: improve doc
@@ -57,7 +54,7 @@ NOTE: for now, most camera configurations are hard-coded in this module
         else:  # default to 1280p
             resolution = (1280,720)
         self.cam = PiCamera(camera_num=num, resolution=resolution, framerate=fps)
-        PiCam.setlocation_preview(self)
+        # PiCam.setlocation_preview(self)
         # Set fixed camera properties
         self.cam.ISO = 100
         self.cam.awb_mode = 'off'  # white balance off
@@ -67,8 +64,8 @@ NOTE: for now, most camera configurations are hard-coded in this module
         self.cam.exposure_mode = 'off'  # auto exposure off
         self.cam.shutter_speed = 33 *1000  # exposure time (in microseconds, remember to convert)      
         time.sleep(1)
-        PiCam.Setting_info(self)
-        PiCam.Histogram(self)
+        # PiCam.Setting_info(self)
+        # PiCam.Histogram(self)
         
     
     def capture(self, nframes=1, save=False, filename='output.bmp'):
@@ -82,7 +79,8 @@ NOTE: for now, most camera configurations are hard-coded in this module
             pic = pic + frame  # sum the captured images
         frame = pic / nframes  # average
         if save:  # might rewrite this using PIL
-            imwrite(filename, frame.astype('uint8'))  # re-convert to uint8
+            Im = fromarray(frame.astype('uint8'))
+            Im.save(filename)
         return frame.astype('uint8')
 
 
@@ -115,9 +113,9 @@ NOTE: for now, most camera configurations are hard-coded in this module
         #TODO: try / except
         self.cam.framerate = int(fps)
     
-    def setlocation_preview(self):
-        self.cam.stop_preview()
-        self.cam.start_preview(fullscreen=False,window=(0,480,427,240)) 
+    # def setlocation_preview(self):
+    #     self.cam.stop_preview()
+    #     self.cam.start_preview(fullscreen=False,window=(0,480,427,240)) 
     
     def Setting_info(self):
         print("SS: ",self.cam.shutter_speed)
@@ -131,21 +129,21 @@ NOTE: for now, most camera configurations are hard-coded in this module
         print("sharpness: ",self.cam.sharpness)
         print('awb gains: ',self.cam.awb_gains)
     
-    def Histogram(self):
-        # Create the in-memory stream
-        stream = io.BytesIO()   
-        # Generates a 3D RGB array and stores it in rawCapture
-        #raw_capture = PiRGBArray(self.cam, size=(1280, 720))
-        self.cam.capture(stream, format="jpeg")
-        # "Rewind" the stream to the beginning so we can read its content
-        stream.seek(0)
-        image = Image.open(stream)
-        #frame = raw_capture.array
-        R, G, B = image.split()
-        print(R.histogram())
-        R.histogram ()
-        G.histogram () 
-        B.histogram ()
+    # def Histogram(self):
+    #     # Create the in-memory stream
+    #     stream = io.BytesIO()   
+    #     # Generates a 3D RGB array and stores it in rawCapture
+    #     #raw_capture = PiRGBArray(self.cam, size=(1280, 720))
+    #     self.cam.capture(stream, format="jpeg")
+    #     # "Rewind" the stream to the beginning so we can read its content
+    #     stream.seek(0)
+    #     image = Image.open(stream)
+    #     #frame = raw_capture.array
+    #     R, G, B = image.split()
+    #     print(R.histogram())
+    #     R.histogram ()
+    #     G.histogram () 
+    #     B.histogram ()
     
     def close(self):
         """Shut down camera"""

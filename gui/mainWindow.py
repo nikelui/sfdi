@@ -7,7 +7,7 @@ email: luigi.belcastro@liu.se
 
 Main gui script for interface in tkInter
 """
-import sys, os
+import os, io
 from time import time
 import numpy as np
 import tkinter as tk
@@ -15,7 +15,7 @@ from tkinter import ttk
 import PIL
 from PIL import ImageTk as PIL_ImageTk
 # sys.path.append('../common') # Add the common folder to path
-
+from acquisitionRoutine_gui import acquisitionRoutine
 
 class MainWindow(tk.Tk):
     def __init__(self, cam, par):
@@ -46,6 +46,7 @@ class MainWindow(tk.Tk):
         self.expMax = 0
         self.expStep = 0
         self.Nacquisition = tk.StringVar(value=1)
+        self.stop = True  # flag to stop current routine
         
         # here should go the camera
         self.cam = cam
@@ -91,7 +92,7 @@ class MainWindow(tk.Tk):
         self.PreviewCanvas = tk.Canvas(self.PreviewFrame, height=self.par['yres']//2,
                                        width=self.par['xres']//2, bd=-2, bg='red')
         self.PreviewCanvas.place(x=0, y=0)
-        # TODO: get camera preview to display in PreviewCanvas
+        self.setlocation_preview(self)  # display overlay preview
         
         # Canvas to display histogram
         self.HistCanvas = tk.Canvas(self.PreviewFrame, height=self.par['yres']//2,
@@ -163,6 +164,9 @@ class MainWindow(tk.Tk):
         self.closeButton.grid(row=2, column=3)
         
     ############## Callbacks ################  
+    def setlocation_preview(self):
+        self.cam.stop_preview()
+        self.cam.start_preview(fullscreen=False,window=(0,480,427,240)) 
     
     def sliderUpdate(self, exp):
         self.exposure.set(exp)
@@ -196,25 +200,43 @@ class MainWindow(tk.Tk):
         self.destroy()
         self.cam.close()
     
-    def updateHist(self, hist):
-        # Assume hist is a (256 x 3) array
-        # first clean the canvas
-        self.HistCanvas.delete('all')
-        # scale x and y coordinates to the canvas size
-        xaxis = np.arange(0, 256) / 255 * (self.par['xres']/2)
-        # loop through 3 color channels
-        color = ['red', 'green', 'blue']
-        for _i in range(3):
-            yaxis = hist[:,_i] / np.max(hist) * (self.par['yres']/2)
-            # print(yaxis)  # debug
-            # note: y coordinates are reversed, zero is at the top
-            coords = [(x, self.par['xres']//4 - y) for x, y in zip(xaxis, yaxis)]
-            self.HistCanvas.create_line(coords, fill=color[_i], width=1.5)
+    def histogram(self):
+        # Create the in-memory stream
+        stream = io.BytesIO()   
+        # Generates a 3D RGB array and stores it in rawCapture
+        self.cam.cam.capture(stream, format="jpeg")
+        # "Rewind" the stream to the beginning so we can read its content
+        stream.seek(0)
+        image = PIL.Image.open(stream)
+        #frame = raw_capture.array
+        R, G, B = image.split()
+        hist = np.stack([R.histogram(), G.histogram(), B.histogram()], axis=1)
+        return hist
+        
+    def updateHist(self):
+        if self.stop:  # if routine is not running
+            # Assume hist is a (256 x 3) array
+            # get histogram
+            hist = self.histogram()
+            # first clean the canvas
+            self.HistCanvas.delete('all')
+            # scale x and y coordinates to the canvas size
+            xaxis = np.arange(0, 256) / 255 * (self.par['xres']/2)
+            # loop through 3 color channels
+            color = ['red', 'green', 'blue']
+            for _i in range(3):
+                yaxis = hist[:,_i] / np.max(hist) * (self.par['yres']/2)
+                # print(yaxis)  # debug
+                # note: y coordinates are reversed, zero is at the top
+                coords = [(x, self.par['xres']//4 - y) for x, y in zip(xaxis, yaxis)]
+                self.HistCanvas.create_line(coords, fill=color[_i], width=1.5)
+        self.after(500, self.updateHist)  # iteratively update
     
     def sfdiRoutine(self):
-        # TODO: import this
+        # TODO: need a way to stop acquisition
         if self.routineMenu.get() == 'SFDI acquisition':
             print('Start SFDI!')
+            acquisitionRoutine(self)
         elif self.routineMenu.get() == 'Calibrate gamma':
             print('Start gamma!')
         else:
