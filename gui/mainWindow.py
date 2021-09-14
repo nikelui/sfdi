@@ -15,7 +15,7 @@ from tkinter import ttk
 import PIL
 from PIL import ImageTk as PIL_ImageTk
 # sys.path.append('../common') # Add the common folder to path
-from acquisitionRoutine_gui import acquisitionRoutine
+from common.sfdi.acquisitionRoutine_gui import acquisitionRoutine
 
 class MainWindow(tk.Tk):
     def __init__(self, cam, par):
@@ -92,12 +92,13 @@ class MainWindow(tk.Tk):
         self.PreviewCanvas = tk.Canvas(self.PreviewFrame, height=self.par['yres']//2,
                                        width=self.par['xres']//2, bd=-2, bg='red')
         self.PreviewCanvas.place(x=0, y=0)
-        self.setlocation_preview(self)  # display overlay preview
+        self.setlocation_preview()  # display overlay preview
         
         # Canvas to display histogram
         self.HistCanvas = tk.Canvas(self.PreviewFrame, height=self.par['yres']//2,
                                     width=self.par['xres']//2, bd=-2, bg='black')
         self.HistCanvas.place(x=self.par['xres']//2, y=0)
+        self.updateHist()
         # TODO: draw the histogram on HistCanvas
         
         ######## Commands ########
@@ -165,8 +166,8 @@ class MainWindow(tk.Tk):
         
     ############## Callbacks ################  
     def setlocation_preview(self):
-        self.cam.stop_preview()
-        self.cam.start_preview(fullscreen=False,window=(0,480,427,240)) 
+        self.cam.stoppreview()
+        self.cam.setstartpreview() 
     
     def sliderUpdate(self, exp):
         self.exposure.set(exp)
@@ -193,7 +194,7 @@ class MainWindow(tk.Tk):
             
     def capture(self):
         frame = self.cam.capture()
-        im = PIL.Image.fromarray(frame)
+        im = PIL.Image.fromarray(frame.astype('uint8'))
         im.save('{}.bmp'.format(int(time())))  # use timestamp as filename
         
     def close(self):

@@ -8,7 +8,7 @@ email: luigi.belcastro@liu.se
 import time
 import numpy as np
 from picamera import PiCamera  # only works in raspbian system
-from PIL import fromarray
+from PIL import Image
 
 class PiCam:
     #TODO: improve doc
@@ -75,7 +75,7 @@ NOTE: for now, most camera configurations are hard-coded in this module
         ## Begin acquisition
         for _i in range(nframes):
             frame = np.zeros((height, width, 3), dtype='uint8')  # initialize
-            self.cam.capture(frame, format='bgr')
+            self.cam.capture(frame, format='rgb')
             pic = pic + frame  # sum the captured images
         frame = pic / nframes  # average
         if save:  # might rewrite this using PIL
@@ -113,6 +113,11 @@ NOTE: for now, most camera configurations are hard-coded in this module
         #TODO: try / except
         self.cam.framerate = int(fps)
     
+    def stoppreview(self):
+        self.cam.stop_preview()
+        
+    def setstartpreview(self):
+        self.cam.start_preview(fullscreen=False,window=(0,480,427,240))
     # def setlocation_preview(self):
     #     self.cam.stop_preview()
     #     self.cam.start_preview(fullscreen=False,window=(0,480,427,240)) 

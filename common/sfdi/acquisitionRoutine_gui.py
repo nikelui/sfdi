@@ -9,7 +9,7 @@ import PIL
 from PIL import ImageTk as PIL_ImageTk
 from tkinter import NW
 import time, os
-from sfdi.sinPattern import sinPattern
+from common.sfdi.sinPattern import sinPattern
 import threading
 
 # def saveFunc(nFreq, nPhase, nchannels, curr_path, name, dataMat):
@@ -24,7 +24,7 @@ import threading
 def saveFunc(i, j, k, nchannels, curr_path, name, frame):
     """Function to save data, run in a separate thread"""
     for _i in range(nchannels):
-        im = PIL.fromarray(frame[:,:,_i].astype('uint8'))
+        im = PIL.Image.fromarray(frame[:,:,_i].astype('uint8'))
         im.save('{}/{}_{:d}-{:d}-{:d}.bmp'.format(curr_path, name, i*nchannels+_i, j, k),
                 format='BMP', compression='raw')
         # print("Pictures saved to: {}\n".format(curr_path))
@@ -56,7 +56,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     
     # Unpacking parameters here to avoid changing half the script
     nPhase = root.par['nphase']
-    nFreq = root.par['nfreq']
+    #nFreq = root.par['nfreq']
     nchannels = root.cam.nchannels
     correction = root.par['gamma']
     xRes = root.par['xres']
@@ -64,6 +64,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     dt = root.par['dt']
     w = root.par['width']
     f = root.par['fx']
+    nFreq = len(f)
     Bb = Bg = Br = 255
     outPath = root.par['outpath']
     fname = root.par['fname']
@@ -83,23 +84,24 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     ## New: increase the exposure time for blue channel (SNR is very low on tissues)
     ## consider to use a slightly longer pause between patterns
     #TODO: wrap in try/except for safety
-    if (root.par['blueBoost']):
+    if (root.par['blueboost']):
         expT = root.cam.getExposure()
         root.cam.setExposure(expT + 33.3)   
     pshift = 2*np.pi/nPhase # phase shift for demodulation [default = 2/3 pi]
     
     # Acquire BLUE / BG
-    for i in range(nFreq+1):
+    for i in range(nFreq):
         for p in range(nPhase):
             _,_,_,Ib = sinPattern(xRes, yRes, w, f[i], pshift*p, Bb, correction,'b')
             # DEBUG
             #Ib = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,0,i,p))
             ## fix: opencv 4.0.0 does not like float images, so convert to uint8
             Ib = (Ib*255).astype('uint8')             
-            patt = PIL.fromarray(Ib)
+            patt = PIL.Image.fromarray(Ib)
             pattern = PIL_ImageTk.PhotoImage(patt)
             root.PatternCanvas.create_image(0, 0, image=pattern, anchor=NW)
-            if (root.par['blueBoost']):
+            root.update()
+            if (root.par['blueboost']):
                 time.sleep(dt/1000 + 0.05)
             else:
                 time.sleep(dt/1000)
@@ -108,20 +110,21 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
             th = threading.Thread(target=saveFunc,args=(0, i, p, nchannels, curr_path, name, frame,))
             th.start()
     
-    if (root.par['blueBoost']):
+    if (root.par['blueboost']):
         # Here, return exposure to previous value
         root.cam.setExposure(expT)
         
     # Acquire GREEN
-    for i in range(nFreq+1):
+    for i in range(nFreq):
         for p in range(nPhase):
             _,_,Ig,_ = sinPattern(xRes,yRes,w,f[i],pshift*p,Bg,correction,'g')
             #Ig = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,1,i,p))
             ## fix: opencv 4.0.0 does not like float images, so convert to uint8
             Ig = (Ig*255).astype('uint8')  
-            patt = PIL.fromarray(Ig)
+            patt = PIL.Image.fromarray(Ig)
             pattern = PIL_ImageTk.PhotoImage(patt)
             root.PatternCanvas.create_image(0, 0, image=pattern, anchor=NW)
+            root.update()
             time.sleep(dt/1000)
             frame = root.cam.capture(nframes=1, save=False)
             ## New: save single images (because of memory constrains)
@@ -133,15 +136,16 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     ##time.sleep(dt/2000)
     
     # Acquire RED
-    for i in range(nFreq+1):
+    for i in range(nFreq):
         for p in range(nPhase):
             _,Ir,_,_ = sinPattern(xRes,yRes,w,f[i],pshift*p,Br,correction,'r')
             #Ir = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,2,i,p))
             ## fix: opencv 4.0.0 does not like float images, so convert to uint8
             Ir = (Ir*255).astype('uint8')
-            patt = PIL.fromarray(Ir)
+            patt = PIL.Image.fromarray(Ir)
             pattern = PIL_ImageTk.PhotoImage(patt)
             root.PatternCanvas.create_image(0, 0, image=pattern, anchor=NW)
+            root.update()
             time.sleep(dt/1000)
             frame = root.cam.capture(nframes=1, save=False)
             ## New: save single images (because of memory constrains)
