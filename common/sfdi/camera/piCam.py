@@ -75,7 +75,7 @@ NOTE: for now, most camera configurations are hard-coded in this module
         ## Begin acquisition
         for _i in range(nframes):
             frame = np.zeros((height, width, 3), dtype='uint8')  # initialize
-            self.cam.capture(frame, format='rgb')
+            self.cam.capture(frame, format='rgb',use_video_port=True)
             pic = pic + frame  # sum the captured images
         frame = pic / nframes  # average
         if save:  # might rewrite this using PIL

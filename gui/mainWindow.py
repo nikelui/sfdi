@@ -16,6 +16,8 @@ import PIL
 from PIL import ImageTk as PIL_ImageTk
 # sys.path.append('../common') # Add the common folder to path
 from common.sfdi.acquisitionRoutine_gui import acquisitionRoutine
+from common.sfdi.Gamma_Calibration import gamma_calibration
+
 
 class MainWindow(tk.Tk):
     def __init__(self, cam, par):
@@ -205,7 +207,7 @@ class MainWindow(tk.Tk):
         # Create the in-memory stream
         stream = io.BytesIO()   
         # Generates a 3D RGB array and stores it in rawCapture
-        self.cam.cam.capture(stream, format="jpeg")
+        self.cam.cam.capture(stream, format="jpeg",use_video_port=True)
         # "Rewind" the stream to the beginning so we can read its content
         stream.seek(0)
         image = PIL.Image.open(stream)
@@ -238,8 +240,13 @@ class MainWindow(tk.Tk):
         if self.routineMenu.get() == 'SFDI acquisition':
             print('Start SFDI!')
             acquisitionRoutine(self)
+            print('Camera config Info')
+            self.cam.Setting_info()
         elif self.routineMenu.get() == 'Calibrate gamma':
             print('Start gamma!')
+            gamma_calibration(self)
+            print('Camera config Info')
+            self.cam.Setting_info()
         else:
             print('You should not be here!')
         
