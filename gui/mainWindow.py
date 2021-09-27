@@ -92,7 +92,7 @@ class MainWindow(tk.Tk):
 
         # Canvas to display preview
         self.PreviewCanvas = tk.Canvas(self.PreviewFrame, height=self.par['yres']//2,
-                                       width=self.par['xres']//2, bd=-2, bg='red')
+                                       width=self.par['xres']//2, bd=-2, bg='black')
         self.PreviewCanvas.place(x=0, y=0)
         self.setlocation_preview()  # display overlay preview
         
