@@ -63,30 +63,53 @@ if not os.path.exists(par['savefile']):
 #if not os.path.exists('{}calR/'.format(par['savefile'])):
 #    os.makedirs('{}calR/'.format(par['savefile']))
 
+if True:  # multi-frequencies approach
+    FX = list(list(range(_i, _i+4)) for _i in range(len(par['freqs']) - 3))
+else:
+    FX = [par['freq_used']]
+
+## Save processing prameters to file
+params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
+          'binsize': par['binsize'],  # pixel binning
+          'ROI': ROI,  # processed ROI
+          'fx': par['freqs'],  # all spatial frequencies
+    }
+to_write = ['# Parameters\nbinsize = {}\nROI = {}\nwv = {}nm\nfx = {}mm^-1'.format(
+             params['binsize'], params['ROI'], params['wv'], params['fx'])]
+for _f, fx in enumerate(FX):
+    params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
+    to_write.append('f{} -> {}mm^-1\n'.format(_f, params['f{}'.format(_f)]))
+with open('{}processing_parameters.txt'.format(par['savefile']), 'w') as par_file:
+    print('\n'.join(to_write), file=par_file)
+print('Parameters saved to file {}processing_parameters.txt'.format(par['savefile']))
+
 ## save calibrated reflectance data (matlab and npy format)
-#savemat('{}calR/{}'.format(par['savefile'], nn), {'calibrated_R':crop(cal_R, ROI)})  # matlab format
-#np.save('{}calR/{}'.format(par['savefile'], nn), crop(cal_R, ROI))  # numpy format
-#plt.savefig('{}calR/{}.png'.format(par['savefile'], nn))  # stack plot
+if 'numpy' in par['savefmt']:
+    np.save('{}calR/{}'.format(par['savefile'], nn), crop(cal_R, ROI))  # numpy format
+if 'matlab' in par['savefmt']:
+    savemat('{}calR/{}'.format(par['savefile'], nn), {'calibrated_R':crop(cal_R, ROI)})  # matlab format
 
 ## DEBUG: stop here if you only want calibrated reflectance
-#sys.exit()
+# plt.savefig('{}calR/{}.png'.format(par['savefile'], nn))  # stack plot
+# sys.exit()
 
 ## Fitting for optical properties
 ## TODO: this part is pretty computationally intensive, might be worth to optimize
 op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']],ROI),par)  # fit for all fx
 
 ## save optical properties to file. Remember to adjust the filename
-#print('Saving data...')
-#fullpath = '{}{}'.format(par['savefile'], nn)
-#savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
-#np.savez('{}_OPmap_f0'.format(fullpath), op_fit_maps=op_fit_maps.data)  # numpy format
-#np.savez('{}_calR'.format(fullpath), cal_R=cal_R, ROI=ROI)
-#print('Done!')
+if len(par['savefmt']) > 0:
+    print('Saving data...')
+    fullpath = '{}/{}'.format(par['savefile'], nn)
+    if 'numpy' in par['savefmt']:
+        np.savez('{}_OPmap_f0'.format(fullpath), op_fit_maps=op_fit_maps.data)  # numpy format
+    if 'matlab' in par['savefmt']:
+        savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
+    print('Done!')
 
 #sys.exit()
 
 chrom_map = chromFit(op_fit_maps, par) # linear fitting for chromophores. This is fast, no need to save
-
 op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)
 
 #if not os.path.exists(par['savefile']):
@@ -94,6 +117,7 @@ op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op
 #np.save('{}{}_ave_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_ave)
 #np.save('{}{}_std_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_std)
 
+# TODO: loop through FX earlier and save
 ## Now looop through different fx combinations
 #for i in range(5):
 #    par['freq_used'] = [i,i+1,i+2,i+3] # select spatial frequencies

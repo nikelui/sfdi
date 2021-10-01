@@ -13,22 +13,23 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import lsq_linear
 
-def chromFit(op_fit_maps, par, cfile=[], old=False, linear=False):
+def chromFit(op_fit_maps, par, cfile='', old=False, linear=False):
     """A function to do linear fitting of absorption to known chromophores.
     - op_fit_maps: map of (mua,mus) at all wavelenghs. Should have shape = (x,y,w,2)
             (but only mua will be fitted)
     - par: dictionary containing the parameters (need the wavelengths and used chromophores)
+    - cfile: list containing a string with the path to the chromophores reference file (for batch mode)
+             NOTE: if the path is in a list, it 
     - old: flag. If true, it uses old approach (average of +-5nm instead of weighted sum)
     - linear: flag, if True it uses linear algebra to fit, otherwise uses scipy lsq_linear() 
               function, with bounds on the solution (0, +inf)
     """
     chrom_map = []
     if len(par['chrom_used']) > 0: # Only process if the chromophore list is not empty
-        
-        if len(cfile) == 0:
+        if not cfile:
             # Select chromophores file
-            cfile.append(getFile('Select chromophores file'))
-        chromophores,_ = csvread(cfile[0],arr=True,delimiter='\t') # remember that cfile is a list
+            cfile = getFile('Select chromophores file')
+        chromophores,_ = csvread(cfile, arr=True, delimiter='\t')
         
         # Interpolate at the used wavelengths
         ## OLD method: central wavelengths
@@ -39,16 +40,16 @@ def chromFit(op_fit_maps, par, cfile=[], old=False, linear=False):
         
         ## NEW method: weighted average
         else:
-            data,_ = csvread('../common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
-            spec = data[(9,6,5,4,1),:] # Keep 5 channels in order from BB to RR
-            wv = data[0,:] # wavelength axis
+            data,_ = csvread('../common/overlaps_calibrated.csv',arr=True)  # load overlaps spectrum
+            spec = data[(9,6,5,4,1),:]  # Keep 5 channels in order from BB to RR
+            wv = data[0,:]  # wavelength axis
             
             f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',
                          axis=0,fill_value='extrapolate')
-            chrom = f(wv).T # chromophores used, full spectrum [380-720]nm
+            chrom = f(wv).T  # chromophores used, full spectrum [380-720]nm
             
             E = np.zeros((len(par['wv_used']),len(chrom))) # initialize
-            # changed: matrix data type is obsolete, try to use only arrays
+            ## changed: matrix data type is obsolete, try to use only arrays
             
             # TODO: Double for loop, very inefficient. Try to optimize
             for i,band in enumerate(spec):
@@ -86,7 +87,7 @@ def chromFit(op_fit_maps, par, cfile=[], old=False, linear=False):
 if __name__ == '__main__':
 #    op_fit_maps = [1]
 #    par = {'wv':[458,520,536,556,626],'chrom_used':[1,2,5]}
-    chrom_map = chromFit(op_fit_maps,par)
+    chrom_map = chromFit(op_fit_maps, par)
 #    chrom_map = []
 #    for op in op_fit_sfds:
 #        chrom_map.append(chromFit(op,par)) # linear fitting for chromofores
