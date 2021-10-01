@@ -2,13 +2,13 @@
 """
 Created on Mon Jun 24 13:51:14 2019
 
-@author: luibe59
+@author: Luigi Belcastro - Linköping University
+email: luigi.belcastro@liu.se
 """
 import numpy as np
 import cv2 as cv
 import cvui
-
-from sfdi.acquisitionRoutine_IS import acquisitionRoutine
+from sfdi.acquisition.acquisitionRoutine import acquisitionRoutine
 
 class expGUI_cvui:
     """A class to implement a simple GUI in openCV for brightness control (Point Grey version).
@@ -27,19 +27,17 @@ syntax: gui = expGUI_cvui(cam,[window])
 - use the sliders to adjust color brightness and/or exposure time.
 - the real-time acquisition runs until 'Enter' or 'Escape' is pressed.
 """
-    def __init__(self,cam,par,wname='pattern',correction=[]):
+    def __init__(self, cam, par, wname='pattern', correction=[]):
         self.par = par # container for parameters
         self.cam = cam # camera objects
-
         self.n = [1] # number of acquisitions
-        self.exposure = [10] # Arbitrary starting value
+        self.exposure = [33] # Arbitrary starting value
         self.stop = [False] # Boolean value for stop checkbox
         self.h = 0
         self.step = 1 # Step to increase counters
         self.wname = wname # name of the pattern window
         self.n_acq = 0 # counter, n. of acquisitions
         self.correction = correction # gamma correction array
-        
         # Since bool() does not work very well with strings
         if self.par['blueboost'] in ['False','false',0,'0','None','none','No','no','']:
             self.blueboost = False
@@ -49,8 +47,7 @@ syntax: gui = expGUI_cvui(cam,[window])
 
     def set_exposure(self):
         """Control camera exposure."""
-        self.cam.setExposure(self.exposure[0])
-        
+        self.cam.setExposure(self.exposure[0])  # in ms
         
     def reference(self,xRes,yRes):
         """Use this function to control the brightness level of the three channels"""
@@ -79,27 +76,28 @@ syntax: gui = expGUI_cvui(cam,[window])
 
         ## Get info about exposure time
         expMin, expMax, tstep = self.cam.getExposureLim()
-        
+		
+        ## Set a limit to exposure to 500ms (to use when you disable fps)
+        if expMax > 500:
+            expMax = 500
+            tstep = 0.5
+
         ## Create and show reference picture
         self.reference(xRes=853,yRes=480)
         
         while(True):
             ## Calibration loop
             ## Capture image from camera
-            frame = self.cam.capture()
-
-            ## Convert to color and reshape
-#            im = im.convert(pc.PIXEL_FORMAT.BGR) # from RAW to color (BGR 8bit)
-#            data = im.getData() # a long array of data (python list)
-#            width = im.getCols()
-#            heigth = im.getRows()
-#            frame = np.reshape(data,(heigth,width,3)) # Reshape to 2D color image
+            for i in range(10): # number of retries
+                frame = self.cam.capture(nframes=1, save=False)
+                break # break if image was retrieved successfully
+            height, width = frame.shape[:2]  # image has 3 dimensions
 
             ## Clean background
             self.bg[:,:,:] = (20,20,20)
             
             ## If resolution is 1280p, downsample to 640p
-            if (frame.shape[1] == 1280):
+            if (width == 1280):
                 frame = cv.resize(frame,(640,480),cv.INTER_NEAREST)
             
             ## Draw frame on main window
@@ -108,10 +106,9 @@ syntax: gui = expGUI_cvui(cam,[window])
             ## Draw trackbar for exposure and adjust value if changed
             cvui.text(self.bg,20,20,'Exposure(ms)')
             
-            if (cvui.trackbar(self.bg,130,0,700,self.exposure,expMin,expMax,1,"%.1Lf",\
+            if (cvui.trackbar(self.bg,130,0,700,self.exposure,expMin,expMax,1,"%.2Lf",\
                               cvui.TRACKBAR_DISCRETE,tstep)):
                 self.set_exposure()
-    
             
             ## Number of acquisitions
             cvui.text(self.bg,700,60,'n. of acquisitions')
@@ -131,7 +128,6 @@ syntax: gui = expGUI_cvui(cam,[window])
 #            self.set_red()
             cvui.imshow(self.wname,self.ref)
             
-
             ## calculate histograms
             hist_im = np.zeros((300,512,3),dtype=np.uint8) # background
             hist_b = cv.calcHist([frame],[0],None,[256],[0,256]) # BLUE histogram
@@ -153,7 +149,6 @@ syntax: gui = expGUI_cvui(cam,[window])
             if k == 13:
                 cv.destroyWindow('gui')
                 cv.destroyWindow('histogram')
-                #self.cam.stopCapture()
                 break
             ## ESCAPE: quit program
             elif k == 27: 
@@ -188,6 +183,6 @@ syntax: gui = expGUI_cvui(cam,[window])
                                self.par['nphase'],self.par['dt'],self.correction,self.par['bb'],
                                self.par['bg'],self.par['br'],outPath=self.par['outpath'],
                                name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq,
-                               nchannels=self.cam.nchannels,blueBoost=self.blueboost)
+                               blueBoost=self.blueboost)
             self.n_acq += 1 # increase counter
             self.stop[0] = ret # use return value to break from loop

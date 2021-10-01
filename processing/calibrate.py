@@ -5,16 +5,12 @@ Created on Tue Jul  2 09:53:22 2019
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
-import sys
-sys.path.append('./common')
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
-
-from sfdi.getFile import getFile
-from mycsv import csvread
 from scipy.interpolate import interp1d
 import numpy as np
-from reflecMCSFD import reflecMCSFD
-from larsSFD import larsSFD
+from sfdi.common.getFile import getFile
+from sfdi.processing.models.reflecMCSFD import reflecMCSFD
+from sfdi.processing.models.larsSFD import larsSFD
+from sfdi.processing import __path__ as over_path
 
 def calibrate(AC, ACph, par, path=[], old=False):
     """Take the AC measure of the tissue and calibrates against the AC measure on the calibration phantom.
@@ -22,7 +18,7 @@ Need a .txt file with the phantom known optical properties."""
     
     if len(path) == 0:
         path.append(getFile('Select phantom reference file'))
-    test,_ = csvread(path[0],arr=True,delimiter='\t')
+    test = np.genfromtxt(path[0], delimiter='\t')
     
     # Interpolate optical properties at the measured wavelengths
     ## OLD interpolation (only central wavelength)
@@ -36,7 +32,8 @@ Need a .txt file with the phantom known optical properties."""
     
     ## NEW interpolation (with weighted average over bands)
     else:
-        data,_ = csvread('../common/overlaps_calibrated.csv',arr=True) # load overlaps spectrum
+        data,_ = np.genfromtxt('{}/overlaps_calibrated.csv'.format(over_path),
+                               delimiter=',') # load overlaps spectrum
         wv = data[0,:] # wavelength axis
         spec = data[(9,8,7,6,5,4,3,2,1),:] # 9 channels
         

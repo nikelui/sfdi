@@ -4,8 +4,10 @@ Created on Wed Jul 10 13:42:44 2019
 
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
-"""
 
+Diffuse reflectance model using diffuse aproximation
+
+"""
 import numpy as np
 
 ## TODO: fix doc

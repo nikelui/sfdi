@@ -9,11 +9,8 @@ import os,sys
 import numpy as np
 import cv2 as cv
 
-sys.path.append('./common')
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
-
-from sfdi.readParams3 import readParams
-from sfdi.getPath import getPath
+from sfdi.common.readParams import readParams
+from sfdi.common.getPath import getPath
 
 def rawDataLoad(par, prompt='Select folder', batch=False):
     """Select a folder to load the images contained inside.

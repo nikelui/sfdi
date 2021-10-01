@@ -29,7 +29,7 @@ from scipy.io import savemat
 sys.path.append('../common')
 sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
 
-from sfdi.readParams3 import readParams
+from sfdi.readParams import readParams
 from sfdi.crop import crop
 from sfdi.getPath import getPath
 from sfdi.getFile import getFile
@@ -153,22 +153,3 @@ for _d, dataset in enumerate(dirs):
         if len(par['savefmt']) > 0:
             print('{} saved'.format(dataset))
     print('Done!')
-
-    
-    # if (len(par['chrom_used'])>0):
-    #     for i in range(len(chrom_map)):
-    #         chrom_map[i] = chromPlot(chrom_map[i],names[i],par)
-    #     ## Plot average of chromophores in time
-    #     titles = ['',r'HbO$_2$','Hb',r'H$_2$O','lipid','melanin', 'metHb'] # chromophores names. the first is empty to
-    #                                                                   # respect the naming convention
-    #     titles = [titles[i] for i in par['chrom_used']] # Only keep used chromophores
-        
-    #     chroms_ave = mask.masked_array(chrom_map).mean(axis=(1,2)) # collapse dimensions and average
-    #     chroms_std = mask.masked_array(chrom_map).std(axis=(1,2)) # collapse dimensions and std
-    #     plt.figure(300)
-    #     for i in range(np.shape(chroms_ave)[1]):
-    #         plt.errorbar(np.arange(9),chroms_ave[:,i],fmt='D',yerr=chroms_std[:,i].data,linestyle='solid',
-    #                      capsize=5,markersize=3)
-    #     plt.legend(titles)
-    #     plt.grid(True)
-    #     plt.show(block=False)

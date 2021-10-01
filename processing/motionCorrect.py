@@ -7,12 +7,11 @@ email: luigi.belcastro@liu.se
 
 A function to perform motion correction algorithms on demodulated SFDI data
 """
-import sys, os
+import os
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
-sys.path.append('../')  # common folder
-from stackPlot import stackPlot
+from sfdi.processing.stackPlot import stackPlot
 
 def motionCorrect(AC, par, edge='sobel', con=1, gauss=(0,0), debug=False):
     """A function to perform motion correction
@@ -121,9 +120,9 @@ better results if applied to raw data (instead of calibrated reflectance)
 
 
 if __name__ == '__main__':
-    from sfdi.readParams3 import readParams
-    from rawDataLoad import rawDataLoad
-    from calibrate import calibrate
+    from sfdi.common.readParams import readParams
+    from sfdi.processing.rawDataLoad import rawDataLoad
+    from sfdi.processing.calibrate import calibrate
     
     par = readParams('../../processing/parameters.ini')
 

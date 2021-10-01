@@ -11,10 +11,8 @@ from PIL import Image
 from PIL import ImageTk as PIL_ImageTk
 from tkinter import NW
 import time, os
-#from pathlib import Path
 
 def gamma_calibration(root):
-
     ## Timing tests
     start = time.time()
     t_stamp = int(start) # get timestamp for the current acquisition

@@ -9,17 +9,8 @@ import PIL
 from PIL import ImageTk as PIL_ImageTk
 from tkinter import NW
 import time, os
-from common.sfdi.sinPattern import sinPattern
 import threading
-
-# def saveFunc(nFreq, nPhase, nchannels, curr_path, name, dataMat):
-#     """Function to save data, run in a separate thread"""
-#     for i in range(nchannels*3):
-#         for j in range(nFreq+1):
-#             for k in range(nPhase):
-#                 im = PIL.fromarray(dataMat[:,:,k + (nPhase*j) + i*(nPhase*(nFreq+1))].astype('uint8'))
-#                 im.save('{}/{}_{:d}-{:d}-{:d}.bmp'.format(curr_path, name, i, j, k))
-#     print("Pictures saved to: {}\n".format(curr_path))
+from sfdi.acquisition.sinPattern import sinPattern
 
 def saveFunc(i, j, k, nchannels, curr_path, name, frame):
     """Function to save data, run in a separate thread"""

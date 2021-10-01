@@ -4,26 +4,37 @@ Created on Mon Jul  1 11:16:24 2019
 
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
+
+Script for processing SFDI data
+
+Steps before starting:
+    - Check the parameters.ini file
+    - Turn motion correction to True or False
+    - Turn background masking to True or False
+    - Turn multi-frequencies to True or False
+
+Steps:
+    - Select calibration phantom data folder
+    - Select tissue data folder
+    - Select chromophore reference file
+    - Select a ROI on calibrated reflectance data
 """
-import sys, os
+import os
 import numpy as np
 import cv2 as cv
-from matplotlib import pyplot as plt
 from scipy.io import savemat
 
-sys.path.append('../common')
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
-
-from sfdi.readParams3 import readParams
-from sfdi.crop import crop
-from rawDataLoad import rawDataLoad
-from calibrate import calibrate
-from stackPlot import stackPlot
-from fitOps import fitOps
-from chromFit import chromFit
-from chromPlot import chromPlot
-from opticalSpectra import opticalSpectra
-from utilities.motionCorrect import motionCorrect
+from sfdi.common.readParams import readParams
+from sfdi.common.getFile import getFile
+from sfdi.processing.crop import crop
+from sfdi.processing.rawDataLoad import rawDataLoad
+from sfdi.processing.calibrate import calibrate
+from sfdi.processing.stackPlot import stackPlot
+from sfdi.processing.fitOps import fitOps
+from sfdi.processing.chromFit import chromFit
+from sfdi.processing.chromPlot import chromPlot
+from sfdi.processing.opticalSpectra import opticalSpectra
+from sfdi.processing.motionCorrect import motionCorrect
 
 
 par = readParams('parameters.ini')
@@ -34,15 +45,26 @@ if len(par['freq_used']) == 0: # use all frequencies if empty
 if len(par['wv_used']) == 0: # use all wavelengths if empty
     par['wv_used'] = list(np.arange(len(par['wv'])))
 
-## Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-AC,name,_ = rawDataLoad(par, 'Select tissue data folder')
-AC = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=True)
-
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 ACph,_,_ = rawDataLoad(par, 'Select calibration phantom data folder')
 
+## Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
+AC,name,_ = rawDataLoad(par, 'Select tissue data folder')
+if True:
+    AC = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=True)
+
+cfile = getFile('Select chromophores reference file')
+
 ## Calibration step
 cal_R = calibrate(AC, ACph, par)
+
+## True to mask background (e.g to remove black background that will return very high absorption)
+if False:
+    th = 0.1  # threshold value (calculated on RED wavelength at fx=0)
+    MASK = cal_R[:,:,-1,0] < th
+    MASK = MASK.reshape((MASK.shape[0], MASK.shape[1], 1, 1))  # otherwise np.tile does not work correctly
+    MASK = np.tile(MASK, (1, 1, cal_R.shape[2], cal_R.shape[3]))
+    cal_R = np.ma.array(cal_R, mask=MASK)
 
 nn = name.split('/')[-1].split('_')[1]  # base file name
 
@@ -107,9 +129,7 @@ if len(par['savefmt']) > 0:
         savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
     print('Done!')
 
-#sys.exit()
-
-chrom_map = chromFit(op_fit_maps, par) # linear fitting for chromophores. This is fast, no need to save
+chrom_map = chromFit(op_fit_maps, par, cfile) # linear fitting for chromophores. This is fast, no need to save
 op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)
 
 #if not os.path.exists(par['savefile']):
