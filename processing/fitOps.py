@@ -11,9 +11,9 @@ from datetime import datetime
 from scipy.optimize import minimize
 from scipy.interpolate import interp1d
 
-from reflecMCSFD import reflecMCSFD
-from larsSFD import larsSFD
-from sfdi.rebin import rebin
+from sfdi.processing.models.reflecMCSFD import reflecMCSFD
+from sfdi.processing.models.larsSFD import larsSFD
+from sfdi.processing.rebin import rebin
 
 def target_fun(opt,n,model,freqs,R_meas):
     """Function to minimize. It calculates the squared error between the model and the data.
@@ -76,7 +76,6 @@ def fitOps(cal_R,par,model='mc'):
     
     # Initialize optical properties map. The last dimension is 0:mua, 1:mus
     op_fit_maps = np.zeros((cal_Rbin.shape[0],cal_Rbin.shape[1],cal_Rbin.shape[2],2),dtype=float)
-    #res = [] # store results
     
     start = datetime.now()
     for i,w in enumerate(np.array(par['wv'])[par['wv_used']]):
@@ -91,7 +90,6 @@ def fitOps(cal_R,par,model='mc'):
                            options = {'maxiter':200, 'xatol':0.001, 'fatol':0.001})
                 
                 op_fit_maps[j,k,i,:] = temp.x
-                #res.append(temp)
         
         end = datetime.now()
         print('Elapsed time: {}'.format(str(end-start)))

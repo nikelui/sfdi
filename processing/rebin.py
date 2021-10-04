@@ -8,7 +8,7 @@ email: luigi.belcastro@liu.se
 
 import numpy as np
 
-def rebin(data,binsize):
+def rebin(data, binsize):
     """Function to efficiently bin a large data set with the reshape method (avoid for loops).
 If the dimensions are not multiples of nbin, it will crop the data."""
     data = data[:(data.shape[0] // binsize) * binsize,:(data.shape[1] // binsize) * binsize] # Crop the data

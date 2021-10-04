@@ -20,28 +20,25 @@ Steps:
     - Select chromophore reference file
     - Select a ROI on calibrated reflectance data
 """
-import sys, os, re
+import os, re
 import numpy as np
 import numpy.ma as mask
 import cv2 as cv
 from scipy.io import savemat
 
-sys.path.append('../common')
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
+from sfdi.common.readParams import readParams
+from sfdi.common.getPath import getPath
+from sfdi.common.getFile import getFile
+from sfdi.processing.crop import crop
+from sfdi.processing.rawDataLoad import rawDataLoad
+from sfdi.processing.calibrate import calibrate
+from sfdi.processing.stackPlot import stackPlot
+from sfdi.processing.fitOps import fitOps
+from sfdi.processing.chromFit import chromFit
+from sfdi.processing.motionCorrect import motionCorrect
 
-from sfdi.readParams import readParams
-from sfdi.crop import crop
-from sfdi.getPath import getPath
-from sfdi.getFile import getFile
-
-from rawDataLoad import rawDataLoad
-from calibrate import calibrate
-from stackPlot import stackPlot
-from fitOps import fitOps
-from chromFit import chromFit
-from utilities.motionCorrect import motionCorrect
-
-par = readParams('parameters.ini')
+from sfdi.processing import __path__ as par_path  # processing parameters path
+par = readParams('{}/parameters.ini'.format(par_path))
 
 if len(par['freq_used']) == 0:  # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
@@ -58,12 +55,12 @@ if path:  # check for empty path
     ##  Define the folders to process here. Leave empty for interactive prompt  ##
     ##############################################################################
     toProcess = ['1601804882', '1601805054', '1601805170', '1601805243']
-    
     if(not toProcess):  # In case you define by hand
         regex = input('Input base name to match (end with empty line): ').lower()  # only process matching directories
         while (regex != ''):  # End with an empty name
             toProcess.append(regex)
             regex = input('Input base name to match: ').lower()  # only process matching directories
+    
     ## Some regex magic
     pattern = "|".join(re.escape(s) for s in toProcess)
     rexp = re.compile(pattern)
@@ -110,22 +107,23 @@ for _d, dataset in enumerate(dirs):
         FX = [par['freq_used']]
     
     ## Save processing parameters on file
-    if not os.path.exists(par['savefile']):  # check if path exists and create it
-        os.mkdir(par['savefile'])
+    if _d == 0:
+        if not os.path.exists(par['savefile']):  # check if path exists and create it
+            os.mkdir(par['savefile'])
     
-    params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
-              'binsize': par['binsize'],  # pixel binning
-              'ROI': ROI,  # processed ROI
-              'fx': par['freqs'],  # all spatial frequencies
-        }
-    to_write = ['# Parameters\nbinsize = {}\nROI = {}\nwv = {}nm\nfx = {}mm^-1'.format(
-                 params['binsize'], params['ROI'], params['wv'], params['fx'])]
-    for _f, fx in enumerate(FX):
-        params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
-        to_write.append('f{} -> {}mm^-1\n'.format(_f, params['f{}'.format(_f)]))
-    with open('{}/processing_parameters.txt'.format(par['savefile']), 'w') as par_file:
-        print('\n'.join(to_write), file=par_file)
-    print('Parameters saved to file {}/processing_parameters.txt'.format(par['savefile']))
+        params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
+                  'binsize': par['binsize'],  # pixel binning
+                  'ROI': ROI,  # processed ROI
+                  'fx': par['freqs'],  # all spatial frequencies
+            }
+        to_write = ['# Parameters\nbinsize = {}\nROI = {}\nwv = {}nm\nfx = {}mm^-1'.format(
+                     params['binsize'], params['ROI'], params['wv'], params['fx'])]
+        for _f, fx in enumerate(FX):
+            params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
+            to_write.append('f{} -> {}mm^-1\n'.format(_f, params['f{}'.format(_f)]))
+        with open('{}/processing_parameters.txt'.format(par['savefile']), 'w') as par_file:
+            print('\n'.join(to_write), file=par_file)
+        print('Parameters saved to file {}/processing_parameters.txt'.format(par['savefile']))
     
     # loop through frequencies sub-sets and fit
     for _f, fx in enumerate(FX):

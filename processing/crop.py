@@ -2,10 +2,11 @@
 """
 Created on Mon Jun 24 14:35:37 2019
 
-@author: luibe59
+@author: Luigi Belcastro - Linköping University
+email: luigi.belcastro@liu.se
 """
 
-def crop(Im,ROI):
+def crop(Im, ROI):
     """Simple function to crop images with ROI acquired in OpenCV.
 - Im is an image in the form of a numpy array.
 - ROI is a tuple that defines a rectangle: (x,y,width,heigth),

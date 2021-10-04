@@ -2,11 +2,12 @@
 """
 Created on Mon Jun 24 14:20:42 2019
 
-@author: luibe59
+@author: Luigi Belcastro - Linköping University
+email: luigi.belcastro@liu.se
 """
 from numpy import sqrt
 
-def demodulate(Im1,Im2,Im3):
+def demodulate(Im1, Im2, Im3):
     """Algorithm to perform time-domain amplitude demodulation.
 
 Syntax: AC,DC = demodulate(Im1,Im2,Im3)

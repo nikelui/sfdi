@@ -37,7 +37,8 @@ from sfdi.processing.opticalSpectra import opticalSpectra
 from sfdi.processing.motionCorrect import motionCorrect
 
 
-par = readParams('parameters.ini')
+from sfdi.processing import __path__ as par_path  # processing parameters path
+par = readParams('{}/parameters.ini'.format(par_path))
 
 if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
@@ -117,42 +118,38 @@ if 'matlab' in par['savefmt']:
 
 ## Fitting for optical properties
 ## TODO: this part is pretty computationally intensive, might be worth to optimize
-op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']],ROI),par)  # fit for all fx
 
-## save optical properties to file. Remember to adjust the filename
-if len(par['savefmt']) > 0:
-    print('Saving data...')
-    fullpath = '{}/{}'.format(par['savefile'], nn)
+# loop through frequencies sub-sets and fit
+for _f, fx in enumerate(FX):
+    print('\nFrequency set {} of {}'.format(_f+1, len(FX)))
+    par['freq_used'] = fx
+    op_fit_maps = fitOps(crop(cal_R, ROI), par)
+    
+    if (len(par['chrom_used']) > 0):
+        chrom_map = chromFit(op_fit_maps, par, cfile) # linear fitting for chromofores
+        
+    ## Save data to file
     if 'numpy' in par['savefmt']:
-        np.savez('{}_OPmap_f0'.format(fullpath), op_fit_maps=op_fit_maps.data)  # numpy format
+        np.savez('{}/{}_f{}'.format(par['savefile'], nn, _f), op_fit_maps=op_fit_maps.data)
+        if (len(par['chrom_used']) > 0):
+            np.savez('{}/{}_f{}_chrom'.format(par['savefile'], nn, _f), chrom_map=chrom_map.data)
     if 'matlab' in par['savefmt']:
-        savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
-    print('Done!')
+        savemat('{}/{}_f{}'.format(par['savefile'], nn, _f), {'op_fit_maps':op_fit_maps.data})
+        if (len(par['chrom_used']) > 0):
+            savemat('{}/{}_f{}_chrom'.format(par['savefile'], nn, _f), {'chrom_map':chrom_map.data})
+    if len(par['savefmt']) > 0:
+        print('{} saved'.format(nn))
+print('Done!')
 
-chrom_map = chromFit(op_fit_maps, par, cfile) # linear fitting for chromophores. This is fast, no need to save
+# Interactive plot
+# TODO: save all datasets and allow to choose one?
 op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)
+# chrom_map = chromPlot(chrom_map, name.split('/')[-1], par)
 
-#if not os.path.exists(par['savefile']):
-#        os.mkdir(par['savefile'])
-#np.save('{}{}_ave_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_ave)
-#np.save('{}{}_std_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_std)
+## Save average optical properties to file
+# if not os.path.exists(par['savefile']):
+#         os.mkdir(par['savefile'])
+# np.save('{}{}_ave_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_ave)
+# np.save('{}{}_std_{}fx.npy'.format(par['savefile'], nn, len(par['freq_used'])), opt_std)
 
-# TODO: loop through FX earlier and save
-## Now looop through different fx combinations
-#for i in range(5):
-#    par['freq_used'] = [i,i+1,i+2,i+3] # select spatial frequencies
-#    
-#    op_fit_maps = fitOps(crop(cal_R[:,:,:,par['freq_used']], ROI), par)  # fit optical properties
-#    chrom_map = chromFit(op_fit_maps,par)  # linear fitting for chromofores
-#    
-#    ## save optical properties to file. Remember to adjust the filename
-#    print('Saving data...')
-#    suffix = '{}'.format(i)  # suffix = loop iteration
-#    fullpath = '{}{}_OPmap_{}wv{}'.format(par['savefile'], nn, len(par['freq_used']), suffix)
-#    savemat(fullpath, {'op_map':op_fit_maps.data})  # matlab format
-#    np.save(fullpath, op_fit_maps.data)  # numpy format
-#    print('Done!')
 
-## Plots
-#op_fit_maps,op_ave,op_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)
-#chrom_map = chromPlot(chrom_map, name.split('/')[-1], par)

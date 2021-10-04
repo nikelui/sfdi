@@ -16,8 +16,8 @@ from matplotlib.widgets import RadioButtons, AxesWidget
 import matplotlib.gridspec as gridspec
 import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from sfdi.crop import crop
 
+from sfdi.processing.crop import crop
 
 def mad(x,scale=1.4826,axis=None):
     """Median assoulte difference (since Scipy does not implement it anymore).
@@ -26,7 +26,6 @@ def mad(x,scale=1.4826,axis=None):
     (for normal distribution)"""
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
-
 
 def colourbar(mappable):
     """Improved colorbar function. Fits well to the axis dimension."""
@@ -38,7 +37,6 @@ def colourbar(mappable):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     return fig.colorbar(mappable, cax=cax)
     
-
 class MyRadioButtons(RadioButtons):
     """Custom radio button class from stackoverflow [https://stackoverflow.com/a/55102639]"""
     def __init__(self, ax, labels, active=0, activecolor='blue', size=49,
@@ -101,8 +99,6 @@ class MyRadioButtons(RadioButtons):
         if event.artist in self.circles:
             self.set_active(self.circles.index(event.artist))
 
-
-
 def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     """Select ROIs and calculate average optical properties on each one.
 
@@ -127,18 +123,6 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
 """
     ## Put callbacks here
     def call_mua(label):
-#        label_dict = {'B':0,'GB':1,'G':2,'GR':3,'R':4}
-#        data_a = op_fit_maps[:,:,label_dict[label],0]
-#        data_s = op_fit_maps[:,:,label_dict[label],1]
-#        im1.set_data(data_a)
-#        im1.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],0]))
-#        cbar1 = colourbar(im1)
-#
-#        im2.set_data(data_s)
-#        im2.set_clim(vmin=0,vmax=np.nanmax(op_fit_maps[:,:,label_dict[label],1]))
-#        cbar2 = colourbar(im2)
-#        plt.draw()
-#        plt.tight_layout()
         ## new callback
         data_a = op_fit_maps[:,:,int(label),0]
         data_s = op_fit_maps[:,:,int(label),1]
@@ -181,24 +165,9 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     opt_ave = np.zeros((len(ROIs),len(par['wv_used']),2),dtype=float)
     opt_std = np.zeros((len(ROIs),len(par['wv_used']),2),dtype=float)
 
-    # Before calculating average, put the 
-
     for i in range(len(ROIs)): # calculate average and std inside ROIs
         opt_ave[i,:,:] = np.nanmean(crop(op_fit_maps,ROIs[i,:]//par['binsize']),axis=(0,1))
         opt_std[i,:,:] = np.nanstd(crop(op_fit_maps,ROIs[i,:]//par['binsize']),axis=(0,1))
-    
-#    # New: manually define axis using gridspec
-#    fig = plt.figure(constrained_layout=False,figsize=(10,6))
-#    spec = gridspec.GridSpec(ncols=3,nrows=2,width_ratios=[1,0.3,1],figure=fig)
-#    
-#    ax1 = fig.add_subplot(spec[0,0])
-#    ax2 = fig.add_subplot(spec[0,1])
-#    ax3 = fig.add_subplot(spec[0,2])
-#    ax4 = fig.add_subplot(spec[1,0])
-#    ax5 = fig.add_subplot(spec[1,1])
-#    ax6 = fig.add_subplot(spec[1,2])
-#    
-#    ax = np.array([[ax1,ax2,ax3],[ax4,ax5,ax6]]) # this way the old scheme is kept
     
     ## New layout
     fig = plt.figure(constrained_layout=False,figsize=(10,7))
@@ -212,7 +181,6 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     ax5 = fig.add_subplot(spec[1,1])  # 1,1 -> xx
     ax6 = fig.add_subplot(spec[2,1])  # 1,2 -> 2,1
     ax = np.array([[ax1,ax2,ax3],[ax4,None,ax6]]) # this way the old scheme is kept
-    
     
     vmax = np.nanmax(op_fit_maps[:,:,:,0])
     im1 = ax[0,0].imshow(op_fit_maps[:,:,0,0],cmap='magma',vmin=0,vmax=vmax)
@@ -234,8 +202,6 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
     current_cmap = cm.get_cmap('magma')
     current_cmap.set_bad(color='cyan') # masked values colour
     cbar2 = colourbar(im2)
-
-    #ax[1,1].axis('off')
     
     b = par['binsize'] # to correctly rescale the rectangles
     

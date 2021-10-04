@@ -6,14 +6,9 @@ Created on Fri Jul 12 11:30:59 2019
 email: luigi.belcastro@liu.se
 """
 
-import sys
 import numpy as np
-
-sys.path.append('./common')
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
-
-from sfdi.getFile import getFiles
 from scipy.io import loadmat
+from sfdi.common.getFile import getFiles
 
 def smooth(interval, window_size):
     """Perform moving average to smooth dataset"""
@@ -45,10 +40,6 @@ prompt: optional string for file dialog"""
         AC = np.zeros((1, 1, wv.size, len(par['freqs'])), dtype='float')  #try to adopt this as standard data format
         
         for i in range(0,spec.shape[1], par['nphase']): # read data n phases at a time
-#            AC[0,0,:,i//3] = np.sqrt(2)/3 * np.sqrt((spec[:,i]-spec[:,i+1])**2 + # demodulate
-#                        (spec[:,i+1]-spec[:,i+2])**2 +
-#                        (spec[:,i+2]-spec[:,i])**2) / intT # Normalize by exposure time
-            
             ## New AC demodulation, with vectorialization. Allows to use n-phase instead of 3
             temp = np.concatenate((spec[:, i:i+par['nphase']], spec[:, i, np.newaxis]), axis=1) # append the first element again at the end
             AC[0,0,:,i//par['nphase']] = np.sqrt(np.sum(np.diff(temp, axis=1)**2, axis=1)) / intT
@@ -66,7 +57,7 @@ if __name__ == '__main__':
     from sfdi.readParams3 import readParams
     
     par = readParams('../acquisition/parameters.ini')
-    temp,wv = sfdsDataLoad(par,'Select SDFD data file')
+    temp,wv = sfdsDataLoad(par,'Select SFDS data file')
 
     fig,ax = plt.subplots(1,1)
     for i in range(temp.shape[1]):

@@ -5,13 +5,12 @@ Created on Mon Jul  8 13:59:17 2019
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
-
-from sfdi.getFile import getFile
-from mycsv import csvread
-
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import lsq_linear
+
+from sfdi.common.getFile import getFile
+from sfdi.processing import __path__ as over_path
 
 def chromFit(op_fit_maps, par, cfile='', old=False, linear=False):
     """A function to do linear fitting of absorption to known chromophores.
@@ -29,7 +28,7 @@ def chromFit(op_fit_maps, par, cfile='', old=False, linear=False):
         if not cfile:
             # Select chromophores file
             cfile = getFile('Select chromophores file')
-        chromophores,_ = csvread(cfile, arr=True, delimiter='\t')
+        chromophores = np.genfromtxt(cfile, delimiter='\t')
         
         # Interpolate at the used wavelengths
         ## OLD method: central wavelengths
@@ -40,8 +39,9 @@ def chromFit(op_fit_maps, par, cfile='', old=False, linear=False):
         
         ## NEW method: weighted average
         else:
-            data,_ = csvread('../common/overlaps_calibrated.csv',arr=True)  # load overlaps spectrum
-            spec = data[(9,6,5,4,1),:]  # Keep 5 channels in order from BB to RR
+            data = np.genfromtxt('{}/overlaps_calibrated.csv'.format(over_path), delimiter=',') # load overlaps spectrum
+            
+            spec = data[tuple(x+1 for x in par['wv_used'][::-1]),:]  # Need to invert the order to go from RGB to BGR
             wv = data[0,:]  # wavelength axis
             
             f = interp1d(chromophores[:,0],chromophores[:,par['chrom_used']],kind='linear',
