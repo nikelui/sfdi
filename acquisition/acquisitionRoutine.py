@@ -55,6 +55,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     - blueBoost: flag to increase exposure time for blue
 """
     ## Timing tests
+    #TODO: use time instead
     start = cv.getTickCount()
     
     t_patt = []

@@ -41,29 +41,20 @@ data structure:
 """
 import os
 import itertools
+import cv2 as cv
 import numpy as np
 import numpy.ma as ma
 from scipy.io import loadmat
 from scipy.optimize import curve_fit
-import cv2 as cv
-from sfdi.common.sfdi.crop import crop
-from sfdi.common.stackPlot import stackPlot
 from matplotlib import pyplot as plt
 import matplotlib.colors as colors
-import matplotlib.cm as cm
 import matplotlib.patches as patches
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from depthMC import depthMC
+import matplotlib.cm as cm
 
-def colourbar(mappable, **kwargs):
-    """Improved colorbar function. Fits well to the axis dimension."""
-    if (mappable.colorbar is not None):
-        mappable.colorbar.remove()
-    ax = mappable.axes
-    fig = ax.figure
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    return fig.colorbar(mappable, cax=cax, **kwargs)
+from sfdi.analysis.depthMC import depthMC
+from sfdi.processing.crop import crop
+from sfdi.processing.stackPlot import stackPlot
+from sfdi.common.colourbar import colourbar
 
 def mad(x,scale=1.4826,axis=None):
     """Median assoulte difference (since Scipy does not implement it anymore).
@@ -84,6 +75,12 @@ class dataDict(dict):
        super(dataDict, self).__init__(*arg, **kw)
        parameters = kw.pop('parameters', {'wv':[458, 520, 536, 556, 626]})
        self.par = parameters
+    
+    def list_data(self):
+        """List the name of all the datasets and the number of spatial frequencies ranges"""
+        print('Datasets:')
+        for key in self.keys():
+            print('- {} [{} fx]'.format(key, len(self['key'])))
     
     def plot_op(self, key, **kwargs):
         """Plot optical properties of dataset <key>"""
@@ -124,7 +121,7 @@ class dataDict(dict):
                 _k = f_used.index(_i)  # change variable for simplicity
                 mus = self[key][fx[_i]]['op_fit_maps'][:,:,_j,1]
                 
-                # import pdb; pdb.set_trace()
+                # import pdb; pdb.set_trace()  # DEBUG
                 
                 im = ax[_k, _j].imshow(mus, cmap='viridis', vmin=vmin, vmax=vmax)
                 colourbar(im)

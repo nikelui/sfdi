@@ -10,8 +10,7 @@ import pickle
 import json
 import numpy as np
 from scipy.optimize import least_squares
-from sfdi.common.sfdi.getPath import getPath
-
+from sfdi.common.getPath import getPath
 
 def load_obj(name, path):
     """Utility function to load python objects using pickle module"""
@@ -21,10 +20,10 @@ def load_obj(name, path):
 def two_layer_fun(x, li, bm):
     """Partial volumes equation for a two layer model
 __________
-a_________ | |- (la, ba)
+____a_____ | |- (la, ba)
            |
            |
-b________  |--- (li, bb)
+____b____  |--- (li, bb)
 
 x = [ba, bb, la]
 bm = measured b coefficient
@@ -44,7 +43,6 @@ def read_param(fpath):
                     item = json.loads(item[:end+1])
                 params[key] = item
     return params
-
 
 #%% Load pre-processed data
 data_path = getPath('select data path')

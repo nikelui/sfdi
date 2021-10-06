@@ -15,9 +15,9 @@ import json
 import numpy as np
 from scipy.io import loadmat  # new standard: work with Matlab files for compatibility
 from scipy.optimize import curve_fit
-from sfdi.common.sfdi.getPath import getPath
 
-from dataDict import dataDict  # moved class to other file
+from sfdi.common.getPath import getPath
+from sfdi.analysis.dataDict import dataDict  # moved class to other file
 
 # support functions
 def save_obj(obj, name, path):
@@ -25,17 +25,14 @@ def save_obj(obj, name, path):
     with open(path + '/obj/' + name + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
-
 def load_obj(name, path):
     """Utility function to load python objects using pickle module"""
     with open(path + '/obj/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
-    
 
 def fit_fun(lamb, a, b):
     """Power law function to fit data to"""
     return a * np.power(lamb, -b)
-
 
 def read_param(fpath):
     params = {}
