@@ -11,12 +11,11 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.colors import LogNorm
+#from matplotlib.colors import LogNorm
 from matplotlib.backend_bases import MouseButton
-from sfdi.common.sfdi.getPath import getPath
-from sfdi.common.colourbar import colourbar
 
+from sfdi.common.getPath import getPath
+from sfdi.common.colourbar import colourbar
 
 def fit_fun(lamb, a, b):
     """Exponential function to fit data to"""
@@ -30,7 +29,6 @@ def mad(x,scale=1.4826,axis=None):
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
 
-
 def onclick(event):
     global coord
     if event.name == 'button_press_event':
@@ -42,11 +40,9 @@ def onclick(event):
     if event.button == MouseButton.RIGHT:
         coord['x'] = None
         coord['y'] = None
-        
 
 # select data path
 path = getPath('Select data path')
-
 
 wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm)
 
@@ -56,11 +52,11 @@ files = [x for x in os.listdir(path) if x.endswith('.npz') and 'calR' not in x]
 files.sort()
 titles = [y.split('_')[1] for y in files]  # file name
 for file in files:
-    data = np.load(f'{path}/{file}')
+    data = np.load('{}/{}'.format(path, file))
     op_fit_maps.append(data['op_fit_maps'])
 
 for _a, op_map in enumerate(op_fit_maps[:3], start=1):
-    print(f'Fitting dataset {_a}...')
+    print('Fitting dataset {}...'.format(_a))
     p_map = np.zeros((op_map.shape[0], op_map.shape[1], 2), dtype=float)
     for _i in range(op_map.shape[0]):
         for _j in range(op_map.shape[1]):

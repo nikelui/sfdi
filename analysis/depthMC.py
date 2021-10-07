@@ -37,7 +37,7 @@ Date: 1/17/18
 import numpy as np
 from scipy.interpolate import interp2d
 import warnings
-
+from sfdi.analysis.depthCalculator.data import __path__ as dep_path
 
 def depthMC(mua, mus, fx):
     # Tables values
@@ -82,8 +82,7 @@ def depthMC(mua, mus, fx):
     for _i, cdf in enumerate(cdflevels):
         for _j in range(len(mua)):
             # load each CDF level table
-            table = np.genfromtxt('depthCalculator/data/cdflevel{}table.csv'.format(cdf),
-                          delimiter=',')
+            table = np.genfromtxt('{}/cdflevel{}table.csv'.format(dep_path._path[0], cdf), delimiter=',')
             f = interp2d(tablemuspmua, tablefxs/lstar[_j], table.T * lstar[_j], kind='linear')
             depths[_i, :, _j] = f(muspmua[_j], fx)
     return depths

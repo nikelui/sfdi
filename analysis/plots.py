@@ -10,10 +10,8 @@ Script to plot mua, mus' maps at 5 wavelengths
 import os
 import numpy as np
 from matplotlib import pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from zipfile import BadZipFile
 from sfdi.common.colourbar import colourbar
-
 
 fnames = [x for x in os.listdir(os.getcwd()) if x.endswith('npz')]
 data = []

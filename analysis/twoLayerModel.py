@@ -5,7 +5,6 @@ Created on Thu Feb  4 13:10:56 2021
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
-
 import pickle
 import json
 import numpy as np
@@ -14,7 +13,7 @@ from sfdi.common.getPath import getPath
 
 def load_obj(name, path):
     """Utility function to load python objects using pickle module"""
-    with open(path + '/obj/' + name + '.pkl', 'rb') as f:
+    with open('{}/obj/{}.pkl'.format(path, name), 'rb') as f:
         return pickle.load(f)
     
 def two_layer_fun(x, li, bm):

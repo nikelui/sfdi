@@ -7,10 +7,9 @@ email: luigi.belcastro@liu.se
 """
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import numpy.ma as mask
-
+from sfdi.common.colourbar import colourbar
 
 def mad(x,scale=1.4826,axis=None):
     """Median assoulte difference (since Scipy does not implement it anymore).
@@ -19,16 +18,6 @@ def mad(x,scale=1.4826,axis=None):
     (for normal distribution)"""
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
-
-def colourbar(mappable):
-    """Improved colorbar function. Fits well to the axis dimension."""
-    if (mappable.colorbar is not None):
-        mappable.colorbar.remove()
-    ax = mappable.axes
-    fig = ax.figure
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    return fig.colorbar(mappable, cax=cax)
 
 def chromPlot(chrom_map, name, par, outliers=True):
     """"A function to plot the chromophores distribution map.

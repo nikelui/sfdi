@@ -11,7 +11,7 @@ try:
     import PyCapture2 as pc
 except ImportError:
     import sys
-    sys.path.append('C:/PythonX/Lib/site-packages/')
+    sys.path.append('C:\PythonX\Lib\site-packages')
     import PyCapture2 as pc
 
 

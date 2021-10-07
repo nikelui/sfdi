@@ -22,12 +22,12 @@ from sfdi.analysis.dataDict import dataDict  # moved class to other file
 # support functions
 def save_obj(obj, name, path):
     """Utility function to save python objects using pickle module"""
-    with open(path + '/obj/' + name + '.pkl', 'wb') as f:
+    with open('{}/obj/{}.pkl'.format(path, name), 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 def load_obj(name, path):
     """Utility function to load python objects using pickle module"""
-    with open(path + '/obj/' + name + '.pkl', 'rb') as f:
+    with open('{}/obj/{}.pkl'.format(path, name), 'rb') as f:
         return pickle.load(f)
 
 def fit_fun(lamb, a, b):
@@ -48,7 +48,6 @@ def read_param(fpath):
                 params[key] = item
     return params
 
-#%%
 
 wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm). Import from params?
 regex = re.compile('.*f\d\.mat')  # regular expression for optical properties

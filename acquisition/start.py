@@ -41,8 +41,8 @@ from sfdi.camera.pointGrey import PointGrey as Camera  # Change this as appropri
 from sfdi.common.readParams import readParams
 from sfdi.acquisition import __path__ as par_path
 
-## Read parameters from .cfg file
-par = readParams('{}/parameters.ini'.format(par_path))
+## Read parameters from .ini file
+par = readParams('{}/parameters.ini'.format(par_path[0]))
 ## Load gamma correction array
 if par['cpath']:
     par['gamma'] = genfromtxt(par['cpath'], delimiter=',')
