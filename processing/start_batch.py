@@ -38,7 +38,9 @@ from sfdi.processing.chromFit import chromFit
 from sfdi.processing.motionCorrect import motionCorrect
 
 from sfdi.processing import __path__ as par_path  # processing parameters path
-par = readParams('{}/parameters.ini'.format(par_path))
+from sfdi.common.phantoms import __path__ as ph_path  # phantoms reference data path
+
+par = readParams('{}/parameters.ini'.format(par_path[0]))
 
 if len(par['freq_used']) == 0:  # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
@@ -47,15 +49,17 @@ if len(par['wv_used']) == 0:  # use all wavelengths if empty
     par['wv_used'] = list(np.arange(len(par['wv'])))
 
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-ACph,_ = rawDataLoad(par,'Select calibration phantom data folder')
+phantom_path = getPath('Select calibration phantom data folder')
+ACph,_ = rawDataLoad(par, phantom_path, batch=True)
+
 path = getPath('Select base folder')
 if path:  # check for empty path
     dirs = [x for x in os.listdir(path) if os.path.isdir(path+'/'+x)]  # list of directories
     ##############################################################################
     ##  Define the folders to process here. Leave empty for interactive prompt  ##
     ##############################################################################
-    # toProcess = ['1601804882', '1601805054', '1601805170', '1601805243']
-    toProcess = ['1601804882', '1601805054']
+    toProcess = ['wound1', 'wound2', 'wound3', 'wound4', 'wound5', 'wound6',
+                 'wound7', 'wound8', 'wound9', 'wound11', 'wound13', 'wound15']
     if(not toProcess):  # In case you define by hand
         regex = input('Input base name to match (end with empty line): ').lower()  # only process matching directories
         while (regex != ''):  # End with an empty name
@@ -67,19 +71,25 @@ if path:  # check for empty path
     rexp = re.compile(pattern)
     dirs = [x for x in dirs if rexp.search(x.lower())]  # filter only matching names
 
-cfile = getFile('Select chromophores reference file')
+if (len(par['chrom_used']) > 0):
+    cfile = getFile('Select chromophores reference file')  # Get chromophores reference file
 
+ph_name = phantom_path.split('_')[-2]
+cphantom = '{}/{}.txt'.format(ph_path._path[0], ph_name)
+if not os.path.exists(cphantom):
+    cphantom = []  # pass an empty list to get interactive prompt
+#%%
 ## Begin loop (one folder at a time)
 for _d, dataset in enumerate(dirs):
     # Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
+    print('Dataset {} of {}'.format(_d+1, len(dataset)))
     AC,_ = rawDataLoad(par, '{}/{}'.format(path, dataset), batch=True)
 
     ## Calibration step
-    print('Dataset {} of {}'.format(_d+1, len(dataset)))
     print('Calibrating {}...'.format(dataset))
     if True:  # True to perform motion correction (slower)
         AC = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=False)  # correct motion artifacts in raw data
-    cal_R = calibrate(AC, ACph, par)
+    cal_R = calibrate(AC, ACph, par, path=[cphantom])
 
     ## True to mask background (e.g to remove black background that will return very high absorption)
     if False:
@@ -91,12 +101,12 @@ for _d, dataset in enumerate(dirs):
     print('Calibration done.')
     
     if False:  # plot for DEBUG purposes
-        stackPlot(cal_R[0],'magma')
+        stackPlot(cal_R,'magma')
         # sys.exit()
     
     ## Select only one ROI on the first calibration image
     if _d == 0:
-        ROI = cv.selectROI('Select ROI', cal_R[0][:,:,0,0])  # press Enter to confirm selection
+        ROI = cv.selectROI('Select ROI', cal_R[:,:,0,0])  # press Enter to confirm selection
         cv.destroyWindow('Select ROI')
     
     ## Fitting for optical properties
@@ -121,7 +131,7 @@ for _d, dataset in enumerate(dirs):
                      params['binsize'], params['ROI'], params['wv'], params['fx'])]
         for _f, fx in enumerate(FX):
             params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
-            to_write.append('f{} -> {}mm^-1\n'.format(_f, params['f{}'.format(_f)]))
+            to_write.append('f{} -> {}mm^-1'.format(_f, params['f{}'.format(_f)]))
         with open('{}/processing_parameters.txt'.format(par['savefile']), 'w') as par_file:
             print('\n'.join(to_write), file=par_file)
         print('Parameters saved to file {}/processing_parameters.txt'.format(par['savefile']))
