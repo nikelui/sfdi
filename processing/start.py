@@ -70,6 +70,11 @@ if os.path.exists(a_path):
     par['nphase'] = apar['nphase']
     par['wv'] = apar['wv']
 
+# get processing parameters, if exist from previous datasets
+p_path = '{}/processing_parameters.ini'.format(par['savefile'])
+if os.path.exists(p_path):
+    ppar = readParams(p_path)
+
 ## Calibration step
 ph_name = phantom_path.split('/')[-1].split('_')[-2]
 cphantom = ['{}/{}.txt'.format(ph_path._path[0], ph_name)]
@@ -86,15 +91,19 @@ if False:
     MASK = np.tile(MASK, (1, 1, cal_R.shape[2], cal_R.shape[3]))
     cal_R = np.ma.array(cal_R, mask=MASK)
 
-nn = data_path.split('/')[-1].split('_')[-2]  # base file name
-
+nn = data_path.split('/')[-1]  # base file name
+#%%
 ## Select ROI on calibration image
-ROI = cv.selectROI('Select ROI', cal_R[:,:,0,0])  # press Enter to confirm selection
-cv.destroyWindow('Select ROI')
+# New: if a ROI already exists from previous datasets, you can choose to keep it
+if True and os.path.exists(p_path) and 'roi' in ppar.keys():
+    ROI = ppar['roi']
+else:
+    ROI = cv.selectROI('Select ROI', cal_R[:,:,0,0])  # press Enter to confirm selection
+    cv.destroyWindow('Select ROI')
 
 ## New: plot this after selecting ROI (smaller image)
 stackPlot(crop(cal_R, ROI), 'magma')
-#%%
+
 ## check if save directories exist and create them otherwise
 if not os.path.exists(par['savefile']):
     os.makedirs(par['savefile'])
@@ -110,20 +119,14 @@ params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
           'ROI': list(ROI),  # processed ROI
           'fx': par['freqs'],  # all spatial frequencies
     }
-to_write = ['# Parameters\nbinsize = {}\nROI = {}\nwv = {}nm\nfx = {}mm^-1'.format(
+to_write = ['[DEFAULT]\n# Parameters\nbinsize = {}\nROI = {}\nwv = {}\nfx = {}'.format(
              params['binsize'], params['ROI'], params['wv'], params['fx'])]
 for _f, fx in enumerate(FX):
     params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
-    to_write.append('f{} = {}mm^-1\n'.format(_f, params['f{}'.format(_f)]))
-with open('{}/processing_parameters.txt'.format(par['savefile']), 'w') as par_file:
+    to_write.append('f{} = {}\n'.format(_f, list(params['f{}'.format(_f)])))
+with open('{}/processing_parameters.ini'.format(par['savefile']), 'w') as par_file:
     print('\n'.join(to_write), file=par_file)
-print('Parameters saved to file {}/processing_parameters.txt'.format(par['savefile']))
-
-## save calibrated reflectance data (matlab and npy format)
-# if 'numpy' in par['savefmt']:
-#     np.save('{}/calR/{}'.format(par['savefile'], nn), crop(cal_R, ROI))  # numpy format
-# if 'matlab' in par['savefmt']:
-#     savemat('{}/calR/{}'.format(par['savefile'], nn), {'calibrated_R':crop(cal_R, ROI)})  # matlab format
+print('Parameters saved to file {}/processing_parameters.ini'.format(par['savefile']))
 
 ## DEBUG: stop here if you only want calibrated reflectance
 # plt.savefig('{}calR/{}.png'.format(par['savefile'], nn))  # stack plot
@@ -144,14 +147,14 @@ for _f, fx in enumerate(FX):
     ## Save data to file
     if 'numpy' in par['savefmt']:
         np.savez('{}/{}_f{}'.format(par['savefile'], nn, _f), op_fit_maps=op_fit_maps.data)
-        np.savez('{}/{}_calR'.format(par['savefile'], nn), cal_R=cal_R, ROI=ROI)
+        np.savez('{}/{}_calR'.format(par['savefile'], nn), cal_R=crop(cal_R,ROI), ROI=ROI)
         if (len(par['chrom_used']) > 0):
             np.savez('{}/{}_f{}_chrom'.format(par['savefile'], nn, _f), chrom_map=chrom_map.data)
     if 'matlab' in par['savefmt']:
-        savemat('{}/{}_f{}'.format(par['savefile'], nn, _f), {'op_fit_maps':op_fit_maps.data})
-        savemat('{}/{}_calR'.format(par['savefile'], nn), {'cal_R':cal_R, 'ROI':ROI})
+        savemat('{}/{}_f{}.mat'.format(par['savefile'], nn, _f), {'op_fit_maps':op_fit_maps.data})
+        savemat('{}/{}_calR.mat'.format(par['savefile'], nn), {'cal_R':crop(cal_R,ROI), 'ROI':ROI})
         if (len(par['chrom_used']) > 0):
-            savemat('{}/{}_f{}_chrom'.format(par['savefile'], nn, _f), {'chrom_map':chrom_map.data})
+            savemat('{}/{}_f{}_chrom.mat'.format(par['savefile'], nn, _f), {'chrom_map':chrom_map.data})
     if len(par['savefmt']) > 0:
         print('{} saved'.format(nn))
 print('Done!')

@@ -132,17 +132,17 @@ for _d, dataset in enumerate(dirs):
     
         params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
                   'binsize': par['binsize'],  # pixel binning
-                  'ROI': ROI,  # processed ROI
+                  'ROI': list(ROI),  # processed ROI
                   'fx': par['freqs'],  # all spatial frequencies
             }
-        to_write = ['# Parameters\nbinsize = {}\nROI = {}\nwv = {}nm\nfx = {}mm^-1'.format(
+        to_write = ['[DEFAULT]\n# Parameters\nbinsize = {}\nROI = {}\nwv = {}\nfx = {}'.format(
                      params['binsize'], params['ROI'], params['wv'], params['fx'])]
         for _f, fx in enumerate(FX):
             params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
-            to_write.append('f{} -> {}mm^-1'.format(_f, params['f{}'.format(_f)]))
-        with open('{}/processing_parameters.txt'.format(par['savefile']), 'w') as par_file:
+            to_write.append('f{} = {}'.format(_f, list(params['f{}'.format(_f)])))
+        with open('{}/processing_parameters.ini'.format(par['savefile']), 'w') as par_file:
             print('\n'.join(to_write), file=par_file)
-        print('Parameters saved to file {}/processing_parameters.txt'.format(par['savefile']))
+        print('Parameters saved to file {}/processing_parameters.ini'.format(par['savefile']))
     
     # loop through frequencies sub-sets and fit
     for _f, fx in enumerate(FX):
