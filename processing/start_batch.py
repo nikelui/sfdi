@@ -74,8 +74,16 @@ if path:  # check for empty path
 if (len(par['chrom_used']) > 0):
     cfile = getFile('Select chromophores reference file')  # Get chromophores reference file
 
-ph_name = phantom_path.split('_')[-2]
-cphantom = '{}/{}.txt'.format(ph_path._path[0], ph_name)
+# Update parameter if acquisition_parameters is found
+a_path = '{}/acquisition_parameters.ini'.format('/'.join(phantom_path.split('/')[:-1]))
+if os.path.exists(a_path):
+    apar = readParams(a_path)
+    par['fx'] = apar['fx']
+    par['nphase'] = apar['nphase']
+    par['wv'] = apar['wv']
+
+ph_name = phantom_path.split('/')[-1].split('_')[-2]
+cphantom = ['{}/{}.txt'.format(ph_path._path[0], ph_name)]
 if not os.path.exists(cphantom):
     cphantom = []  # pass an empty list to get interactive prompt
 #%%
@@ -89,7 +97,7 @@ for _d, dataset in enumerate(dirs):
     print('Calibrating {}...'.format(dataset))
     if True:  # True to perform motion correction (slower)
         AC = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=False)  # correct motion artifacts in raw data
-    cal_R = calibrate(AC, ACph, par, path=[cphantom])
+    cal_R = calibrate(AC, ACph, par, path=cphantom)
 
     ## True to mask background (e.g to remove black background that will return very high absorption)
     if False:

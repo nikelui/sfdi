@@ -15,9 +15,9 @@ from matplotlib.patches import Rectangle
 from matplotlib.widgets import RadioButtons, AxesWidget
 import matplotlib.gridspec as gridspec
 import matplotlib.cm as cm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from sfdi.processing.crop import crop
+from sfdi.common.colourbar import colourbar
 
 def mad(x,scale=1.4826,axis=None):
     """Median assoulte difference (since Scipy does not implement it anymore).
@@ -26,16 +26,6 @@ def mad(x,scale=1.4826,axis=None):
     (for normal distribution)"""
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
-
-def colourbar(mappable):
-    """Improved colorbar function. Fits well to the axis dimension."""
-    if (mappable.colorbar is not None):
-        mappable.colorbar.remove()
-    ax = mappable.axes
-    fig = ax.figure
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    return fig.colorbar(mappable, cax=cax)
     
 class MyRadioButtons(RadioButtons):
     """Custom radio button class from stackoverflow [https://stackoverflow.com/a/55102639]"""
@@ -216,8 +206,7 @@ def opticalSpectra(Im,op_fit_maps,par,save=False,outliers=False):
         
         rect = Rectangle((ROIs[i,0]//b,ROIs[i,1]//b),ROIs[i,2]//b,ROIs[i,3]//b,fill=False,
                          edgecolor=colours[i],facecolor=None,linewidth=2,linestyle=lin)
-        ax[0,1].add_patch(rect)
-        
+        ax[0,2].add_patch(rect)
         
         ax[1,0].errorbar(np.array(par['wv'])[par['wv_used']],opt_ave[i,:,0],yerr=opt_std[i,:,0],
               fmt='D',linestyle=lin,color=colours[i],capsize=5,markersize=3)
