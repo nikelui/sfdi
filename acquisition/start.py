@@ -63,11 +63,11 @@ expGUI_cvui(cam, par, 'pattern', par['gamma'])  # Start GUI
 # Save relevant acquisition parameters to .ini (to be read with sfdi.readParams)
 # You can add any additional annotations as comments manually
 par_file = '{}/acquisition_parameters.ini'.format(par['outpath'])
-if not os.file.exists(par_file):
+if not os.path.exists(par_file):
     with open(par_file, 'w') as pFile:
-        pFile.write('[DEFAULT]')
-        pFile.write('fx={}'.format(par['fx']))
-        pFile.write('nphase={}'.format(par['nphase']))
-        pFile.write('wv={}'.format([458,460,461,520,536,556,600,601,626]))  # adjust this depening on hardware
+        pFile.write('[DEFAULT]\n')
+        pFile.write('fx={}\n'.format(par['fx']))
+        pFile.write('nphase={}\n'.format(par['nphase']))
+        pFile.write('wv={}\n'.format([458,460,461,520,536,556,600,601,626]))  # adjust this depening on hardware
 
 cv.destroyAllWindows()

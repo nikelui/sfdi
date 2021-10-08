@@ -108,7 +108,7 @@ stackPlot(crop(cal_R, ROI), 'magma')
 if not os.path.exists(par['savefile']):
     os.makedirs(par['savefile'])
 
-if False:  # multi-frequencies approach
+if True:  # multi-frequencies approach
     FX = list(list(range(_i, _i+4)) for _i in range(len(par['freqs']) - 3))
 else:
     FX = [par['freq_used']]
@@ -120,10 +120,10 @@ params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
           'fx': par['freqs'],  # all spatial frequencies
     }
 to_write = ['[DEFAULT]\n# Parameters\nbinsize = {}\nROI = {}\nwv = {}\nfx = {}'.format(
-             params['binsize'], params['ROI'], params['wv'], params['fx'])]
+             params['binsize'], params['ROI'], list(params['wv']), params['fx'])]
 for _f, fx in enumerate(FX):
     params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
-    to_write.append('f{} = {}\n'.format(_f, list(params['f{}'.format(_f)])))
+    to_write.append('f{} = {}'.format(_f, list(params['f{}'.format(_f)])))
 with open('{}/processing_parameters.ini'.format(par['savefile']), 'w') as par_file:
     print('\n'.join(to_write), file=par_file)
 print('Parameters saved to file {}/processing_parameters.ini'.format(par['savefile']))
@@ -161,7 +161,7 @@ print('Done!')
 
 # Interactive plot
 # TODO: save all datasets and allow to choose one?
-op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)
+# op_fit_maps,opt_ave,opt_std,radio = opticalSpectra(crop(cal_R[:,:,0,0], ROI), op_fit_maps, par, outliers=True)
 # chrom_map = chromPlot(chrom_map, name.split('/')[-1], par)
 
 ## Save average optical properties to file

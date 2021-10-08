@@ -136,7 +136,7 @@ for _d, dataset in enumerate(dirs):
                   'fx': par['freqs'],  # all spatial frequencies
             }
         to_write = ['[DEFAULT]\n# Parameters\nbinsize = {}\nROI = {}\nwv = {}\nfx = {}'.format(
-                     params['binsize'], params['ROI'], params['wv'], params['fx'])]
+                     params['binsize'], params['ROI'], list(params['wv']), params['fx'])]
         for _f, fx in enumerate(FX):
             params['f{}'.format(_f)] = np.array(par['freqs'])[fx]  # partial fx
             to_write.append('f{} = {}'.format(_f, list(params['f{}'.format(_f)])))

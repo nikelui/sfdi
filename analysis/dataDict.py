@@ -94,11 +94,12 @@ class dataDict(dict):
                 plt.suptitle('{}'.format(fx))
                 for _i, _j in itertools.product(np.arange(row), np.arange(column)):
                     op_map = self[key][fx]['op_fit_maps'][:,:,_j,_i]
+                    vmin = 0
                     if _i == 0:
                         vmax = 0.5
                     else:
                         vmax = 5
-                    im = ax[_i, _j].imshow(op_map, cmap='magma', vmax=vmax)
+                    im = ax[_i, _j].imshow(op_map, cmap='magma', vmax=vmax, vmin=vmin)
                     colourbar(im)
                     ax[_i, _j].axis('off')
                 cmap = cm.get_cmap('magma')
@@ -366,7 +367,7 @@ class dataDict(dict):
             
     
     def mask_on(self):
-        for dataset in self:
+        for dataset in [x for x in self if not x == 'parameters']:
             for fx in self[dataset]:
                 op_map = self[dataset][fx]['op_fit_maps']
                 mask = np.zeros(op_map.shape, dtype=bool)  # initialize
@@ -379,7 +380,7 @@ class dataDict(dict):
                           data=op_map, mask=mask, fill_value=np.nan)
     
     def mask_off(self):
-        for dataset in self:
+        for dataset in [x for x in self if not x == 'parameters']:
             for fx in self[dataset]:
                 self[dataset][fx]['op_fit_maps'] = self[dataset][fx]['op_fit_maps'].data
     

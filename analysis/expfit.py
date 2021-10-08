@@ -11,8 +11,11 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
-#from matplotlib.colors import LogNorm
+from scipy.io import loadmat
+
+import matplotlib as mpl
 from matplotlib.backend_bases import MouseButton
+from matplotlib.figure import Figure
 
 from sfdi.common.getPath import getPath
 from sfdi.common.colourbar import colourbar
@@ -31,6 +34,7 @@ def mad(x,scale=1.4826,axis=None):
 
 def onclick(event):
     global coord
+    # print(event)
     if event.name == 'button_press_event':
         if event.xdata != None:
             coord['x'] = int(round(event.xdata))
@@ -48,11 +52,12 @@ wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm)
 
 op_fit_maps = []
 param_maps = []
-files = [x for x in os.listdir(path) if x.endswith('.npz') and 'calR' not in x]
+files = [x for x in os.listdir(path) if x.endswith('.mat') and 'calR' not in x]
 files.sort()
-titles = [y.split('_')[1] for y in files]  # file name
+titles = [y.split('_')[-3] for y in files]  # file name
 for file in files:
-    data = np.load('{}/{}'.format(path, file))
+    # data = np.load('{}/{}'.format(path, file))
+    data = loadmat('{}/{}'.format(path, file))
     op_fit_maps.append(data['op_fit_maps'])
 
 for _a, op_map in enumerate(op_fit_maps[:3], start=1):
@@ -69,8 +74,9 @@ for _a, op_map in enumerate(op_fit_maps[:3], start=1):
     param_maps.append(p_map)
 
 
+#%%
 # test
-N = 0  # data set
+N = 2  # data set
 global coord
 coord = {'x': 0, 'y': 0}
 
@@ -90,8 +96,8 @@ ax[1,0].legend()
 ax[1,0].grid(True, linestyle=':')
 ax[1,1].axis('off')
 # Interactive plot
+fig.canvas.draw()
 if True:  # put True to execute
-    plt.pause(0.1)
     WV = np.arange(450,650)
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     while coord['x'] is not None:

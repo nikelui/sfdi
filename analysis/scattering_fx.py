@@ -9,15 +9,16 @@ Script to fit mus' to a power law of the kind A * lambda^(-b), select a ROI and
 compare the variation at different fx
 """
 import os, sys, re
-import datetime
+from datetime import datetime
 import pickle
-import json
+# import json
 import numpy as np
 from scipy.io import loadmat  # new standard: work with Matlab files for compatibility
 from scipy.optimize import curve_fit
 
 from sfdi.common.getPath import getPath
 from sfdi.analysis.dataDict import dataDict  # moved class to other file
+from sfdi.common.readParams import readParams
 
 # support functions
 def save_obj(obj, name, path):
@@ -34,26 +35,27 @@ def fit_fun(lamb, a, b):
     """Power law function to fit data to"""
     return a * np.power(lamb, -b)
 
-def read_param(fpath):
-    params = {}
-    with open(fpath, 'r') as file:
-        for line in file.readlines():
-            if line.startswith('#') or len(line.strip()) == 0:  # ignore comments and newlines
-                pass
-            else:
-                key, item = (x.strip() for x in line.split('='))
-                if item.startswith('['):
-                    end = item.find(']')
-                    item = json.loads(item[:end+1])
-                params[key] = item
-    return params
-
-
-wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm). Import from params?
+# def read_param(fpath):
+#     params = {}
+#     with open(fpath, 'r') as file:
+#         for line in file.readlines():
+#             if line.startswith('#') or len(line.strip()) == 0:  # ignore comments and newlines
+#                 pass
+#             else:
+#                 key, item = (x.strip() for x in line.split('='))
+#                 if item.startswith('['):
+#                     end = item.find(']')
+#                     item = json.loads(item[:end+1])
+#                 params[key] = item
+#     return params
+data_path = getPath('Select data path')
+par = readParams('{}/processing_parameters.ini'.format(data_path))  # optional
+if 'wv' in par.keys():
+    wv = par['wv']
+else:
+    wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm). Import from params?
 regex = re.compile('.*f\d\.mat')  # regular expression for optical properties
 regex2 = re.compile('.*calR.mat')  # regular expression for calibrated reflectance
-data_path = getPath('Select data path')
-par = read_param('{}/README.txt'.format(data_path))  # optional
 
 # If the dataset has already been processed, load it
 if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
@@ -62,10 +64,10 @@ if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)
 # If you need to process / modify it. NOTE: the old set will be overwritten
 else:
     files = [x for x in os.listdir(data_path) if re.match(regex, x)]
-    datasets = set(x.split('_')[1] for x in files)  # sets have unique values
+    datasets = set(x.split('_')[-3] for x in files)  # sets have unique values
     data = dataDict(parameters=par)
     # load the data into a custom dictionary
-    start = datetime.datetime.now()  # calculate execution time
+    start = datetime.now()  # calculate execution time
     for _d, dataset in enumerate(datasets, start=1):
         data[dataset] = {}  # need to initialize it
         temp = [x for x in files if dataset in x]   # get filenames
@@ -85,8 +87,8 @@ else:
                         continue
                     p_map[_i, _j, :] = temp
             data[dataset][fx]['par_map'] = p_map
-    end = datetime.datetime.now()
-    print('Elapsed time: {}'.format(str(end-start).split('.')[0]))
+    end = datetime.now()
+    print('Elapsed time: {}'.format(str(end-start)))
     # save fitted dataset to file for easier access
     if not os.path.isdir('{}/obj'.format(data_path)):
         os.makedirs('{}/obj'.format(data_path))
@@ -94,4 +96,7 @@ else:
 
 # Post- processing
 data.mask_on()  # mask outliers
-#data.plot_cal('K1', data_path)
+# data.plot_cal('AlO05ml', data_path)
+# data.plot_mus('AlO05ml')
+ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
+ret = data.singleROI('AlO1ml', norm=-1, fit='single', f=[0,1,2,3,4])

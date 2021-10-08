@@ -179,6 +179,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         while((self.n_acq < self.n[0] or self.n[0] == 0) and not(self.stop[0]) ):
             ## Acquisition loop
             ## TODO: break from infinite loop using the return value from acquisitionRoutine
+            ## TODO: remove every reference to BB, BG, BR in the parameters
             ret = acquisitionRoutine(self.cam,self.par['xres'],self.par['yres'],self.par['width'],f,len(f)-1,
                                self.par['nphase'],self.par['dt'],self.correction,self.par['bb'],
                                self.par['bg'],self.par['br'],outPath=self.par['outpath'],
