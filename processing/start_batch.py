@@ -158,15 +158,15 @@ for _d, dataset in enumerate(dirs):
             if 'numpy' in par['savefmt']:
                 np.savez('{}/{}_calR'.format(par['savefile'], dataset), cal_R=cal_R, ROI=ROI)
             if 'matlab' in par['savefmt']:
-                savemat('{}/{}_calR'.format(par['savefile'], dataset), {'cal_R':cal_R, 'ROI':ROI})
+                savemat('{}/{}_calR.mat'.format(par['savefile'], dataset), {'cal_R':cal_R, 'ROI':ROI})
         if 'numpy' in par['savefmt']:
             np.savez('{}/{}_f{}'.format(par['savefile'], dataset, _f), op_fit_maps=op_fit_maps.data)
             if (len(par['chrom_used']) > 0):
                 np.savez('{}/{}_f{}_chrom'.format(par['savefile'], dataset, _f), chrom_map=chrom_map.data)
         if 'matlab' in par['savefmt']:
-            savemat('{}/{}_f{}'.format(par['savefile'], dataset, _f), {'op_fit_maps':op_fit_maps.data})
+            savemat('{}/{}_f{}.mat'.format(par['savefile'], dataset, _f), {'op_fit_maps':op_fit_maps.data})
             if (len(par['chrom_used']) > 0):
-                savemat('{}/{}_f{}_chrom'.format(par['savefile'], dataset, _f), {'chrom_map':chrom_map.data})
+                savemat('{}/{}_f{}_chrom.mat'.format(par['savefile'], dataset, _f), {'chrom_map':chrom_map.data})
         if len(par['savefmt']) > 0:
             print('{} saved'.format(dataset))
     print('Done!')

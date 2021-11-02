@@ -35,26 +35,13 @@ def fit_fun(lamb, a, b):
     """Power law function to fit data to"""
     return a * np.power(lamb, -b)
 
-# def read_param(fpath):
-#     params = {}
-#     with open(fpath, 'r') as file:
-#         for line in file.readlines():
-#             if line.startswith('#') or len(line.strip()) == 0:  # ignore comments and newlines
-#                 pass
-#             else:
-#                 key, item = (x.strip() for x in line.split('='))
-#                 if item.startswith('['):
-#                     end = item.find(']')
-#                     item = json.loads(item[:end+1])
-#                 params[key] = item
-#     return params
 data_path = getPath('Select data path')
 par = readParams('{}/processing_parameters.ini'.format(data_path))  # optional
 if 'wv' in par.keys():
     wv = par['wv']
 else:
     wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm). Import from params?
-regex = re.compile('.*f\d\.mat')  # regular expression for optical properties
+regex = re.compile('.*f\d*\.mat')  # regular expression for optical properties
 regex2 = re.compile('.*calR.mat')  # regular expression for calibrated reflectance
 
 # If the dataset has already been processed, load it
@@ -98,5 +85,5 @@ else:
 data.mask_on()  # mask outliers
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_mus('AlO05ml')
-ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
-ret = data.singleROI('AlO1ml', norm=-1, fit='single', f=[0,1,2,3,4])
+# ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
+# ret = data.singleROI('AlO1ml', norm=-1, fit='single', f=[0,1,2,3,4])
