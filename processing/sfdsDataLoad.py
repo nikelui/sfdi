@@ -29,9 +29,9 @@ prompt: optional string for file dialog"""
         
         spec = temp['s'] # Spectrum
         wv = temp['w'] # wavelengths
-        intT = float(fname.split('/')[-1].split('_')[-1][:-6]) # exposure time in ms, assuming the name
-                                                          # convention is correct
-        
+        # intT = float(fname.split('/')[-1].split('_')[-1][:-6]) # exposure time in ms, assuming the name
+                                                                 # convention is correct
+        intT = temp['intTime']
         idx = np.where(np.all([wv >= 450,wv <= 750], axis=0))[0] # Limit the spatial range
         spec = spec[idx, :]
         wv = wv[idx]

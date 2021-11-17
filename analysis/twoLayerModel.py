@@ -57,7 +57,7 @@ ____b____  |--- (delta, mus_b)
     -------
     Difference between mus measurement and 2-layer model (to be used in least square)
 """
-    import pdb; pdb.set_trace()    
+    import pdb; pdb.set_trace()  # DEBUG
     return (x[0]*x[2] + x[1]*(delta - x[2]))/delta - mus
 
 

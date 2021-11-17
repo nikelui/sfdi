@@ -5,19 +5,20 @@ Created on Mon Jul  1 11:16:24 2019
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
-import sys
+# import sys
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.io import loadmat
+# from scipy.io import loadmat
+from scipy.io import savemat
 
 from sfdi.common.readParams import readParams
 from sfdi.processing.sfdsDataLoad import sfdsDataLoad
-from sfds.processing.calibrate import calibrate
+from sfdi.processing.calibrate import calibrate
 from sfdi.processing.fitOps_sfds import fitOps_sfds
 from sfdi.processing.chromFit import chromFit
 
 from sfdi.processing import __path__ as par_path  # processing parameters path
-par = readParams('{}/parameters.ini'.format(par_path))
+par = readParams('{}/parameters.ini'.format(par_path[0]))
 
 if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
@@ -49,10 +50,13 @@ for op in op_fit_sfds:
 nn = []
 
 for name in names:
-    nn.append(name.split('/')[-1].split('_')[-2])
+    # nn.append(name.split('/')[-1].split('_')[-2])
+    nn.append(name.split('/')[-1][:-4])
 ## Saving results
-np.save('{}{}_SFDS_{}fx'.format(par['savefile'], nn[0], len(par['freq_used'])),
-        np.concatenate((wv, op_fit_sfds[0]), axis=1))
+# np.save('{}{}_SFDS_{}fx'.format(par['savefile'], nn[0], len(par['freq_used'])),
+        # np.concatenate((wv, op_fit_sfds[0]), axis=1))
+savemat('{}/{}_SFDS_{}fx.mat'.format(par['savefile'], nn[0], len(par['freq_used'])),
+        {'wv':wv, 'op_fit_sfds':op_fit_sfds})
 
 ## TODO: Plotting (Maybe put this in a function?)
 fig = plt.figure(1,figsize=(9,4))
@@ -62,8 +66,8 @@ for i in range(len(op_fit_sfds)):
 plt.title(r'Absorption coefficient ($\mu_A$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
-plt.xlim([450,650])
-plt.ylim([0,0.5])
+plt.xlim([450,750])
+plt.ylim([0,0.05])
 
 plt.subplot(1,2,2)
 for i in range(len(op_fit_sfds)):
@@ -71,8 +75,8 @@ for i in range(len(op_fit_sfds)):
 plt.title(r'Scattering coefficient ($\mu_S$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
-plt.xlim([450,650])
-plt.ylim([0,5])
+plt.xlim([450,750])
+plt.ylim([0,2])
 plt.legend()
 
 plt.tight_layout()
