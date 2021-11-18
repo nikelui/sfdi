@@ -18,18 +18,18 @@ def load_obj(name, path):
     with open('{}/obj/{}.pkl'.format(path, name), 'rb') as f:
         return pickle.load(f)
     
-def two_layer_fun(x, li, bm):
+def two_layer_fun(x, delta, bm):
     """Partial volumes equation for a two layer model
 __________
 ____a_____ | |- (la, ba)
            |
            |
-____b____  |--- (li, bb)
+____b____  |--- (delta, bb)
 
 x = [ba, bb, la]
 bm = measured b coefficient
 """
-    return ((x[0] * x[2]) + x[1]*(li - x[2])) - bm
+    return ((x[0] * x[2]) + x[1]*(delta - x[2]))/delta - bm
 
 
 def new_two_layer_fun(x, delta, mus, wv):
@@ -62,7 +62,7 @@ ____b____  |--- (delta, mus_b)
 """
     return np.sum(((x[0]*wv[:,np.newaxis]**(-x[1]) * x[4]) + 
                    (x[2]*wv[:,np.newaxis]**(-x[3]) * (delta[np.newaxis,:] - x[4])) / 
-                       delta - mus)**2, axis=1)
+                       delta - mus), axis=0)
 
 
 # def read_param(fpath):
@@ -88,11 +88,24 @@ data.par = par
 #%% Least square fit
 ret = data.singleROI('AlO3ml', fit='single', I=3e3, norm=None)
 
-d = np.mean(ret['depths'], axis=1)  # delta/2
-d2 = np.mean(ret['depth_phi'], axis=1)  # 1/e * phi^2
-d3 = np.mean(ret['depth_MC'], axis=1)  # calculated via Monte Carlo model
-mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
+d = np.mean(ret['depths'], axis=1)[:-1]  # delta/2
+d2 = np.mean(ret['depth_phi'], axis=1)[:-1]  # 1/e * phi^2
+d3 = np.mean(ret['depth_MC'], axis=1)[:-1]  # calculated via Monte Carlo model
+mus = ret['op_ave'][:-1,:,1]  # average measured scattering coefficient
+bm = ret['par_ave'][:-1, 1]  # average measured scattering slope
 
+# Old model
+opt = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'delta': d, 'bm': bm},
+                    bounds=[0, np.inf], method='trf')
+
+opt2 = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'delta': d2, 'bm': bm},
+                    bounds=[0, np.inf], method='trf')
+
+opt3 = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'delta': d3, 'bm': bm},
+                    bounds=[0, np.inf], method='trf')
+
+#%%
+# New model
 opt = least_squares(new_two_layer_fun, x0=[100,1,100,1,0.1],
                     kwargs={'delta': d, 'mus': mus.T, 'wv':np.array(data.par['wv'])},
                     bounds=[0, np.inf], method='trf')
