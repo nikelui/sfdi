@@ -111,3 +111,4 @@ temp.py
 *.npy
 *.npz
 transform.txt
+*.bat
