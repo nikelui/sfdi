@@ -82,7 +82,7 @@ else:
     save_obj(data, 'dataset', data_path)
 
 # Post- processing
-data.mask_on()  # mask outliers
+# data.mask_on()  # mask outliers
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_mus('AlO05ml')
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])

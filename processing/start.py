@@ -12,6 +12,7 @@ Steps before starting:
     - Turn motion correction to True or False
     - Turn background masking to True or False
     - Turn multi-frequencies to True or False
+    - Select if dataset is homogeneous (fix mua at f0)
 
 Steps:
     - Select calibration phantom data folder
@@ -110,6 +111,7 @@ if not os.path.exists(par['savefile']):
 
 if True:  # multi-frequencies approach
     FX = list(list(range(_i, _i+4)) for _i in range(len(par['freqs']) - 3))
+    FX = [[0,1,2,3],[1,2,3,4],[2,3,4,5],[3,4,5,6]]  # DEBUG
 else:
     FX = [par['freq_used']]
 
@@ -145,8 +147,12 @@ for _f, fx in enumerate(FX):
         # Initial guess is based on mua, mus median value calculated in a ROI at the center
         X0, Y0 = np.array(op_fit_maps.shape[:2])//2  # coordinates of the center
         W = 5  # ROI half-width
-        op_guess = np.squeeze(np.nanmedian(op_fit_maps[X0-W:X0+W,Y0-W:Y0+W,:,:], axis=(0,1)))
-        
+        op_guess = np.squeeze(np.nanmedian(op_fit_maps[X0-W:X0+W,Y0-W:Y0+W,:,:], axis=(0,1)))       
+        # op_guess = np.random.rand(5,2)  # DEBUG
+        WV = np.array(par['wv'])[par['wv_used'], np.newaxis]
+        op_guess = np.append(WV, op_guess, axis=1)  # use mua, mus at f0 as initial guess
+    else:
+        op_fit_maps = fitOps(crop(cal_R, ROI), par, guess=op_guess, homogeneous=True)
     
     if (len(par['chrom_used']) > 0):
         chrom_map = chromFit(op_fit_maps, par, cfile) # linear fitting for chromofores
