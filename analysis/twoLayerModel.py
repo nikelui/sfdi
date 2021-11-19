@@ -88,20 +88,20 @@ data.par = par
 #%% Least square fit
 ret = data.singleROI('AlO3ml', fit='single', I=3e3, norm=None)
 
-d = np.mean(ret['depths'], axis=1)[:-1]  # delta/2
-d2 = np.mean(ret['depth_phi'], axis=1)[:-1]  # 1/e * phi^2
-d3 = np.mean(ret['depth_MC'], axis=1)[:-1]  # calculated via Monte Carlo model
-mus = ret['op_ave'][:-1,:,1]  # average measured scattering coefficient
-bm = ret['par_ave'][:-1, 1]  # average measured scattering slope
+d = np.mean(ret['depths'], axis=1)[:5]  # delta/2
+d2 = np.mean(ret['depth_phi'], axis=1)[:5]  # 1/e * phi^2
+d3 = np.mean(ret['depth_MC'], axis=1)[:5]  # calculated via Monte Carlo model
+mus = ret['op_ave'][:5,:,1]  # average measured scattering coefficient
+bm = ret['par_ave'][:5, 1]  # average measured scattering slope
 
 # Old model
-opt = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'delta': d, 'bm': bm},
+opt = least_squares(two_layer_fun, x0=[10, 10, 0.5], kwargs={'delta': d, 'bm': bm},
                     bounds=[0, np.inf], method='trf')
 
-opt2 = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'delta': d2, 'bm': bm},
+opt2 = least_squares(two_layer_fun, x0=[10, 10, 0.5], kwargs={'delta': d2, 'bm': bm},
                     bounds=[0, np.inf], method='trf')
 
-opt3 = least_squares(two_layer_fun, x0=[1, 1, 0.1], kwargs={'delta': d3, 'bm': bm},
+opt3 = least_squares(two_layer_fun, x0=[10, 10, 0.5], kwargs={'delta': d3, 'bm': bm},
                     bounds=[0, np.inf], method='trf')
 
 #%%

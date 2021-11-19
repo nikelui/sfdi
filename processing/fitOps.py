@@ -27,11 +27,13 @@ def target_fun(opt,n,model,freqs,R_meas):
     return np.sum((R_model - R_meas)**2) # return sum of square diff.
     
 
-def fitOps(cal_R,par,model='mc'):
+def fitOps(cal_R, par, model='mc', guess=np.array([])):
     """Optimization routine to fit for optical properties.
 - cal_R: calibrated reflectance values (measured)
 - par: dictionary with the parameter used
 - model: light transport model. Either 'mc' or 'diff'
+- guess: initial guess for optical properties, [3 x wv] array:
+         [wv; mua; mus]
 """
 
     if model == 'diff':
@@ -41,11 +43,12 @@ def fitOps(cal_R,par,model='mc'):
        
     # Initial guess of optical properties:
     # wavelength, mua, mus
-    guess = np.array([[455.0, 0.0203,1.4186],
-                      [525.0, 0.0203, 1.3732],
-                      [650.0, 0.0203, 1.2186],
-                      [670.0, 0.0172, 0.9732],
-                      [690.0, 0.0179, 0.8592]])
+    if len(guess):
+        guess = np.array([[455.0, 0.0203,1.4186],
+                          [525.0, 0.0203, 1.3732],
+                          [650.0, 0.0203, 1.2186],
+                          [670.0, 0.0172, 0.9732],
+                          [690.0, 0.0179, 0.8592]])
     # interpolate at used wavelengths
     f = interp1d(guess[:,0],guess[:,1],kind='linear',bounds_error=False,fill_value='extrapolate')
     mua_guess = f(np.array(par['wv'])[par['wv_used']])
@@ -65,7 +68,7 @@ def fitOps(cal_R,par,model='mc'):
                        x0=(mua_guess[w],mus_guess[w]), # initial guess
                        args = (par['n_sample'],forward_model,freqs,ave_R[w,np.array(par['freq_used'])]), # function arguments
                        method = 'Nelder-Mead', # TODO: check other methods
-                       options = {'maxiter':200, 'xatol':0.001, 'fatol':0.001})
+                       options = {'maxiter':300, 'xatol':0.001, 'fatol':0.001})
         #res.append(temp) # this is not really used, but contains extra informations (eg. n. of iterations)
         mua_guess[w] = temp.x[0] # update initial guess
         mus_guess[w] = temp.x[1]
@@ -87,7 +90,7 @@ def fitOps(cal_R,par,model='mc'):
                            x0=[mua_guess[i],mus_guess[i]], # initial guess from previous step
                            args=(par['n_sample'],forward_model,freqs,cal_Rbin[j,k,i,np.array(par['freq_used'])]),
                            method = 'Nelder-Mead', # TODO: check other methods
-                           options = {'maxiter':200, 'xatol':0.001, 'fatol':0.001})
+                           options = {'maxiter':300, 'xatol':0.001, 'fatol':0.001})
                 
                 op_fit_maps[j,k,i,:] = temp.x
         

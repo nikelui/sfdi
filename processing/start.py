@@ -139,7 +139,14 @@ print('Parameters saved to file {}/processing_parameters.ini'.format(par['savefi
 for _f, fx in enumerate(FX):
     print('\nFrequency set {} of {}'.format(_f+1, len(FX)))
     par['freq_used'] = fx
-    op_fit_maps = fitOps(crop(cal_R, ROI), par)
+    
+    if _f == 0:  # in case of multi-fx, save initial mua
+        op_fit_maps = fitOps(crop(cal_R, ROI), par)
+        # Initial guess is based on mua, mus median value calculated in a ROI at the center
+        X0, Y0 = np.array(op_fit_maps.shape[:2])//2  # coordinates of the center
+        W = 5  # ROI half-width
+        op_guess = np.squeeze(np.nanmedian(op_fit_maps[X0-W:X0+W,Y0-W:Y0+W,:,:], axis=(0,1)))
+        
     
     if (len(par['chrom_used']) > 0):
         chrom_map = chromFit(op_fit_maps, par, cfile) # linear fitting for chromofores
