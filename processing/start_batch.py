@@ -13,6 +13,7 @@ Steps before starting:
     - Turn motion correction to True or False
     - Turn background masking to True or False
     - Turn multi-frequencies to True or False
+    - Select if data sample is homogeneous or not in fitOps
 
 Steps:
     - Select calibration phantom data folder
@@ -50,6 +51,13 @@ if len(par['wv_used']) == 0:  # use all wavelengths if empty
 
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 phantom_path = getPath('Select calibration phantom data folder')
+# Update parameter if acquisition_parameters is found
+a_path = '{}/acquisition_parameters.ini'.format('/'.join(phantom_path.split('/')[:-1]))
+if os.path.exists(a_path):
+    apar = readParams(a_path)
+    par['freqs'] = apar['fx']
+    par['nphase'] = apar['nphase']
+    par['wv'] = apar['wv']
 ACph,_ = rawDataLoad(par, phantom_path, batch=True)
 
 path = getPath('Select base folder')
@@ -58,8 +66,7 @@ if path:  # check for empty path
     ##############################################################################
     ##  Define the folders to process here. Leave empty for interactive prompt  ##
     ##############################################################################
-    toProcess = ['wound1', 'wound2', 'wound3', 'wound4', 'wound5', 'wound6',
-                 'wound7', 'wound8', 'wound9', 'wound11', 'wound13', 'wound15']
+    toProcess = ['TiObase', 'AlObase', 'AlO10ml']
     if(not toProcess):  # In case you define by hand
         regex = input('Input base name to match (end with empty line): ').lower()  # only process matching directories
         while (regex != ''):  # End with an empty name
@@ -69,34 +76,27 @@ if path:  # check for empty path
     ## Some regex magic
     pattern = "|".join(re.escape(s) for s in toProcess)
     rexp = re.compile(pattern)
-    dirs = [x for x in dirs if rexp.search(x.lower())]  # filter only matching names
+    dirs = [x for x in dirs if rexp.search(x)]  # filter only matching names
 
 if (len(par['chrom_used']) > 0):
     cfile = getFile('Select chromophores reference file')  # Get chromophores reference file
 
-# Update parameter if acquisition_parameters is found
-a_path = '{}/acquisition_parameters.ini'.format('/'.join(phantom_path.split('/')[:-1]))
-if os.path.exists(a_path):
-    apar = readParams(a_path)
-    par['fx'] = apar['fx']
-    par['nphase'] = apar['nphase']
-    par['wv'] = apar['wv']
-
 ph_name = phantom_path.split('/')[-1].split('_')[-2]
 cphantom = ['{}/{}.txt'.format(ph_path._path[0], ph_name)]
-if not os.path.exists(cphantom):
+if not os.path.exists(cphantom[0]):
     cphantom = []  # pass an empty list to get interactive prompt
 #%%
 ## Begin loop (one folder at a time)
 for _d, dataset in enumerate(dirs):
     # Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-    print('Dataset {} of {}'.format(_d+1, len(dataset)))
+    print('Dataset {} of {}'.format(_d+1, len(dirs)))
     AC,_ = rawDataLoad(par, '{}/{}'.format(path, dataset), batch=True)
 
     ## Calibration step
     print('Calibrating {}...'.format(dataset))
-    if True:  # True to perform motion correction (slower)
+    if False:  # True to perform motion correction (slower)
         AC = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=False)  # correct motion artifacts in raw data
+        
     cal_R = calibrate(AC, ACph, par, path=cphantom)
 
     ## True to mask background (e.g to remove black background that will return very high absorption)
@@ -148,7 +148,7 @@ for _d, dataset in enumerate(dirs):
     for _f, fx in enumerate(FX):
         print('\nFrequency set {} of {}'.format(_f+1, len(FX)))
         par['freq_used'] = fx
-        op_fit_maps = fitOps(crop(cal_R, ROI), par)
+        op_fit_maps = fitOps(crop(cal_R, ROI), par, homogeneous=True)
         
         if (len(par['chrom_used']) > 0):
             chrom_map = chromFit(op_fit_maps, par, cfile) # linear fitting for chromofores
