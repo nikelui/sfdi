@@ -111,7 +111,7 @@ if not os.path.exists(par['savefile']):
 
 if True:  # multi-frequencies approach
     FX = list(list(range(_i, _i+4)) for _i in range(len(par['freqs']) - 3))
-    FX = [[0,1,2,3],[1,2,3,4],[2,3,4,5],[3,4,5,6]]  # DEBUG
+    # FX = [[0,1,2,3],[1,2,3,4],[2,3,4,5],[3,4,5,6]]  # DEBUG
 else:
     FX = [par['freq_used']]
 
@@ -143,7 +143,7 @@ for _f, fx in enumerate(FX):
     par['freq_used'] = fx
     
     if _f == 0:  # in case of multi-fx, save initial mua
-        op_fit_maps = fitOps(crop(cal_R, ROI), par)
+        op_fit_maps = fitOps(crop(cal_R, ROI), par, homogeneous=False)
         # Initial guess is based on mua, mus median value calculated in a ROI at the center
         X0, Y0 = np.array(op_fit_maps.shape[:2])//2  # coordinates of the center
         W = 5  # ROI half-width
