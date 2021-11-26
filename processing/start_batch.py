@@ -66,7 +66,8 @@ if path:  # check for empty path
     ##############################################################################
     ##  Define the folders to process here. Leave empty for interactive prompt  ##
     ##############################################################################
-    toProcess = ['TiObase', 'AlObase', 'AlO10ml']
+    toProcess = ['TiObaseTop', 'TiObaseBottom', 'AlObaseTop', 'AlObaseBottom',
+                 'AlO10mlTop', 'AlO15mlTop']
     if(not toProcess):  # In case you define by hand
         regex = input('Input base name to match (end with empty line): ').lower()  # only process matching directories
         while (regex != ''):  # End with an empty name
@@ -149,7 +150,7 @@ for _d, dataset in enumerate(dirs):
         print('\nFrequency set {} of {}'.format(_f+1, len(FX)))
         par['freq_used'] = fx
         if _f == 0:  # in case of multi-fx, save initial mua
-            op_fit_maps = fitOps(crop(cal_R, ROI), par, homogeneous=False)
+            op_fit_maps = fitOps(crop(cal_R, ROI), par)
             # Initial guess is based on mua, mus median value calculated in a ROI at the center
             X0, Y0 = np.array(op_fit_maps.shape[:2])//2  # coordinates of the center
             W = 5  # ROI half-width

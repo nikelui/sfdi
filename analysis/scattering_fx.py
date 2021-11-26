@@ -13,7 +13,7 @@ from datetime import datetime
 import pickle
 # import json
 import numpy as np
-from scipy.io import loadmat  # new standard: work with Matlab files for compatibility
+from scipy.io import loadmat  # new s tandard: work with Matlab files for compatibility
 from scipy.optimize import curve_fit
 
 from sfdi.common.getPath import getPath
@@ -86,4 +86,32 @@ else:
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_mus('AlO05ml')
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
-# ret = data.singleROI('AlO1ml', norm=-1, fit='single', f=[0,1,2,3,4])
+ret = data.singleROI('AlO15mlTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
+
+#%% plotting
+from matplotlib import pyplot as plt
+from sfdi.common.phantoms import __path__ as ph_path
+TS2 = np.genfromtxt('{}/TS2.txt'.format(ph_path._path[0]))  # reference
+plt.figure(figsize=(10,4))
+labels = ['f0','f1','f2','f3','f4','f5','f6','f7']
+for _j in range(ret['op_ave'].shape[0]-3):
+    plt.subplot(1,2,1)
+    plt.errorbar(wv, ret['op_ave'][_j,:,0], yerr=ret['op_std'][_j,:,0], fmt='s', capsize=5,
+                 linestyle='solid', linewidth=2, label=labels[_j])
+    plt.grid(True, linestyle=':')
+
+    plt.subplot(1,2,2)
+    plt.errorbar(wv, ret['op_ave'][_j,:,1], yerr=ret['op_std'][_j,:,1], fmt='s', capsize=5,
+                 linestyle='solid', linewidth=2, label=labels[_j])
+    plt.grid(True, linestyle=':')
+
+plt.subplot(1,2,1)
+plt.plot(TS2[:4,0], TS2[:4,1], '*k', linestyle='--', label='TS2', linewidth=2, zorder=100, markersize=10)
+plt.title(r'$\mu_a$')
+plt.xlabel('nm')
+plt.legend()
+plt.subplot(1,2,2)
+plt.plot(TS2[:4,0], TS2[:4,2], '*k', linestyle='--', label='TS2', linewidth=2, zorder=100, markersize=10)
+plt.title(r"$\mu'_s$")
+plt.xlabel('nm')
+plt.tight_layout()
