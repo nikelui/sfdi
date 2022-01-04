@@ -80,30 +80,35 @@ for name in names:
 ## check if save directories exist and create them otherwise
 if not os.path.exists(par['savefile']):
     os.makedirs(par['savefile'])
-    
-savemat('{}/{}_SFDS_{}fx.mat'.format(par['savefile'], nn[0], len(FX)),
-        {'wv':wv, 'op_fit_sfds':op_fit_sfds})
+   
+to_save = {'wv': wv}
+for _n, name in enumerate(nn):
+    to_save[name] = op_fit_sfds[_n]
+savemat('{}/{}_SFDS_{}fx.mat'.format(par['savefile'], nn[0], len(FX)), to_save)
 
+#%%
 ## TODO: Plotting (Maybe put this in a function?)
+n = 2
 fig = plt.figure(1,figsize=(9,4))
 plt.subplot(1,2,1)
-for i in range(len(op_fit_sfds)):
-    plt.plot(wv,op_fit_sfds[i][:,:,0],label=names[i].split('/')[-1])
+plt.suptitle('{}'.format(nn[n]))
+for i in range(1):
+    plt.plot(wv,op_fit_sfds[n][:,:5,0])#,label=names[i].split('/')[-1])
 plt.title(r'Absorption coefficient ($\mu_A$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([0,0.05])
+plt.ylim([-0.01,0.05])
 
 plt.subplot(1,2,2)
-for i in range(len(op_fit_sfds)):
-    plt.plot(wv,op_fit_sfds[i][:,:,1],label=names[i].split('/')[-1])
+for i in range(1):
+    plt.plot(wv,op_fit_sfds[n][:,:5,1])#,label=names[i].split('/')[-1])
 plt.title(r'Scattering coefficient ($\mu_S$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([0,2])
-plt.legend()
+plt.ylim([1.5,3.5])
+plt.legend(['f0','f1','f2','f3','f4'])
 
 plt.tight_layout()
 plt.show(block=False)
