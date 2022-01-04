@@ -50,7 +50,7 @@ prompt: optional string for file dialog"""
         
     return AC_list,wv,names # should return names to identify the data
 
-
+# DEBUG
 if __name__ == '__main__':
     
     from matplotlib import pyplot as plt

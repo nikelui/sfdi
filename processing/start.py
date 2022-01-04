@@ -17,7 +17,7 @@ Steps before starting:
 Steps:
     - Select calibration phantom data folder
     - Select tissue data folder
-    - Select chromophore reference file
+    - Select chromophore reference file [if processed]
     - Select a ROI on calibrated reflectance data
 """
 import os
