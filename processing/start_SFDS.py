@@ -63,7 +63,11 @@ for _c, cal in enumerate(cal_R):
     for _f, fx in enumerate(FX):
         print('Frequency set {} of {}'.format(_f+1, len(FX)))
         par['freq_used'] = fx
-        temp[:, _f, :] = fitOps_sfds(cal[:, par['freq_used']], par)
+        if _f == 0:
+            temp[:, _f, :] = fitOps_sfds(cal[:, par['freq_used']], par, homogeneous=False)
+            op_guess = temp[:, _f, :]  # save [mua, mus] at f0 as initial guess
+        else:
+            temp[:, _f, :] = fitOps_sfds(cal[:, par['freq_used']], par, guess= op_guess, homogeneous=True)
     op_fit_sfds.append(temp)
 
 # TODO: fix this fitting
@@ -84,11 +88,11 @@ if not os.path.exists(par['savefile']):
 to_save = {'wv': wv}
 for _n, name in enumerate(nn):
     to_save[name] = op_fit_sfds[_n]
-savemat('{}/{}_SFDS_{}fx.mat'.format(par['savefile'], nn[0], len(FX)), to_save)
+savemat('{}/SFDS_{}fx.mat'.format(par['savefile'], len(FX)), to_save)
 
 #%%
 ## TODO: Plotting (Maybe put this in a function?)
-n = 2
+n = 13
 fig = plt.figure(1,figsize=(9,4))
 plt.subplot(1,2,1)
 plt.suptitle('{}'.format(nn[n]))
@@ -107,7 +111,7 @@ plt.title(r'Scattering coefficient ($\mu_S$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([1.5,3.5])
+plt.ylim([1, 3])
 plt.legend(['f0','f1','f2','f3','f4'])
 
 plt.tight_layout()

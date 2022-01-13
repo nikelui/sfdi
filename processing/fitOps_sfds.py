@@ -25,8 +25,17 @@ def target_fun(opt,n,model,freqs,R_meas):
     R_model = np.squeeze(model([mua],[mus],n,freqs)) # calculate R from light transport model
     return np.sum((R_model - R_meas)**2) # return sum of square diff.
     
+def target_fun2(mus,mua,n,model,freqs,R_meas):
+    """Function to minimize. It calculates the squared error between the model and the data.
+    - model: light transport model (Monte Carlo or diffusion)
+    - mus,mua,n: optical properties
+    - freqs: spatial frequencies used in the computation
+    - R_meas: measured Reflectance values
+"""
+    R_model = np.squeeze(model([mua],[mus],n,freqs)) # calculate R from light transport model
+    return np.sum((R_model - R_meas)**2) # return sum of square diff.
 
-def fitOps_sfds(cal_R, par, model='mc'):
+def fitOps_sfds(cal_R, par, model='mc', guess=np.array([]), homogeneous=False):
     """Optimization routine to fit for optical properties.
 - cal_R: calibrated reflectance values (measured)
 - par: dictionary with the parameter used
@@ -38,25 +47,35 @@ def fitOps_sfds(cal_R, par, model='mc'):
     else:
         forward_model = reflecMCSFD  # default to Monte Carlo
            
-    ## Initial guess at lowest wavelength
-    guess = np.array([0.0223, 2.818]) # [mua, mus]
+    ## Initial guess, if not passed
+    if len(guess) == 0:
+        first_run = True  # assume this is called only on the first loop (fx = f0)
+        guess = np.tile(np.array([0.01, 1]), (len(par['wv']), 1))  # [mua, mus]
+    else:
+        first_run = False
     
     freqs = np.array([par['freqs']])[:,np.array(par['freq_used'])] # only freq_used
-    
-    ## Very heavy optimization algorithm here
-    # Initialize optical properties map. The last dimension is 0:mua, 1:mus
     op_fit_maps = np.zeros((len(par['wv']), 2), dtype=float)
-    
     start = time.time()
-    for i, w in enumerate(par['wv']):
-        #print('processing wavelength: %dnm' % w)
-        temp = minimize(target_fun,
-                        x0=[guess[0], guess[1]], # initial guess from previous step
-                        args=(par['n_sample'], forward_model, freqs, cal_R[i]),
-                        method = 'Nelder-Mead', # TODO: check other methods
-                        options = {'maxiter':200, 'xatol':0.001, 'fatol':0.001})
-                
-        op_fit_maps[i,:] = temp.x
+    
+    if homogeneous and not first_run:
+        for w in range(len(par['wv'])):
+            temp = minimize(target_fun2,  # only fit mus
+                            x0=guess[w, 1], # initial guess from previous step
+                            args=(guess[w,0], par['n_sample'], forward_model, freqs, cal_R[w]),
+                            method = 'Nelder-Mead', # TODO: check other methods
+                            options = {'maxiter':300, 'xatol':0.001, 'fatol':0.001})
+            op_fit_maps[w,0] = guess[w,0]
+            op_fit_maps[w,1] = temp.x
+    else:
+        for w in range(len(par['wv'])):
+            temp = minimize(target_fun,
+                            x0=guess[w, :], # initial guess from previous step
+                            args=(par['n_sample'], forward_model, freqs, cal_R[w]),
+                            method = 'Nelder-Mead', # TODO: check other methods
+                            options = {'maxiter':300, 'xatol':0.001, 'fatol':0.001})
+            op_fit_maps[w,:] = temp.x
+        
     end = time.time() # total time
     print('Elapsed time: %.1fs' % (end-start))
     
