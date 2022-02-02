@@ -66,8 +66,7 @@ if path:  # check for empty path
     ##############################################################################
     ##  Define the folders to process here. Leave empty for interactive prompt  ##
     ##############################################################################
-    toProcess = ['TiObaseTop', 'TiObaseBottom', 'AlObaseTop', 'AlObaseBottom',
-                 'AlO10mlTop', 'AlO15mlTop']
+    toProcess = ['TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml']
     if(not toProcess):  # In case you define by hand
         regex = input('Input base name to match (end with empty line): ').lower()  # only process matching directories
         while (regex != ''):  # End with an empty name

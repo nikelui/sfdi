@@ -43,6 +43,7 @@ else:
     wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm). Import from params?
 regex = re.compile('.*f\d*\.mat')  # regular expression for optical properties
 regex2 = re.compile('.*calR.mat')  # regular expression for calibrated reflectance
+regex3 = re.compile('SFDS.*\.mat')  # regular expression for SFDS data
 
 # If the dataset has already been processed, load it
 if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
@@ -52,8 +53,13 @@ if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)
 else:
     files = [x for x in os.listdir(data_path) if re.match(regex, x)]
     datasets = set(x.split('_')[-3] for x in files)  # sets have unique values
-    data = dataDict(parameters=par)
-    # load the data into a custom dictionary
+    sfds_path = [x for x in os.listdir(data_path) if re.match(regex3, x)]  # should be only one
+    if sfds_path:  # need a check, because it might not exist
+        sfds = loadmat('{}/{}'.format(data_path,sfds_path[0]))
+        par['wv_sfds'] = np.squeeze(sfds['wv'])
+    data = dataDict()
+    data.par = par
+    # load the SFDI data into a custom dictionary
     start = datetime.now()  # calculate execution time
     for _d, dataset in enumerate(datasets, start=1):
         data[dataset] = {}  # need to initialize it
@@ -61,10 +67,14 @@ else:
         freqs = [x.split('_')[-1][:-4] for x in temp]  # get frequency range
         for file,fx in zip(temp, freqs):
             data[dataset][fx] = loadmat('{}/{}'.format(data_path, file))
+            if sfds_path and dataset in sfds.keys():
+                data[dataset][fx]['sfds'] = {}
+                data[dataset][fx]['sfds']['op_fit'] = sfds[dataset][:,freqs.index(fx),:]
             # here fit the data
             print('Fitting dataset {}_{}...[{} of {}]'.format(dataset, fx, _d, len(datasets)))
+            # SFDI data
             op_map = data[dataset][fx]['op_fit_maps']  # for convenience
-            p_map = np.zeros((op_map.shape[0], op_map.shape[1], 2), dtype=float)  #initialize
+            p_map = np.zeros((op_map.shape[0], op_map.shape[1], 2), dtype=float)  # initialize
             for _i in range(op_map.shape[0]):
                 for _j in range(op_map.shape[1]):
                     try:
@@ -74,6 +84,12 @@ else:
                         continue
                     p_map[_i, _j, :] = temp
             data[dataset][fx]['par_map'] = p_map
+            # SFDS data
+            if sfds_path and dataset in sfds.keys():
+                temp, _ = curve_fit(fit_fun, par['wv_sfds'], data[dataset][fx]['sfds']['op_fit'][:,1],
+                                    p0=[10, 1], method='trf', loss='soft_l1', max_nfev=2000)
+                data[dataset][fx]['sfds']['par'] = temp
+            
     end = datetime.now()
     print('Elapsed time: {}'.format(str(end-start)))
     # save fitted dataset to file for easier access
@@ -86,7 +102,7 @@ else:
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_mus('AlO05ml')
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
-ret = data.singleROI('TiObaseBottom', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
+ret = data.singleROI('TiO10ml', norm=None, fit='single', f=[0,1,2,3,4], I=3e3)
 
 #%% plotting
 from matplotlib import pyplot as plt

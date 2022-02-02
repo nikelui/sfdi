@@ -13,8 +13,8 @@ Steps before starting:
     - Select if dataset is homogeneous (fix mua at f0)
 
 Steps:
-    - Select calibration phantom data
     - Select tissue data
+    - Select calibration phantom data
     - Select chromophore reference file [if processed]
 """
 import os
@@ -92,7 +92,7 @@ savemat('{}/SFDS_{}fx.mat'.format(par['savefile'], len(FX)), to_save)
 
 #%%
 ## TODO: Plotting (Maybe put this in a function?)
-n = 13
+n = 4
 fig = plt.figure(1,figsize=(9,4))
 plt.subplot(1,2,1)
 plt.suptitle('{}'.format(nn[n]))
@@ -102,7 +102,7 @@ plt.title(r'Absorption coefficient ($\mu_A$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([-0.01,0.05])
+plt.ylim([-0.01,0.2])
 
 plt.subplot(1,2,2)
 for i in range(1):
@@ -111,7 +111,7 @@ plt.title(r'Scattering coefficient ($\mu_S$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([1, 3])
+plt.ylim([0.5,2.5])
 plt.legend(['f0','f1','f2','f3','f4'])
 
 plt.tight_layout()
