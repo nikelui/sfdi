@@ -116,7 +116,32 @@ class dataDict(dict):
                 cmap = cm.get_cmap('magma')
                 cmap.set_bad(color='cyan')
                 plt.tight_layout()
-            
+    
+    def plot_op_sfds(self, key, **kwargs):
+        """Plot optical properties of dataset <key> (SFDS)"""
+        f_used = kwargs.pop('f', list(range(len(self[key]))))  # Default: use all frequencies
+        f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
+        norm = kwargs.pop('norm', None)
+        fit = kwargs.pop('fit', None)  # wether to plot the raw data or the fitted one
+        fig, ax = plt.subplots(num=100, nrows=1, ncols=2, figsize=(10,4))
+        for _f, fx in enumerate(self[key].keys()):
+            if _f in f_used:
+                plt.suptitle('{}'.format(fx))
+                if fit == 'single':
+                    ...#TODO continue here
+                else:
+                    ax[0].plot(self.par['wv_sfds'], self[key][fx]['sfds']['op_fit'][:,0],
+                               linewidth=2, label=f'{fx}', color='C{}'.format(_f))
+                    ax[0].set_title(r'Absorption coefficient')
+                    ax[0].set_xlabel('wv (nm)')
+                    ax[0].set_ylabel(r'mm$^{-1}$')
+                    
+                    ax[1].plot(self.par['wv_sfds'], self[key][fx]['sfds']['op_fit'][:,0],
+                               linewidth=2, label=f'{fx}', color='C{}'.format(_f))
+                    ax[1].set_title(r'Scattering coefficient')
+                    ax[1].set_xlabel('wv (nm)')
+                    ax[1].set_ylabel(r'mm$^{-1}$')
+    
     def plot_mus(self, key, vmin=0, vmax=4, **kwargs):
         """Plot optical properties of dataset <key>"""
         #TODO: improve docstring
