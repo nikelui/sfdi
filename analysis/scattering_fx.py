@@ -48,7 +48,7 @@ regex3 = re.compile('SFDS.*\.mat')  # regular expression for SFDS data
 # If the dataset has already been processed, load it
 if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
     data = load_obj('dataset', data_path)
-    data.par = par
+    # data.par = par  # This should be already saved in the pickle
 # If you need to process / modify it. NOTE: the old set will be overwritten
 else:
     files = [x for x in os.listdir(data_path) if re.match(regex, x)]
@@ -131,3 +131,9 @@ plt.plot(TS2[:4,0], TS2[:4,2], '*k', linestyle='--', label='TS2', linewidth=2, z
 plt.title(r"$\mu'_s$")
 plt.xlabel('nm')
 plt.tight_layout()
+
+#%% 
+for key in ['TiObaseTop', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml', 'AlObaseTop']:
+    print(key)
+    for fx in ['f0', 'f1', 'f2', 'f3', 'f4']:
+        print('{} -> A: {:.2f}\tB:{:.4f}'.format(fx, data[key][fx]['sfds']['par'][0], data[key][fx]['sfds']['par'][1]))

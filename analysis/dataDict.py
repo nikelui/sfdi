@@ -126,21 +126,42 @@ class dataDict(dict):
         fig, ax = plt.subplots(num=100, nrows=1, ncols=2, figsize=(10,4))
         for _f, fx in enumerate(self[key].keys()):
             if _f in f_used:
-                plt.suptitle('{}'.format(fx))
-                if fit == 'single':
-                    ...#TODO continue here
+                fitted = fit_fun(self.par['wv_sfds'], self[key][fx]['sfds']['par'][0],
+                                     self[key][fx]['sfds']['par'][1])
+                ax[0].plot(self.par['wv_sfds'], self[key][fx]['sfds']['op_fit'][:,0],
+                               linewidth=2, label=f'{fx}', color='C{}'.format(_f))
+                if fit == 'single' and norm is None:
+                    ax[1].plot(self.par['wv_sfds'], fitted, linewidth=2, label=f'{fx}',
+                               color='C{}'.format(_f))
+                elif fit == 'single' and norm is not None:
+                    ax[1].plot(self.par['wv_sfds'], fitted / fitted[norm],
+                               linewidth=2, label=f'{fx}', color='C{}'.format(_f))
+                elif fit == 'double' and norm is None:
+                    ax[1].plot(self.par['wv_sfds'], self[key][fx]['sfds']['op_fit'][:,1],
+                               linewidth=2, label=f'{fx}', color='C{}'.format(_f))
+                    ax[1].plot(self.par['wv_sfds'], fitted, linewidth=2,
+                               color='k'.format(_f), linestyle=':')
+                elif fit == 'double' and norm is not None:
+                    ax[1].plot(self.par['wv_sfds'], self[key][fx]['sfds']['op_fit'][:,1],
+                               linewidth=2, label=f'{fx}', color='C{}'.format(_f))
+                    ax[1].plot(self.par['wv_sfds'], fitted / fitted[norm], linewidth=2,
+                               color='k'.format(_f), linestyle=':')
                 else:
-                    ax[0].plot(self.par['wv_sfds'], self[key][fx]['sfds']['op_fit'][:,0],
+                    ax[1].plot(self.par['wv_sfds'], self[key][fx]['sfds']['op_fit'][:,1],
                                linewidth=2, label=f'{fx}', color='C{}'.format(_f))
-                    ax[0].set_title(r'Absorption coefficient')
-                    ax[0].set_xlabel('wv (nm)')
-                    ax[0].set_ylabel(r'mm$^{-1}$')
-                    
-                    ax[1].plot(self.par['wv_sfds'], self[key][fx]['sfds']['op_fit'][:,0],
-                               linewidth=2, label=f'{fx}', color='C{}'.format(_f))
-                    ax[1].set_title(r'Scattering coefficient')
-                    ax[1].set_xlabel('wv (nm)')
-                    ax[1].set_ylabel(r'mm$^{-1}$')
+        plt.suptitle('{}'.format(key))
+        ax[0].set_title(r"$\mu_a$")
+        ax[0].set_xlabel('wv (nm)')
+        ax[0].set_ylabel(r'mm$^{-1}$')
+        ax[0].grid(True, linestyle=':')
+        ax[0].set_xlim([450, 750])
+        ax[1].set_title(r"$\mu'_s$")
+        ax[1].set_xlabel('wv (nm)')
+        ax[1].set_ylabel(r'mm$^{-1}$')
+        ax[1].grid(True, linestyle=':')
+        ax[1].set_xlim([450, 750])
+        ax[1].legend(loc=0)
+        plt.tight_layout()
     
     def plot_mus(self, key, vmin=0, vmax=4, **kwargs):
         """Plot optical properties of dataset <key>"""
