@@ -21,34 +21,43 @@ def load_obj(name, path):
 def two_layer_fun(x, delta, bm):
     """Partial volumes equation for a two layer model
 __________
-____a_____ | |- (la, ba)
+____1_____ | |- (d, b1)
            |
            |
-____b____  |--- (delta, bb)
+____2____  |--- (delta, b2)
 
-x = [ba, bb, la]
+x = [b1, b2, d]
 bm = measured b coefficient
 """
-    return ((x[0] * x[2]) + x[1]*(delta - x[2]))/delta - bm
+    b1, b2, d = x  # unpack
+    return ((b1 * d) + b2*(delta - d))/delta - bm
 
+def two_layer_fun2(x, delta, bm):
+    b1, b2, d = x  # unpack
+    mask = d/delta >= 1
+    ret = ((b1 * d) + b2*(delta - d))/delta - bm
+    ret[mask] = b1 - bm[mask]  # correction
+    return ret
 
 def new_two_layer_fun(x, delta, mus, wv):
     """Partial volumes equation for a two layer model
 __________
-____a_____ | |- (la, mus_a)
+____1_____ | |- (la, mus_a)
            |
            |
-____b____  |--- (delta, mus_b)
+____2____  |--- (delta, mus_b)
     
     model: mus = (a1*lambda^-b1 * la + 2*lambda^-b2 * (delta-la))/delta
 
     Parameters
     ----------
     x : FLOAT array
-        array of unknowns  ->  [a1, b1, a2, b2, la]
-        - a1, b1 -> scattering parameters of layer a [mm^-1]
-        - a2, b2 -> scattering parameters of layer b [mm^-1]
-        - la -> thickness of layer a [mm]
+        array of unknowns  ->  [ln(a1), b1, ln(a2), b2, d]
+        - a1, b1 -> scattering parameters of layer 1 [mm^-1]
+        - a2, b2 -> scattering parameters of layer 2 [mm^-1]
+        - d -> thickness of layer 1 [mm]
+        * NEW: now the 'a' parameter is passed as a logarithm, since it changes
+                much more than the other 2 parameters.
     delta : FLOAT
         Estimated penetration depth of light [mm]
     mus : FLOAT
@@ -60,10 +69,25 @@ ____b____  |--- (delta, mus_b)
     -------
     Square difference between mus measurement and 2-layer model (to be used in least square)
 """
-    return np.sum(((x[0]*wv[:,np.newaxis]**(-x[1]) * x[4]) + 
-                   (x[2]*wv[:,np.newaxis]**(-x[3]) * (delta[np.newaxis,:] - x[4])) / 
-                       delta - mus), axis=0)
+    (a1, b1, a2, b2, d) = x  # unpack
+    a1 = np.power(10, a1*5)  # exponentiate logarithm
+    a2 = np.power(10, a2*5)
+    return np.sum(((a1*wv[:,np.newaxis]**(-b1) * d) + 
+                   (a2*wv[:,np.newaxis]**(-b2) * (delta[np.newaxis,:] - d))) / delta 
+                    - mus, axis=0)
 
+def new_two_layer_fun2(x, delta, mus, wv):
+    (a1, b1, a2, b2, d) = x  # unpack
+    a1 = np.power(10, a1*5)  # exponentiate logarithm
+    a2 = np.power(10, a2*5)
+    ret = np.zeros((len(delta), len(wv)), dtype=float)
+    for _w, w in enumerate(wv):
+        for _f in range(len(delta)):
+            if d / delta[_f] < 1:
+                ret[_f, _w] = (a1*w**(-b1) * d + a2*w**(-b2) * (delta[_f] - d)) / delta[_f] - mus[_w, _f]
+            else:
+                ret[_f, _w] = a1*w**(-b1) - mus[_w, _f]  # only first layer
+    return np.sum(ret, axis=0)
 
 # def read_param(fpath):
 #     params = {}'
@@ -86,34 +110,40 @@ data = load_obj('dataset', data_path)
 data.par = par
 
 #%% Least square fit
-ret = data.singleROI('AlO3ml', fit='single', I=3e3, norm=None)
+ret = data.singleROI('TiO15ml', fit='single', I=3e3, norm=None)
 
-d = np.mean(ret['depths'], axis=1)[:5]  # delta/2
-d2 = np.mean(ret['depth_phi'], axis=1)[:5]  # 1/e * phi^2
-d3 = np.mean(ret['depth_MC'], axis=1)[:5]  # calculated via Monte Carlo model
-mus = ret['op_ave'][:5,:,1]  # average measured scattering coefficient
-bm = ret['par_ave'][:5, 1]  # average measured scattering slope
+d = np.mean(ret['depths'], axis=1)[:]  # delta/2
+d2 = np.mean(ret['depth_phi'], axis=1)[:]  # 1/e * phi^2
+d3 = np.mean(ret['depth_MC'], axis=1)[:]  # calculated via Monte Carlo model
+mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
+bm = ret['par_ave'][:, 1]  # average measured scattering slope
 
 # Old model
-opt = least_squares(two_layer_fun, x0=[10, 10, 0.5], kwargs={'delta': d, 'bm': bm},
-                    bounds=[0, np.inf], method='trf')
+opt = least_squares(two_layer_fun2, x0=[1, 1, 0.1], kwargs={'delta': d, 'bm': bm},
+                    bounds=([0, 0, 0],[4, 4, np.inf]), method='trf',
+                    loss='soft_l1', max_nfev=1000)
 
-opt2 = least_squares(two_layer_fun, x0=[10, 10, 0.5], kwargs={'delta': d2, 'bm': bm},
-                    bounds=[0, np.inf], method='trf')
+opt2 = least_squares(two_layer_fun2, x0=[1, 1, 0.1], kwargs={'delta': d2, 'bm': bm},
+                    bounds=([0, 0, 0],[4, 4, np.inf]), method='trf',
+                    loss='soft_l1', max_nfev=1000)
 
-opt3 = least_squares(two_layer_fun, x0=[10, 10, 0.5], kwargs={'delta': d3, 'bm': bm},
-                    bounds=[0, np.inf], method='trf')
+opt3 = least_squares(two_layer_fun2, x0=[1, 1, 0.1], kwargs={'delta': d3, 'bm': bm},
+                    bounds=([0, 0, 0],[4, 4, np.inf]), method='trf',
+                    loss='soft_l1', max_nfev=1000)
 
 #%%
 # New model
-opt = least_squares(new_two_layer_fun, x0=[100,1,100,1,0.1],
+opt = least_squares(new_two_layer_fun2, x0=[0.4,1,0.4,1,0.1],
                     kwargs={'delta': d, 'mus': mus.T, 'wv':np.array(data.par['wv'])},
-                    bounds=[0, np.inf], method='trf')
+                    bounds=([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]), method='trf',
+                    loss='soft_l1', max_nfev=1000)
 
-opt2 = least_squares(new_two_layer_fun, x0=[100,1,100,1,0.1],
+opt2 = least_squares(new_two_layer_fun2, x0=[0.4,1,0.4,1,0.1],
                     kwargs={'delta': d2, 'mus': mus.T, 'wv':np.array(data.par['wv'])},
-                    bounds=[0, np.inf], method='trf')
+                    bounds=([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]), method='trf',
+                    loss='soft_l1', max_nfev=1000)
 
-opt3 = least_squares(new_two_layer_fun, x0=[100,1,100,1,0.1],
+opt3 = least_squares(new_two_layer_fun2, x0=[0.4,1,0.4,1,0.1],
                     kwargs={'delta': d3, 'mus': mus.T, 'wv':np.array(data.par['wv'])},
-                    bounds=[0, np.inf], method='trf')
+                    bounds=([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]), method='trf',
+                    loss='soft_l1', max_nfev=1000)
