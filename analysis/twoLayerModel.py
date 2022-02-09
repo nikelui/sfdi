@@ -9,6 +9,8 @@ import pickle
 import json
 import numpy as np
 from scipy.optimize import least_squares
+from scipy.optimize import minimize
+from scipy.optimize import Bounds
 from sfdi.common.getPath import getPath
 from sfdi.common.readParams import readParams
 from sfdi.analysis.dataDict import dataDict
@@ -70,24 +72,24 @@ ____2____  |--- (delta, mus_b)
     Square difference between mus measurement and 2-layer model (to be used in least square)
 """
     (a1, b1, a2, b2, d) = x  # unpack
-    a1 = np.power(10, a1*5)  # exponentiate logarithm
-    a2 = np.power(10, a2*5)
-    return np.sum(((a1*wv[:,np.newaxis]**(-b1) * d) + 
+    a1 = np.power(10, a1)  # exponentiate logarithm
+    a2 = np.power(10, a2)
+    return np.sum(np.sqrt((((a1*wv[:,np.newaxis]**(-b1) * d) + 
                    (a2*wv[:,np.newaxis]**(-b2) * (delta[np.newaxis,:] - d))) / delta 
-                    - mus, axis=0)
+                    - mus.T)**2), axis=(0,1))
 
 def new_two_layer_fun2(x, delta, mus, wv):
     (a1, b1, a2, b2, d) = x  # unpack
-    a1 = np.power(10, a1*5)  # exponentiate logarithm
-    a2 = np.power(10, a2*5)
+    a1 = np.power(10, a1)  # exponentiate logarithm
+    a2 = np.power(10, a2)
     ret = np.zeros((len(delta), len(wv)), dtype=float)
     for _w, w in enumerate(wv):
         for _f in range(len(delta)):
             if d / delta[_f] < 1:
-                ret[_f, _w] = (a1*w**(-b1) * d + a2*w**(-b2) * (delta[_f] - d)) / delta[_f] - mus[_w, _f]
+                ret[_f, _w] = (a1*w**(-b1) * d + a2*w**(-b2) * (delta[_f] - d)) / delta[_f] - mus[_f, _w]
             else:
-                ret[_f, _w] = a1*w**(-b1) - mus[_w, _f]  # only first layer
-    return np.sum(ret, axis=0)
+                ret[_f, _w] = a1*w**(-b1) - mus[_f, _w]  # only first layer
+    return np.sum(np.sqrt(ret**2), axis=(0,1))
 
 # def read_param(fpath):
 #     params = {}'
@@ -110,7 +112,7 @@ data = load_obj('dataset', data_path)
 data.par = par
 
 #%% Least square fit
-ret = data.singleROI('TiO15ml', fit='single', I=3e3, norm=None)
+ret = data.singleROI('TiO20ml', fit='single', I=3e3, norm=None)
 
 d = np.mean(ret['depths'], axis=1)[:]  # delta/2
 d2 = np.mean(ret['depth_phi'], axis=1)[:]  # 1/e * phi^2
@@ -147,3 +149,22 @@ opt3 = least_squares(new_two_layer_fun2, x0=[0.4,1,0.4,1,0.1],
                     kwargs={'delta': d3, 'mus': mus.T, 'wv':np.array(data.par['wv'])},
                     bounds=([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]), method='trf',
                     loss='soft_l1', max_nfev=1000)
+#%%
+# scipy.Minimize
+opt = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,0.1]),
+               args=(d, mus, np.array(data.par['wv'])),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':True})
+
+opt2 = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,0.1]),
+               args=(d2, mus, np.array(data.par['wv'])),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':True})
+
+opt3 = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,0.1]),
+               args=(d3, mus, np.array(data.par['wv'])),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':True})

@@ -68,7 +68,7 @@ def depthMC(mua, mus, fx):
     lstar = 1/(mua + mus)  # path length  
     
     # check variables nd issue warnings
-    if any(mua) < 0 or any(mus) < 0:
+    if np.any(mua < 0) or np.any(mus < 0):
         warnings.warn('The input mua and musp values need to be > 0 -> NaN results')
     if any(f < 0 for f in fx):
         warnings.warn('The input fxs need to be > 0 -> NaN results')
