@@ -11,7 +11,12 @@ from scipy.optimize import minimize
 from scipy.optimize import Bounds
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
+from matplotlib import cm as cmap
 from sfdi.analysis.depthMC import depthMC
+
+def scatter_fun(lamb, a, b):
+    """Power law function to fit scattering data to"""
+    return a * np.power(lamb, -b)
 
 def phi(mua, mus, fx, z):
     """Function to calculate fluence of light in depth
@@ -101,15 +106,53 @@ def two_layer_model(mus1, mus2, depths, thick):
         M: number of wavelengths
         D: number of thin phantoms
     
+    RETURN
+    - mus_model: list of arrays containing mus of 2-layer for each thickness
+    - params: list of arrays, containing fitted A,B parameters
     """
     mus_model = []
+    params = []
     for th in thick:
         ret = (mus1 * th + mus2 * (depths - th)) / depths
         idx = np.where(th/depths >= 1)
         if len(idx[0]) > 0:
             ret[idx] = mus1[idx]
         mus_model.append(ret)
-    return mus_model
+        temp = np.zeros((mus1.shape[0], 2), dtype=float)
+        for _f in range(mus1.shape[0]):
+            temp[_f,:], _ = curve_fit(scatter_fun, wv, ret[_f,:], p0=[100, 1],
+                        method='trf', loss='soft_l1', max_nfev=2000)
+        params.append(temp)
+    return mus_model, params
+
+def two_layer_model2(mus1, mus2, depths, thick):
+    """Linear combination of mus on 2-layer model
+    - mus1: scattering vector, thin layer (N x M)
+    - mus2: scattering vector, thick layer (N x M)
+    - depths: equivalent penetration depths [(N x M) x D]
+    - thick: thicness of top layer (D x 1)
+        N: number of frequencies
+        M: number of wavelengths
+        D: number of thin phantoms
+    
+    RETURN
+    - mus_model: list of arrays containing mus of 2-layer for each thickness
+    - params: list of arrays, containing fitted A,B parameters
+    """
+    mus_model = []
+    params = []
+    for _t, th in enumerate(thick):
+        ret = (mus1 * th + mus2 * (depths[_t] - th)) / depths[_t]
+        idx = np.where(th/depths[_t] >= 1)
+        if len(idx[0]) > 0:
+            ret[idx] = mus1[idx]
+        mus_model.append(ret)
+        temp = np.zeros((mus1.shape[0], 2), dtype=float)
+        for _f in range(mus1.shape[0]):
+            temp[_f,:], _ = curve_fit(scatter_fun, wv, ret[_f,:], p0=[100, 1],
+                        method='trf', loss='soft_l1', max_nfev=2000)
+        params.append(temp)
+    return mus_model, params
 
 ## Parameters
 wv = np.array([458,520,536,556,626])  # wavelengths
@@ -118,52 +161,95 @@ fx = np.array([np.mean(F[a:a+3]) for a in range(len(F)-3)])  # average fx
 thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # layer thickness
 
 ## optical properties are stacked over fx (assume homogeneous)
-# Titanium oxide
-mua_ti = np.tile(np.array([0.0315582, 0.0368862, 0.0368169, 0.0367965, 0.0428225]), (8,1))
+# Top layer: Titanium oxide
+mua_top = np.tile(np.array([0.0315582, 0.0368862, 0.0368169, 0.0367965, 0.0428225]), (8,1))
 a1,b1 = np.array([7.61528368e+03, 1.25263885e+00])
-mus_ti = np.tile((a1 * np.power(wv, -b1)), (8,1))
-# Aluminum oxide
-mua_al = np.tile(np.array([0.02110538, 0.0223065 , 0.02223373, 0.02278003, 0.02402116]), (8,1))
+mus_top = np.tile((a1 * np.power(wv, -b1)), (8,1))
+# Bottom layer: Aluminum oxide
+mua_bottom = np.tile(np.array([0.02110538, 0.0223065 , 0.02223373, 0.02278003, 0.02402116]), (8,1))
 a2,b2 = np.array([9.88306737, 0.3909216 ])
-mus_al = np.tile((a2 * np.power(wv, -b2)), (8,1))
+mus_bottom = np.tile((a2 * np.power(wv, -b2)), (8,1))
 
-# penetration depths
-dd_ti = depth_d(mua_ti, mus_ti, fx)
-dp_ti = depth_phi(mua_ti, mus_ti, fx)
-dmc_ti = depth_mc(mua_ti, mus_ti, fx)
-dd_al = depth_d(mua_al, mus_al, fx)
-dp_al = depth_phi(mua_al, mus_al, fx)
-dmc_al = depth_mc(mua_al, mus_al, fx)
+# Calculate penetration depths (Nfreq. x NWv)
+dd_top = depth_d(mua_top, mus_top, fx)
+dp_top = depth_phi(mua_top, mus_top, fx)
+dmc_top = depth_mc(mua_top, mus_top, fx)
+dd_bottom = depth_d(mua_bottom, mus_bottom, fx)
+dp_bottom = depth_phi(mua_bottom, mus_bottom, fx)
+dmc_bottom = depth_mc(mua_bottom, mus_bottom, fx)
 
+# "Equivalent" penetration depths [(Nfreq. x Nwv) x Nthick.]
+dd_eq = []
+dp_eq = []
+dmc_eq = []
+for d in thick:
+    dd_eq.append(d + (dd_top - d)*dd_bottom/dd_top)
+    idx = np.where(dd_top <= d)
+    dd_eq[-1][idx] = dd_top[idx]
+    
+    dp_eq.append(d + (dp_top - d)*dp_bottom/dp_top)
+    idx = np.where(dp_top <= d)
+    dp_eq[-1][idx] = dp_top[idx]
+    
+    dmc_eq.append(d + (dmc_top - d)*dmc_bottom/dmc_top)
+    idx = np.where(dmc_top <= d)
+    dmc_eq[-1][idx] = dmc_top[idx]
 #%% quick plot - penetration depths
 if False:
-    fig, ax = plt.subplots(num=1, ncols=1, nrows=1, figsize=(7,4))
-    ax.plot(wv, dd_ti.T, linestyle='-', marker='*')
-    ax.set_title('penetration depth (TiO$_2$) - diffusion')
-    ax.set_xlabel(r'$\lambda$ (nm)')
-    ax.set_ylabel('mm')
-    ax.grid(True, linestyle=':')
-    ax.set_ylim([0.25, 2])
-    # shrink box to get external legend
-    box = ax.get_position()
-    # Put a legend to the right of the current axis
-    ax.legend(['fx = {:.2f}'.format(f) for f in fx], loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.tight_layout()
+    for _d, d in enumerate(thick):
+        fig, ax = plt.subplots(num=1+_d, ncols=1, nrows=1, figsize=(7,4))
+        ax.plot(wv, dd_eq[_d].T, linestyle='-', marker='*')
+        ax.set_title('Equivalent penetration depth - diffusion - d={}mm'.format(d))
+        ax.set_xlabel(r'$\lambda$ (nm)')
+        ax.set_ylabel('mm')
+        ax.grid(True, linestyle=':')
+        ax.set_ylim([0, 2.5])
+        # shrink box to get external legend
+        box = ax.get_position()
+        # Put a legend to the right of the current axis
+        ax.legend(['fx = {:.2f}'.format(f) for f in fx], loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.tight_layout()
     
 #%% simulation: calculate mua = L(mua1 + mua2)
-mus_ti_model = two_layer_model(mus_ti, mus_al, dp_ti, thick)
+mus_top_model, params = two_layer_model(mus_top, mus_bottom, dmc_top, thick)
 
-for _d, d in enumerate(mus_ti_model):
+for _d, d in enumerate(mus_top_model):
     fig, ax = plt.subplots(nrows=1, ncols=1, num=100+_d, figsize=(7,4))
     ax.plot(wv, d[:5,:].T, '-', marker='*')
-    ax.plot(wv, mus_al[0,:], '--k')
-    ax.plot(wv, mus_ti[0,:], '--k')
-    ax.set_title(r"$\mu'_s$ (d = {}mm) - phi$^2$".format(thick[_d]))
+    ax.plot(wv, mus_bottom[0,:], '--k')
+    ax.plot(wv, mus_top[0,:], '--k')
+    ax.set_title(r"$\mu'_s$ (d = {}mm) - MC".format(thick[_d]))
     ax.set_xlabel('$\lambda$ (nm)')
-    ax.set_ylabel('mm$^-1$')
+    ax.set_ylabel('mm$^{-1}$')
     ax.grid(True, linestyle=':')
     # shrink box to get external legend
     box = ax.get_position()
     # Put a legend to the right of the current axis
     ax.legend(['fx = {:.2f}'.format(f) for f in fx[:5]], loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
+
+blues = cmap.Blues(np.linspace(0.2,1,8))
+reds = cmap.OrRd(np.linspace(0.2,1,8))
+fig, ax = plt.subplots(nrows=1, ncols=2, num=66, figsize=(12,4))
+for _p, par in enumerate(params):
+    ax[0].plot(fx, par[:,0], '*', color=reds[_p], linestyle='-', linewidth=1.5, markersize=9)
+    ax[1].plot(fx, par[:,1], '*', color=reds[_p], linestyle='-', linewidth=1.5, markersize=9)
+# reference parameters (AlO and TiO)
+ax[0].plot([0.05, 0.4], [a1, a1], '--k')
+ax[0].plot([0.05, 0.4], [a2, a2], '--k')
+ax[1].plot([0.05, 0.4], [b1, b1], '--k')
+ax[1].plot([0.05, 0.4], [b2, b2], '--k')
+
+ax[0].set_yscale('log')
+ax[0].set_xlabel('fx')
+ax[0].set_title('A parameter')
+ax[0].grid(True, linestyle=':')
+ax[1].set_xlabel('fx')
+ax[1].set_title('B parameter')
+ax[1].grid(True, linestyle=':')
+
+box = ax[1].get_position()
+# Put a legend to the right of the current axis
+ax[1].legend(['{}mm'.format(x) for x in thick], loc='center left',
+             bbox_to_anchor=(1, 0.5), title='Thickness', title_fontsize='large')
+plt.tight_layout()
