@@ -37,7 +37,7 @@ Date: 1/17/18
 import numpy as np
 from scipy.interpolate import interp2d
 import warnings
-
+from sfdi.analysis.depthCalculator.data import __path__ as dep_path
 
 def depthMC(mua, mus, fx):
     # Tables values
@@ -68,7 +68,7 @@ def depthMC(mua, mus, fx):
     lstar = 1/(mua + mus)  # path length  
     
     # check variables nd issue warnings
-    if any(mua) < 0 or any(mus) < 0:
+    if np.any(mua < 0) or np.any(mus < 0):
         warnings.warn('The input mua and musp values need to be > 0 -> NaN results')
     if any(f < 0 for f in fx):
         warnings.warn('The input fxs need to be > 0 -> NaN results')
@@ -82,8 +82,7 @@ def depthMC(mua, mus, fx):
     for _i, cdf in enumerate(cdflevels):
         for _j in range(len(mua)):
             # load each CDF level table
-            table = np.genfromtxt('depthCalculator/data/cdflevel{}table.csv'.format(cdf),
-                          delimiter=',')
+            table = np.genfromtxt('{}/cdflevel{}table.csv'.format(dep_path._path[0], cdf), delimiter=',')
             f = interp2d(tablemuspmua, tablefxs/lstar[_j], table.T * lstar[_j], kind='linear')
             depths[_i, :, _j] = f(muspmua[_j], fx)
     return depths

@@ -14,9 +14,8 @@ import tkinter as tk
 from tkinter import ttk
 import PIL
 from PIL import ImageTk as PIL_ImageTk
-# sys.path.append('../common') # Add the common folder to path
-from common.sfdi.acquisitionRoutine_gui import acquisitionRoutine
-from common.sfdi.Gamma_Calibration import gamma_calibration
+from sfdi.acquisition.acquisitionRoutine_gui import acquisitionRoutine
+from sfdi.acquisition.Gamma_Calibration import gamma_calibration
 
 
 class MainWindow(tk.Tk):

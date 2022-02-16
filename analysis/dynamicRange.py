@@ -6,20 +6,17 @@ Created on Fri Mar 12 23:57:44 2021
 email: luigi.belcastro@liu.se
 """
 
-import sys, os
 import numpy as np
 from matplotlib import pyplot as plt
 import cv2 as cv
 
-sys.path.append('../common')
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
+from sfdi.common.readParams import readParams
+#from sfdi.processing.crop import crop
+from sfdi.processing.stackPlot import stackPlot
+from sfdi.processing.rawDataLoad import rawDataLoad
+from sfdi.processing import __path__ as par_path
 
-from sfdi.readParams3 import readParams
-from sfdi.crop import crop
-from stackPlot import stackPlot
-from rawDataLoad import rawDataLoad
-
-par = readParams('../processing/parameters.ini')
+par = readParams('{}/parameters.ini'.format(par_path[0]))
 
 if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))

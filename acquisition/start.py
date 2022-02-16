@@ -30,35 +30,44 @@ Each full acquisition dataset is saved inside a folder named with a timestamp,
 this way multiple time-points can be processed easily.
 
 """
-
-import os, sys
+# NOTE: the folder containing sfdi must be in your PYTHONPATH
+import os
 import cv2 as cv
+from numpy import genfromtxt
 
-sys.path.append('../common') # Add the common folder to path
-sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation folder manually if doesn't work
-from sfdi.setWindow import setWindow
-from sfdi.expGUI_cvui import expGUI_cvui
-from sfdi.camera.pointGrey import PointGrey
-from sfdi.readParams3 import readParams
-from mycsv import csvread
-#import numpy as np
+from sfdi.acquisition.setWindow import setWindow
+from sfdi.acquisition.expGUI_cvui import expGUI_cvui
+from sfdi.camera.pointGrey import PointGrey as Camera  # Change this as appropriate
+from sfdi.common.readParams import readParams
+from sfdi.acquisition import __path__ as par_path
 
-## Read parameters from .cfg file
-par = readParams('./parameters.ini') # .cfg file should be in the same directory
+## Read parameters from .ini file
+par = readParams('{}/parameters.ini'.format(par_path[0]))
 ## Load gamma correction array
-correction,_ = csvread(par['cpath'],True)
+if par['cpath']:
+    par['gamma'] = genfromtxt(par['cpath'], delimiter=',')
+else:
+    par['gamma'] = None
 
 ## Check if out folder exist, if not, create it
 if not os.path.exists(par['outpath']):
     os.makedirs(par['outpath'])
 
 ### Setting up camera ###
-cam = PointGrey(num=0, res=par['res'], fps=par['res'])  # set-up camera
-#cam = ImagingSource(num=0, res=par['res'], fps=par['fps'])  # set-up camera
+cam = Camera(num=0, res=par['res'], fps=par['res'])  # set-up camera
 #TODO: automatically detect screen size
-setWindow('pattern',size=(par['xres'],par['yres']),pos=(par['w'],0)) # Set-up window on second monitor
-#TODO: new GUI, with extra functionality
-expGUI_cvui(cam,par,'pattern',correction) # Start GUI
+setWindow('pattern', size=(par['xres'],par['yres']),pos=(par['w'], 0))  # Set-up window on second monitor
+#TODO: new GUI, with extra functionality (remove opencv)
+expGUI_cvui(cam, par, 'pattern', par['gamma'])  # Start GUI
 
-cam.close()
+# Save relevant acquisition parameters to .ini (to be read with sfdi.readParams)
+# You can add any additional annotations as comments manually
+par_file = '{}/acquisition_parameters.ini'.format(par['outpath'])
+if not os.path.exists(par_file):
+    with open(par_file, 'w') as pFile:
+        pFile.write('[DEFAULT]\n')
+        pFile.write('fx={}\n'.format(par['fx']))
+        pFile.write('nphase={}\n'.format(par['nphase']))
+        pFile.write('wv={}\n'.format([458,460,461,520,536,556,600,601,626]))  # adjust this depening on hardware
+
 cv.destroyAllWindows()

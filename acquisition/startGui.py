@@ -31,18 +31,17 @@ this way multiple time-points can be processed easily.
 
 """
 
-import os, sys
-sys.path.append('../')
-from gui.mainWindow import MainWindow
-from common.sfdi.camera.piCam import PiCam as Camera
-from common.sfdi.readParams3 import readParams
-from common.mycsv import csvread
+import os
+from sfdi.gui.mainWindow import MainWindow
+from sfdi.camera.piCam import PiCam as Camera
+from sfdi.common.readParams import readParams
+from numpy import genfromtxt
 
 ## Read parameters from .ini file
 par = readParams('./parameters.ini') # .cfg file should be in the same directory
 ## Load gamma correction array
 if par['cpath']:
-    par['gamma'],_ = csvread(par['cpath'], True)
+    par['gamma'] = genfromtxt(par['cpath'], delimiter=',')
 else:
     par['gamma'] = None
     

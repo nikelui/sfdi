@@ -5,7 +5,7 @@ Created on Tue Nov  3 09:12:13 2020
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
-import os, sys
+import os
 import time
 import numpy as np
 import cv2 as cv
@@ -13,23 +13,15 @@ from matplotlib import pyplot as plt
 from scipy.optimize import lsq_linear
 # from scipy.optimize import least_squares
 from scipy.interpolate import interp1d
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
-from sfdi.common.chromPlot import chromPlot
-from sfdi.common.sfdi.crop import crop
-from sfdi.common.sfdi.getPath import getPath
 
+from sfdi.processing.chromPlot import chromPlot
+from sfdi.processing.crop import crop
+from sfdi.common.getPath import getPath
+from sfdi.common.colourbar import colourbar
 
-def colourbar(mappable, **kwargs):
-    """Improved colorbar function. Fits well to the axis dimension."""
-    if (mappable.colorbar is not None):
-        mappable.colorbar.remove()
-    ax = mappable.axes
-    fig = ax.figure
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    return fig.colorbar(mappable, cax=cax, **kwargs)
-
+from sfdi.processing.models import __path__ as mod_path
+from sfdi.common import __path__ as com_path
 
 def target_fun(x, chrom, mua):
     """Function to minimize for non-linear fitting
@@ -38,7 +30,6 @@ def target_fun(x, chrom, mua):
     - mua[WVx1]: absorption spectrum
 """
     return (chrom @ x) - mua
-
 
 # Decorate chromPlot function to add RGB color image
 def decorate(fun):
@@ -66,9 +57,9 @@ chrom_plot = decorate(chromPlot)
 
 # load chromophores data
 # 0: wavelength, 1: HbO2, 2: Hb, 3: H2O, 4: Lipid, 5: melanin, 6: MetHb
-cfile = open('C:/Users/luibe59/Documents/sfdi/common/models/visnir_chrom_400_1100nm with MetHb.txt', 'r')
-chrom = np.genfromtxt(cfile, comments='%')
-chrom_used = [1, 2, 5, 6]
+with open('{}/visnir_chrom_400_1100nm with MetHb.txt'.format(mod_path[0]), 'r') as cfile:
+    chrom = np.genfromtxt(cfile, comments='%')
+chrom_used = [1, 2, 5, 6]  # Set this
 
 WV5 = np.array([458, 520, 536, 556, 626])  # wavelengts (nm)
 
@@ -81,7 +72,7 @@ files = [x for x in os.listdir(path) if x.endswith('f0.npz') and 'calR' not in x
 files.sort()
 titles = [y.split('_')[1] for y in files]  # file name
 for file in files:
-    data = np.load(f'{path}/{file}')
+    data = np.load('{}/{}'.format(path, file))
     op_fit_maps.append(data['op_fit_maps'])
 
 # Load calibrated reflectance
@@ -92,7 +83,7 @@ if len(files) == 0:
 files.sort()
 
 for file in files:
-    data = np.load(f'{path}/{file}')
+    data = np.load('{}/{}'.format(path, file))
     calR = crop(data['cal_R'], data['ROI'])
     calR = np.squeeze(calR[:,:,(8,4,0),0])
     calRs.append(calR)
@@ -100,8 +91,7 @@ for file in files:
 # sys.exit()
 
 ## Linear fitting
-data = np.genfromtxt('C:/Users/luibe59/Documents/sfdi/common/overlaps_calibrated.csv',
-                       delimiter=',') # load overlaps spectrum
+data = np.genfromtxt('{}/overlaps_calibrated.csv'.format(com_path[0]), delimiter=',') # load overlaps spectrum
 spec = data[(9,6,5,4,1),:] # Keep 5 channels in order from BB to RR
 wv = data[0,:] # wavelength axis
 # need to interpolate to the same wv as the spectral bands

@@ -10,20 +10,8 @@ Script to plot mua, mus' maps at 5 wavelengths
 import os
 import numpy as np
 from matplotlib import pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from zipfile import BadZipFile
-
-
-def colourbar(mappable):
-    """Improved colorbar function. Fits well to the axis dimension."""
-    if (mappable.colorbar is not None):
-        mappable.colorbar.remove()
-    ax = mappable.axes
-    fig = ax.figure
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    return fig.colorbar(mappable, cax=cax)
-
+from sfdi.common.colourbar import colourbar
 
 fnames = [x for x in os.listdir(os.getcwd()) if x.endswith('npz')]
 data = []

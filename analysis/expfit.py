@@ -2,7 +2,7 @@
 """
 Created on Wed Oct 28 16:06:11 2020
 
-@author: luibe59
+@author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 
 Script to fit mus' to a power law of the kind A * lambda^(-b)
@@ -11,16 +11,18 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.colors import LogNorm
-from matplotlib.backend_bases import MouseButton
-from sfdi.common.sfdi.getPath import getPath
+from scipy.io import loadmat
 
+import matplotlib as mpl
+from matplotlib.backend_bases import MouseButton
+from matplotlib.figure import Figure
+
+from sfdi.common.getPath import getPath
+from sfdi.common.colourbar import colourbar
 
 def fit_fun(lamb, a, b):
     """Exponential function to fit data to"""
     return a * np.power(lamb, -b)
-
 
 def mad(x,scale=1.4826,axis=None):
     """Median assoulte difference (since Scipy does not implement it anymore).
@@ -30,20 +32,9 @@ def mad(x,scale=1.4826,axis=None):
     med = np.nanmedian(x,axis=axis)
     return np.nanmedian(np.abs(x-med),axis=axis)*scale
 
-
-def colourbar(mappable, **kwargs):
-    """Improved colorbar function. Fits well to the axis dimension."""
-    if (mappable.colorbar is not None):
-        mappable.colorbar.remove()
-    ax = mappable.axes
-    fig = ax.figure
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    return fig.colorbar(mappable, cax=cax, **kwargs)
-
-
 def onclick(event):
     global coord
+    # print(event)
     if event.name == 'button_press_event':
         if event.xdata != None:
             coord['x'] = int(round(event.xdata))
@@ -53,25 +44,24 @@ def onclick(event):
     if event.button == MouseButton.RIGHT:
         coord['x'] = None
         coord['y'] = None
-        
 
 # select data path
 path = getPath('Select data path')
-
 
 wv = np.array([458, 520, 536, 556, 626])  # wavelengts (nm)
 
 op_fit_maps = []
 param_maps = []
-files = [x for x in os.listdir(path) if x.endswith('.npz') and 'calR' not in x]
+files = [x for x in os.listdir(path) if x.endswith('.mat') and 'calR' not in x]
 files.sort()
-titles = [y.split('_')[1] for y in files]  # file name
+titles = [y.split('_')[-3] for y in files]  # file name
 for file in files:
-    data = np.load(f'{path}/{file}')
+    # data = np.load('{}/{}'.format(path, file))
+    data = loadmat('{}/{}'.format(path, file))
     op_fit_maps.append(data['op_fit_maps'])
 
 for _a, op_map in enumerate(op_fit_maps[:3], start=1):
-    print(f'Fitting dataset {_a}...')
+    print('Fitting dataset {}...'.format(_a))
     p_map = np.zeros((op_map.shape[0], op_map.shape[1], 2), dtype=float)
     for _i in range(op_map.shape[0]):
         for _j in range(op_map.shape[1]):
@@ -84,8 +74,9 @@ for _a, op_map in enumerate(op_fit_maps[:3], start=1):
     param_maps.append(p_map)
 
 
+#%%
 # test
-N = 0  # data set
+N = 2  # data set
 global coord
 coord = {'x': 0, 'y': 0}
 
@@ -105,8 +96,8 @@ ax[1,0].legend()
 ax[1,0].grid(True, linestyle=':')
 ax[1,1].axis('off')
 # Interactive plot
+fig.canvas.draw()
 if True:  # put True to execute
-    plt.pause(0.1)
     WV = np.arange(450,650)
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     while coord['x'] is not None:
