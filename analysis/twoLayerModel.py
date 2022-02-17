@@ -35,10 +35,22 @@ bm = measured b coefficient
     return ((b1 * d) + b2*(delta - d))/delta - bm
 
 def two_layer_fun2(x, delta, bm):
+    """Same as two_layer_fun, but with check for d/delta >= 1"""
     b1, b2, d = x  # unpack
     mask = d/delta >= 1
     ret = ((b1 * d) + b2*(delta - d))/delta - bm
     ret[mask] = b1 - bm[mask]  # correction
+    return ret
+
+def two_layer_fun3(x, delta, bm, alpha=.1):
+    """Same as two_layer_fun2, but with Tikhonov regularization, to be used with scipy.minimize"""
+    b1, b2, d = x  # unpack
+    mask = d/delta >= 1
+    ret = ((b1 * d) + b2*(delta - d))/delta - bm
+    # ret[mask] = b1 - bm[mask]  # correction
+    return np.sum(np.sqrt(np.power(ret, 2))) + alpha*np.sum(np.sqrt(np.power(x, 2)))
+    
+    
     return ret
 
 def new_two_layer_fun(x, delta, mus, wv):
@@ -112,7 +124,7 @@ data = load_obj('dataset', data_path)
 data.par = par
 
 #%% Least square fit
-ret = data.singleROI('TiO20ml', fit='single', I=3e3, norm=None)
+ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
 
 d = np.mean(ret['depths'], axis=1)[:]  # delta/2
 d2 = np.mean(ret['depth_phi'], axis=1)[:]  # 1/e * phi^2
@@ -149,8 +161,8 @@ opt3 = least_squares(new_two_layer_fun2, x0=[0.4,1,0.4,1,0.1],
                     kwargs={'delta': d3, 'mus': mus.T, 'wv':np.array(data.par['wv'])},
                     bounds=([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]), method='trf',
                     loss='soft_l1', max_nfev=1000)
-#%%
-# scipy.Minimize
+#%% scipy.Minimize
+# New model
 opt = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,0.1]),
                args=(d, mus, np.array(data.par['wv'])),
                method='Nelder-Mead',
@@ -168,3 +180,24 @@ opt3 = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,0.1]),
                method='Nelder-Mead',
                bounds=Bounds([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]),
                options={'maxiter':3000, 'adaptive':True})
+
+#%% scipy.Minimize
+# Old model
+opt = minimize(two_layer_fun3, x0=np.array([2,2,.1]),
+               args=(d, bm),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':False})
+
+opt2 = minimize(two_layer_fun3, x0=np.array([2,2,.1]),
+               args=(d2, bm),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':False})
+
+
+opt3 = minimize(two_layer_fun3, x0=np.array([2,2,.1]),
+               args=(d3, bm),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':False})
