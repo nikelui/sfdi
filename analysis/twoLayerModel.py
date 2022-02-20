@@ -91,37 +91,55 @@ ____2____  |--- (delta, mus_b)
                     - mus.T)**2), axis=(0,1))
 
 def new_two_layer_fun2(x, delta, mus, wv):
+    """Same as new_two_layer_fun but with check for d/delta >= 1"""
     (a1, b1, a2, b2, d) = x  # unpack
     a1 = np.power(10, a1)  # exponentiate logarithm
     a2 = np.power(10, a2)
     ret = np.zeros((len(delta), len(wv)), dtype=float)
     for _w, w in enumerate(wv):
         for _f in range(len(delta)):
-            if d / delta[_f] < 1:
+            # if d / delta[_f] < 1:
+            if True:
                 ret[_f, _w] = (a1*w**(-b1) * d + a2*w**(-b2) * (delta[_f] - d)) / delta[_f] - mus[_f, _w]
             else:
                 ret[_f, _w] = a1*w**(-b1) - mus[_f, _w]  # only first layer
     return np.sum(np.sqrt(ret**2), axis=(0,1))
 
-# def read_param(fpath):
-#     params = {}'
-#     with open(fpath, 'r') as file:
-#         for line in file.readlines():
-#             if line.startswith('#') or len(line.strip()) == 0:  # ignore comments and newlines
-#                 pass
-#             else:
-#                 key, item = (x.strip() for x in line.split('='))
-#                 if item.startswith('['):
-#                     end = item.find(']')
-#                     item = json.loads(item[:end+1])
-#                 params[key] = item
-#     return params
+def new_two_layer_fun3(x, delta, mus, wv, alpha=0.1):
+    """Same as new_two_layer_fun2 but with Tikhonov regularization"""
+    (a1, b1, a2, b2, d) = x  # unpack
+    a1 = np.power(10, a1)  # exponentiate logarithm
+    a2 = np.power(10, a2)
+    ret = np.zeros((len(delta), len(wv)), dtype=float)
+    for _w, w in enumerate(wv):
+        for _f in range(len(delta)):
+            # if d / delta[_f] < 1:
+            if True:
+                ret[_f, _w] = (a1*w**(-b1) * d + a2*w**(-b2) * (delta[_f] - d)) / delta[_f] - mus[_f, _w]
+            else:
+                ret[_f, _w] = a1*w**(-b1) - mus[_f, _w]  # only first layer
+    return np.sum(np.sqrt(ret**2), axis=(0,1)) + alpha*np.sum(np.sqrt(x**2))
+
+def single_param_fun(x, delta, mus1, mus2, mus, alpha=0.1):
+    """Fit for single parameter
+    - x: layer 1 thickness
+"""
+    # import pdb; pdb.set_trace()
+    ret = (mus1[np.newaxis,:]*x + mus2[np.newaxis,:]*(delta[:,np.newaxis] - x))/delta[:,np.newaxis] - mus
+    idx = np.where(x >= delta)
+    ret[idx] = mus1[np.newaxis,:]*x/delta[idx,np.newaxis]
+    return np.sum(np.sqrt(ret**2)) + alpha*x[0]
 
 #%% Load pre-processed data
 data_path = getPath('select data path')
 par = readParams('{}/processing_parameters.ini'.format(data_path))  # optional
 data = load_obj('dataset', data_path)
 data.par = par
+
+TiO = data.singleROI('TiObaseTop', fit='single', I=3e3, norm=None)
+mus_TiO = np.mean(TiO['op_ave'][:,:,1], axis=0)
+AlO = data.singleROI('AlObaseTop', fit='single', I=3e3, norm=None)
+mus_AlO = np.mean(AlO['op_ave'][:,:,1], axis=0)
 
 #%% Least square fit
 ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
@@ -131,7 +149,7 @@ d2 = np.mean(ret['depth_phi'], axis=1)[:]  # 1/e * phi^2
 d3 = np.mean(ret['depth_MC'], axis=1)[:]  # calculated via Monte Carlo model
 mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
 bm = ret['par_ave'][:, 1]  # average measured scattering slope
-
+#%%
 # Old model
 opt = least_squares(two_layer_fun2, x0=[1, 1, 0.1], kwargs={'delta': d, 'bm': bm},
                     bounds=([0, 0, 0],[4, 4, np.inf]), method='trf',
@@ -163,22 +181,42 @@ opt3 = least_squares(new_two_layer_fun2, x0=[0.4,1,0.4,1,0.1],
                     loss='soft_l1', max_nfev=1000)
 #%% scipy.Minimize
 # New model
-opt = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,0.1]),
+opt = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,1]),
                args=(d, mus, np.array(data.par['wv'])),
                method='Nelder-Mead',
                bounds=Bounds([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]),
                options={'maxiter':3000, 'adaptive':True})
 
-opt2 = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,0.1]),
+opt2 = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,1]),
                args=(d2, mus, np.array(data.par['wv'])),
                method='Nelder-Mead',
                bounds=Bounds([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]),
                options={'maxiter':3000, 'adaptive':True})
 
-opt3 = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,0.1]),
+opt3 = minimize(new_two_layer_fun2, x0=np.array([2,1,2,1,1]),
                args=(d3, mus, np.array(data.par['wv'])),
                method='Nelder-Mead',
                bounds=Bounds([0, 0, 0, 0, 0],[6, 4, 6, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':True})
+
+#%% scipy.Minimize
+# New model, single parameter
+opt = minimize(single_param_fun, x0=np.array([1]),
+               args=(d[1:], mus_TiO, mus_AlO, mus[1:,:], 0),
+               method='Nelder-Mead',
+               bounds=Bounds([0], [np.inf]),
+               options={'maxiter':3000, 'adaptive':True})
+
+opt2 = minimize(single_param_fun, x0=np.array([1]),
+               args=(d2[1:], mus_TiO, mus_AlO, mus[1:,:], 0),
+               method='Nelder-Mead',
+               bounds=Bounds([0], [np.inf]),
+               options={'maxiter':3000, 'adaptive':True})
+
+opt3 = minimize(single_param_fun, x0=np.array([1]),
+               args=(d3[1:], mus_TiO, mus_AlO, mus[1:,:], 0),
+               method='Nelder-Mead',
+               bounds=Bounds([0], [np.inf]),
                options={'maxiter':3000, 'adaptive':True})
 
 #%% scipy.Minimize
@@ -201,3 +239,5 @@ opt3 = minimize(two_layer_fun3, x0=np.array([2,2,.1]),
                method='Nelder-Mead',
                bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
                options={'maxiter':3000, 'adaptive':False})
+
+
