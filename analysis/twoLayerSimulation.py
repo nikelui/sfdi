@@ -211,7 +211,7 @@ if False:
         plt.tight_layout()
     
 #%% simulation: calculate mua = L(mua1 + mua2)
-mus_top_model, params = two_layer_model(mus_top, mus_bottom, dmc_top, thick)
+mus_top_model, params = two_layer_model(mus_top, mus_bottom, dd_top, thick)
 
 for _d, d in enumerate(mus_top_model):
     fig, ax = plt.subplots(nrows=1, ncols=1, num=100+_d, figsize=(7,4))
@@ -253,3 +253,5 @@ box = ax[1].get_position()
 ax[1].legend(['{}mm'.format(x) for x in thick], loc='center left',
              bbox_to_anchor=(1, 0.5), title='Thickness', title_fontsize='large')
 plt.tight_layout()
+
+#%% Reverse fit?

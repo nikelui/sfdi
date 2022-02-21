@@ -42,7 +42,7 @@ def two_layer_fun2(x, delta, bm):
     ret[mask] = b1 - bm[mask]  # correction
     return ret
 
-def two_layer_fun3(x, delta, bm, alpha=.1):
+def two_layer_fun3(x, delta, bm, alpha=0.1):
     """Same as two_layer_fun2, but with Tikhonov regularization, to be used with scipy.minimize"""
     b1, b2, d = x  # unpack
     mask = d/delta >= 1
@@ -50,8 +50,6 @@ def two_layer_fun3(x, delta, bm, alpha=.1):
     # ret[mask] = b1 - bm[mask]  # correction
     return np.sum(np.sqrt(np.power(ret, 2))) + alpha*np.sum(np.sqrt(np.power(x, 2)))
     
-    
-    return ret
 
 def new_two_layer_fun(x, delta, mus, wv):
     """Partial volumes equation for a two layer model
@@ -90,35 +88,21 @@ ____2____  |--- (delta, mus_b)
                    (a2*wv[:,np.newaxis]**(-b2) * (delta[np.newaxis,:] - d))) / delta 
                     - mus.T)**2), axis=(0,1))
 
-def new_two_layer_fun2(x, delta, mus, wv):
-    """Same as new_two_layer_fun but with check for d/delta >= 1"""
+def new_two_layer_fun2(x, delta, mus, wv, alpha=0.1):
+    """Same as new_two_layer_fun but with check for d/delta >= 1 and Tikhonov regularization"""
     (a1, b1, a2, b2, d) = x  # unpack
     a1 = np.power(10, a1)  # exponentiate logarithm
     a2 = np.power(10, a2)
     ret = np.zeros((len(delta), len(wv)), dtype=float)
     for _w, w in enumerate(wv):
         for _f in range(len(delta)):
-            # if d / delta[_f] < 1:
-            if True:
-                ret[_f, _w] = (a1*w**(-b1) * d + a2*w**(-b2) * (delta[_f] - d)) / delta[_f] - mus[_f, _w]
-            else:
-                ret[_f, _w] = a1*w**(-b1) - mus[_f, _w]  # only first layer
-    return np.sum(np.sqrt(ret**2), axis=(0,1))
-
-def new_two_layer_fun3(x, delta, mus, wv, alpha=0.1):
-    """Same as new_two_layer_fun2 but with Tikhonov regularization"""
-    (a1, b1, a2, b2, d) = x  # unpack
-    a1 = np.power(10, a1)  # exponentiate logarithm
-    a2 = np.power(10, a2)
-    ret = np.zeros((len(delta), len(wv)), dtype=float)
-    for _w, w in enumerate(wv):
-        for _f in range(len(delta)):
-            # if d / delta[_f] < 1:
-            if True:
+            if d / delta[_f] < 1:
+            # if True:
                 ret[_f, _w] = (a1*w**(-b1) * d + a2*w**(-b2) * (delta[_f] - d)) / delta[_f] - mus[_f, _w]
             else:
                 ret[_f, _w] = a1*w**(-b1) - mus[_f, _w]  # only first layer
     return np.sum(np.sqrt(ret**2), axis=(0,1)) + alpha*np.sum(np.sqrt(x**2))
+
 
 def single_param_fun(x, delta, mus1, mus2, mus, alpha=0.1):
     """Fit for single parameter
@@ -126,8 +110,8 @@ def single_param_fun(x, delta, mus1, mus2, mus, alpha=0.1):
 """
     # import pdb; pdb.set_trace()
     ret = (mus1[np.newaxis,:]*x + mus2[np.newaxis,:]*(delta[:,np.newaxis] - x))/delta[:,np.newaxis] - mus
-    idx = np.where(x >= delta)
-    ret[idx] = mus1[np.newaxis,:]*x/delta[idx,np.newaxis]
+    # idx = np.where(x >= delta)
+    # ret[idx] = mus1[np.newaxis,:]*x/delta[idx,np.newaxis]
     return np.sum(np.sqrt(ret**2)) + alpha*x[0]
 
 #%% Load pre-processed data
@@ -220,6 +204,27 @@ opt3 = minimize(single_param_fun, x0=np.array([1]),
                options={'maxiter':3000, 'adaptive':True})
 
 #%% scipy.Minimize
+# # New model, single parameter, from model (run line 214 in twoLayerSimulation.py)
+# N = 4  # dataset, 0: 0.5ml, 1: 1ml, 2: 1.5ml, 3:2ml, 4: 3ml
+# opt = minimize(single_param_fun, x0=np.array([1]),
+#                args=(dd_top[:,N], mus_top[0,:], mus_bottom[0,:], mus_top_model[N], 0),
+#                method='Nelder-Mead',
+#                bounds=Bounds([0], [np.inf]),
+#                options={'maxiter':3000, 'adaptive':False})
+
+# opt2 = minimize(single_param_fun, x0=np.array([1]),
+#                args=(dp_top[:,N], mus_top[0,:], mus_bottom[0,:], mus_top_model[N], 0),
+#                method='Nelder-Mead',
+#                bounds=Bounds([0], [np.inf]),
+#                options={'maxiter':3000, 'adaptive':False})
+
+# opt3 = minimize(single_param_fun, x0=np.array([1]),
+#                args=(dmc_top[:,N], mus_top[0,:], mus_bottom[0,:], mus_top_model[N], 0),
+#                method='Nelder-Mead',
+#                bounds=Bounds([0], [np.inf]),
+#                options={'maxiter':3000, 'adaptive':False})
+
+#%% scipy.Minimize
 # Old model
 opt = minimize(two_layer_fun3, x0=np.array([2,2,.1]),
                args=(d, bm),
@@ -240,4 +245,27 @@ opt3 = minimize(two_layer_fun3, x0=np.array([2,2,.1]),
                bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
                options={'maxiter':3000, 'adaptive':False})
 
+#%% scipy.Minimize
+# Old model, from model (run line 214 in twoLayerSimulation.py)
+N = 3  # Dataset
+a_top, b_top = np.array([7.61528368e+03, 1.25263885e+00])
+a_bottom, b_bottom = np.array([9.88306737, 0.3909216 ])
 
+opt = minimize(two_layer_fun3, x0=np.array([2,2,1]),
+               args=(dd_top[:,N], params[N][:,1], 0),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':False})
+
+opt2 = minimize(two_layer_fun3, x0=np.array([2,2,1]),
+               args=(dp_top[:,N], params[N][:,1], 0),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':False})
+
+
+opt3 = minimize(two_layer_fun3, x0=np.array([2,2,1]),
+               args=(dmc_top[:,N], params[N][:,1], 0),
+               method='Nelder-Mead',
+               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+               options={'maxiter':3000, 'adaptive':False})
