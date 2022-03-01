@@ -6,9 +6,9 @@ Created on Thu Feb  4 13:10:56 2021
 email: luigi.belcastro@liu.se
 """
 import pickle
-import json
 import numpy as np
 from scipy.optimize import least_squares
+from scipy.optimize import curve_fit
 from scipy.optimize import minimize
 from scipy.optimize import Bounds
 from sfdi.common.getPath import getPath
@@ -19,6 +19,10 @@ def load_obj(name, path):
     """Utility function to load python objects using pickle module"""
     with open('{}/obj/{}.pkl'.format(path, name), 'rb') as f:
         return pickle.load(f)
+
+def exp_fun(lamb, a, b):
+    """Exponential function to fit data to"""
+    return a * np.power(lamb, -b)
     
 def two_layer_fun(x, delta, bm):
     """Partial volumes equation for a two layer model
@@ -50,6 +54,22 @@ def two_layer_fun3(x, delta, bm, alpha=0.1):
     # ret[mask] = b1 - bm[mask]  # correction
     return np.sum(np.sqrt(np.power(ret, 2))) + alpha*np.sum(np.sqrt(np.power(x, 2)))
     
+def weights_fun(x, Bm, B1, B2):
+    """Function to fit 2-layer scattering slope to a linear combination: B = a*B1 + b*B2
+    - x: FLOAT array
+        x = (a, b), weights of the linear combination
+    - Bm: FLOAT, measured slope of 2-layer
+    - B1, B2: FLOAT, measured slope of individual layers"""
+    # import pdb; pdb.set_trace()  # DEBUG
+    return np.sum(np.sqrt((x[0]*B1 + x[1]*B2 - Bm)**2))
+
+def weights_fun2(x, Bm, B1, B2):
+    """Function to fit 2-layer scattering slope to a linear combination: B = x*B1 + (1-x)*B2
+    - x: FLOAT
+        x = weight of the linear combination
+    - Bm: FLOAT, measured slope of 2-layer
+    - B1, B2: FLOAT, measured slope of individual layers"""
+    return np.sum(np.sqrt((x*B1 + (1-x)*B2 - Bm)**2))
 
 def new_two_layer_fun(x, delta, mus, wv):
     """Partial volumes equation for a two layer model
@@ -122,8 +142,12 @@ data.par = par
 
 TiO = data.singleROI('TiObaseTop', fit='single', I=3e3, norm=None)
 mus_TiO = np.mean(TiO['op_ave'][:,:,1], axis=0)
+par_TiO = np.mean(TiO['par_ave'], axis=0)
+# (A, B), _ = curve_fit(exp_fun, data.par['wv'], mus_TiO, p0=[100,1],
+#                       method='trf', loss='soft_l1', max_nfev=2000)
 AlO = data.singleROI('AlObaseTop', fit='single', I=3e3, norm=None)
 mus_AlO = np.mean(AlO['op_ave'][:,:,1], axis=0)
+par_AlO = np.mean(AlO['par_ave'], axis=0)
 
 #%% Least square fit
 ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
@@ -247,25 +271,43 @@ opt3 = minimize(two_layer_fun3, x0=np.array([2,2,.1]),
 
 #%% scipy.Minimize
 # Old model, from model (run line 214 in twoLayerSimulation.py)
-N = 3  # Dataset
-a_top, b_top = np.array([7.61528368e+03, 1.25263885e+00])
-a_bottom, b_bottom = np.array([9.88306737, 0.3909216 ])
+# N = 3  # Dataset
+# a_top, b_top = np.array([7.61528368e+03, 1.25263885e+00])
+# a_bottom, b_bottom = np.array([9.88306737, 0.3909216 ])
 
-opt = minimize(two_layer_fun3, x0=np.array([2,2,1]),
-               args=(dd_top[:,N], params[N][:,1], 0),
-               method='Nelder-Mead',
-               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
-               options={'maxiter':3000, 'adaptive':False})
+# opt = minimize(two_layer_fun3, x0=np.array([2,2,1]),
+#                args=(dd_top[:,N], params[N][:,1], 0),
+#                method='Nelder-Mead',
+#                bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+#                options={'maxiter':3000, 'adaptive':False})
 
-opt2 = minimize(two_layer_fun3, x0=np.array([2,2,1]),
-               args=(dp_top[:,N], params[N][:,1], 0),
-               method='Nelder-Mead',
-               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
-               options={'maxiter':3000, 'adaptive':False})
+# opt2 = minimize(two_layer_fun3, x0=np.array([2,2,1]),
+#                args=(dp_top[:,N], params[N][:,1], 0),
+#                method='Nelder-Mead',
+#                bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+#                options={'maxiter':3000, 'adaptive':False})
 
 
-opt3 = minimize(two_layer_fun3, x0=np.array([2,2,1]),
-               args=(dmc_top[:,N], params[N][:,1], 0),
-               method='Nelder-Mead',
-               bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
-               options={'maxiter':3000, 'adaptive':False})
+# opt3 = minimize(two_layer_fun3, x0=np.array([2,2,1]),
+#                args=(dmc_top[:,N], params[N][:,1], 0),
+#                method='Nelder-Mead',
+#                bounds=Bounds([0, 0, 0], [4, 4, np.inf]),
+#                options={'maxiter':3000, 'adaptive':False})
+
+
+#%% Weights fit
+weights_1 = np.zeros(len(bm), dtype=float)
+weights_2 = np.zeros((len(bm),2), dtype=float)
+for _f in range(len(bm)):
+    opt = minimize(weights_fun, x0=np.array([.5, .5]),
+                    args=(bm[_f], par_TiO[1], par_AlO[1]),
+                    method='Nelder-Mead',
+                    # bounds=Bounds([0, 0], [1, 1]),
+                    options={'maxiter':3000, 'adaptive':False})
+    weights_2[_f,:] = opt['x']
+    opt2 = minimize(weights_fun2, x0=np.array([.5]),
+                    args=(bm[_f], par_TiO[1], par_AlO[1]),
+                    method='Nelder-Mead',
+                    # bounds=Bounds([0], [1]),
+                    options={'maxiter':3000, 'adaptive':False})
+    weights_1[_f] = opt2['x']
