@@ -5,13 +5,61 @@ Created on Tue Mar  1 11:52:02 2022
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
+import pickle
 import numpy as np
 from scipy.optimize import minimize
 from matplotlib import pyplot as plt
+from sfdi.common.getPath import getPath
+from sfdi.common.readParams import readParams
+
+def load_obj(name, path):
+    """Utility function to load python objects using pickle module"""
+    with open('{}/obj/{}.pkl'.format(path, name), 'rb') as f:
+        return pickle.load(f)
+
+def depth_diff(mua, mus, fx):
+    """Function to calculate effective penetration depth based on diffusion approximation
+        
+    - mua, mus: FLOAT array (MxN)
+        optical properties
+    - fx: FLOAT array (1xM)
+        average fx in range
+        
+        M: number of spatial frequencies
+        N: number of wavelengths
+        
+    Returns
+    ------
+    d: FLOAT array (MxN)
+        Penetration depth (diffuse) dependent on fx and wavelength
+"""
+    mut = mua + mus  # 1xN
+    mueff = np.sqrt(np.abs(3 * mua * mut))  # 1xN
+    mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # MxN
+    d = 1/mueff1  # MxN
+    return d
+
+def weights_fun(x, Bm, B1, B2):
+    """Function to fit 2-layer scattering slope to a linear combination: B = x*B1 + (1-x)*B2
+    - x: FLOAT
+        x = weight of the linear combination
+    - Bm: FLOAT, measured slope of 2-layer
+    - B1, B2: FLOAT, measured slope of individual layers"""
+    return np.sum(np.sqrt((x*B1 + (1-x)*B2 - Bm)**2))
+
+def weights_fun2(x, mus, mus1, mus2):
+    """Function to fit 2-layer scattering slope to a linear combination: mus = x*mus1 + (1-x)*mus2
+    - x: FLOAT
+        weight of the linear combination
+    - mus: FLOAT
+        measured scattering coefficient of 2-layer
+    - mus1, mus2: FLOAT
+        measured scattering coefficient of individual layers"""
+    return np.sum(np.sqrt((x*mus1 + (1-x)*mus2 - mus)**2))
 
 def alpha_diff(d, mua, mus, fx, g=0.8, n=1.4):
     """
-    Function to calculate the expected weigth (alpha) in a 2 layer model using
+    Function to calculate the expected weigth (alpha) and fluence (phi) in a 2 layer model using
     the diffusion approximtion, given the thickness d and the measured optical properties.
 
 Model:
@@ -25,11 +73,11 @@ ____2____  |---
     ----------
     d : FLOAT
         Thickness of the thin layer.
-    mua : FLOAT array
-        Absorption coefficient, dependent on wavelength.
-    mus : FLOAT array
-        Scattering coefficient, dependent on wavelength.
-    fx :FLOAT array
+    mua : FLOAT array (MxN)
+        Absorption coefficient, dependent on wavelength and fx.
+    mus : FLOAT array (MxN)
+        Scattering coefficient, dependent on wavelength and fx.
+    fx :FLOAT array (Mx1)
         Array with spatial frequencies
     g : FLOAT, optional
         Anysotropy coefficient. The default is 0.8.
@@ -44,19 +92,64 @@ ____2____  |---
         N: number of wavelengths
     """
     # Coefficients. N: number of wavelengths, M: number of fx
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()  # DEBUG
 
     musp = mus*(1-g)  # reduced scattering coefficient
     Reff = 0.0636*n + 0.668 + 0.71/n - 1.44/n**2  # effective reflection coefficient
     mut = mua + musp  # transport coefficient (1xN)
     mueff = np.sqrt(3*mua*mut)  # effective transport coefficient (1xN)
-    mueff1 = np.sqrt(mueff[np.newaxis,:]**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
+    mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
     #TODO: debug the equation (maybe calculate phi?). it return negative values for alpha    
     A = (3*musp/mut)/(mueff1**2/mut**2 - 1)  # MxN
     R = (1-Reff)/(2*(1+Reff))
     B = -3*(musp/mut)*(1+3*R) / ((mueff1**2/mut**2 - 1)*(mueff1/mut + 3*R))  # MxN
     
-    alpha = (A/mut * np.exp(-mut*d) + B/mueff1 * np.exp(-mueff1*d)) / (A/mut + B/mueff1) - 1
+    alpha = -(A/mut * np.exp(-mut*d) + B/mueff1 * np.exp(-mueff1*d)) / (A/mut + B/mueff1) + 1
+    phi = A*np.exp(-mut*d)+B*np.exp(-mueff1*d)
     
-    return alpha
+    return alpha, phi
     
+
+if __name__ == '__main__':
+    fx = np.arange(0.05, 0.45, 0.05)
+    
+    #%% Load pre-processed data
+    data_path = getPath('select data path')
+    par = readParams('{}/processing_parameters.ini'.format(data_path))  # optional
+    data = load_obj('dataset', data_path)
+    data.par = par
+    
+    TiO = data.singleROI('TiObaseTop', fit='single', I=3e3, norm=None)
+    mua_TiO = np.mean(TiO['op_ave'][:,:,0], axis=0)  # averages over fx for homogeneous phantom
+    mus_TiO = np.mean(TiO['op_ave'][:,:,1], axis=0)
+    par_TiO = np.mean(TiO['par_ave'], axis=0)
+
+    AlO = data.singleROI('AlObaseTop', fit='single', I=3e3, norm=None)
+    mua_AlO = np.mean(AlO['op_ave'][:,:,0], axis=0)  # averages over fx for homogeneous phantom
+    mus_AlO = np.mean(AlO['op_ave'][:,:,1], axis=0)
+    par_AlO = np.mean(AlO['par_ave'], axis=0)
+    #%% Load dataset
+    ret = data.singleROI('TiO05ml', fit='single', I=3e3, norm=None)
+    mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
+    mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
+    bm = ret['par_ave'][:, 1]  # average measured scattering slope
+    
+    delta = depth_diff(mua, mus, fx)/2
+    # average over wv?
+    d = np.mean(ret['depths'], axis=1)[:]  # delta/2
+    d2 = np.mean(ret['depth_phi'], axis=1)[:]  # 1/e * phi^2
+    d3 = np.mean(ret['depth_MC'], axis=1)[:]  # calculated via Monte Carlo model
+    
+    alpha = np.zeros(mus.shape, dtype=float)
+    for _f in range(mus.shape[0]):
+        for _w in range(mus.shape[1]):
+            opt = minimize(weights_fun2, x0=np.array([.5]),
+                           args=(mus[_f,_w], mus_TiO[_w], mus_AlO[_w]),
+                           method='Nelder-Mead',
+                           # bounds=Bounds([0], [1]),
+                           options={'maxiter':3000, 'adaptive':False})
+            alpha[_f, _w] = opt['x']
+       
+    # expected values of alpha for thickness d
+    d = 0.125  # mm
+    al, _ = alpha_diff(d, mua, mus, fx, g=0)
