@@ -55,21 +55,22 @@ def fluence(z, mua, mus, fx, n=1.4, g=0.8):
     phi = A[:,:,np.newaxis]*exp1 + B[:,:,np.newaxis]*exp2  # MxNxZ
     return phi
 
-def fluence_d(z, mua, mus, n=1.4, g=0.8):
+def fluence_d(z, mua, mus, fx, n=1.4, g=0.8):
     """Fluence estimation with delta-P1 approximation"""
     C = -0.13755*n**3 + 4.339*n**2 - 4.90366*n + 1.6896
     gs = g/(g+1)
     muss = mus*(1-g**2)
-    mut = mua + mus
-    muts = mua + muss
-    mueff=np.sqrt(3*mua*mut)
+    mut = mua + mus  # transport coefficient MxN
+    muts = mua + muss  # transport coefficient* MxN
+    mueff=np.sqrt(3*mua*mut)  # effective transport coefficient MxN
+    mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
     h = muts*2/3
     
-    A = 3*muss*(muts + gs*mua)/(mueff**2 - muts**2)
-    B = (-A*(1 + C*h*muts) - 3*C*h*gs*muss)/(1 + C*h*mueff)
+    A = 3*muss*(muts + gs*mua)/(mueff1**2 - muts**2)
+    B = (-A*(1 + C*h*muts) - 3*C*h*gs*muss)/(1 + C*h*mueff1)
     
     exp1 = np.exp(-muts[:,:,np.newaxis]*z)
-    exp2 = np.exp(-mueff[:,:,np.newaxis]*z)
+    exp2 = np.exp(-mueff1[:,:,np.newaxis]*z)
     phi = A[:,:,np.newaxis]*exp1 + B[:,:,np.newaxis]*exp2
     return phi
     
@@ -145,13 +146,13 @@ ____2____  |---
     
 
 if __name__ == '__main__':
-    fx = np.arange(0.05, 0.45, 0.05)
     
     #%% Load pre-processed data
     data_path = getPath('select data path')
     par = readParams('{}/processing_parameters.ini'.format(data_path))  # optional
     data = load_obj('dataset', data_path)
     data.par = par
+    fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
     
     TiO = data.singleROI('TiObaseTop', fit='single', I=3e3, norm=None)
     mua_TiO = np.mean(TiO['op_ave'][:,:,0], axis=0)  # averages over fx for homogeneous phantom
@@ -163,7 +164,7 @@ if __name__ == '__main__':
     mus_AlO = np.mean(AlO['op_ave'][:,:,1], axis=0)
     par_AlO = np.mean(AlO['par_ave'], axis=0)
     #%% Load dataset
-    ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
+    ret = data.singleROI('TiO05ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     bm = ret['par_ave'][:, 1]  # average measured scattering slope
@@ -173,7 +174,6 @@ if __name__ == '__main__':
     d = np.mean(ret['depths'], axis=1)[:]  # delta/2
     d2 = np.mean(ret['depth_phi'], axis=1)[:]  # 1/e * phi^2
     d3 = np.mean(ret['depth_MC'], axis=1)[:]  # calculated via Monte Carlo model
-    
     alpha = np.zeros(mus.shape, dtype=float)
     for _f in range(mus.shape[0]):
         for _w in range(mus.shape[1]):
@@ -185,22 +185,22 @@ if __name__ == '__main__':
             alpha[_f, _w] = opt['x']
        
     # expected values of alpha for thickness d
-    d = 0.67  # mm
+    d = 0.125  # mm
     al, _, mueff1 = alpha_diff(d, mua, mus, fx, g=0)
     delta = 1/mueff1
     
     #%% ITERATIVE fitting for d
-    dz = 0.0001  # 1 um
+    dz = 0.0001  # 0.1 um
     Z = np.arange(0, 10, dz)
         
     # Load dataset
-    ret = data.singleROI('TiO10ml', fit='single', I=3e3, norm=None)
+    ret = data.singleROI('TiO15ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     # bm = ret['par_ave'][:, 1]  # average measured scattering slope
     
     phi = fluence(Z, mua, mus, fx, g=0)
-    phi_d = fluence_d(Z, mua, mus/0.2)
+    phi_d = fluence_d(Z, mua, mus/0.2, fx)
     sum_phi = np.sum(phi*dz, axis=-1)
     sum_phid = np.sum(phi_d*dz, axis=-1)
     # obtain alpha
@@ -219,25 +219,25 @@ if __name__ == '__main__':
                     thick[_f,_w] = z
     
     
-    #%%
+    #%% plot fluence over fx
     plt.figure(1)
-    plt.plot(Z, phi[0,:,:].T)
+    plt.plot(Z, phi[:,2,:].T)
     plt.grid(True, linestyle=':')
     plt.xlabel('z [mm]')
-    plt.ylabel(r'$\varphi$(z)')
+    plt.ylabel(r'$\varphi$(z) - {}nm'.format(data.par['wv'][2]))
     plt.title('Diffusion approximation')
     plt.xlim([0, 10])
-    plt.ylim([0, 4])
-    plt.legend([str(x)+' nm' for x in data.par['wv']])
+    plt.ylim([0, 3.5])
+    plt.legend([r'{:.3f} mm$^-1$'.format(x) for x in fx])
     plt.tight_layout()
     
     plt.figure(2)
-    plt.plot(Z, phi_d[0,:,:].T)
+    plt.plot(Z, phi_d[:,2,:].T)
     plt.grid(True, linestyle=':')
     plt.xlabel('z [mm]')
-    plt.ylabel(r'$\varphi$(z)')
+    plt.ylabel(r'$\varphi$(z) - {}nm'.format(data.par['wv'][2]))
     plt.title(r'$\delta$-P1')
     plt.xlim([0, 10])
-    plt.ylim([0, 4])
-    plt.legend([str(x)+' nm' for x in data.par['wv']])
+    plt.ylim([0, 3.8])
+    plt.legend([r'{:.3f} mm$^-1$'.format(x) for x in fx])
     plt.tight_layout()
