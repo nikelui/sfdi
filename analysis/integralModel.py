@@ -8,6 +8,7 @@ email: luigi.belcastro@liu.se
 import pickle
 import numpy as np
 from scipy.optimize import minimize
+from scipy.optimize import Bounds
 from matplotlib import pyplot as plt
 from sfdi.common.getPath import getPath
 from sfdi.common.readParams import readParams
@@ -92,6 +93,15 @@ def weights_fun2(x, mus, mus1, mus2):
         measured scattering coefficient of individual layers"""
     return np.sum(np.sqrt((x*mus1 + (1-x)*mus2 - mus)**2))
 
+def weights_fun3(x, mus):
+    """Function to fit 2-layer scattering slope to a linear combination: mus = x*mus1 + (1-x)*mus2
+    - x: FLOAT array
+        (alpha, mus1, mus2)
+    - mus: FLOAT
+        measured scattering coefficient of 2-layer"""
+    alpha, mus1, mus2 = x  # Unpack
+    return np.sum(np.sqrt(((alpha*mus1 + (1-alpha)*mus2)/2 - mus)**2))
+    
 def alpha_diff(d, mua, mus, fx, g=0.8, n=1.4):
     """
     Function to calculate the expected weigth (alpha) and fluence (phi) in a 2 layer model using
@@ -144,10 +154,8 @@ ____2____  |---
     
     return alpha, phi, mueff1
     
-
+#%% Load pre-processed data
 if __name__ == '__main__':
-    
-    #%% Load pre-processed data
     data_path = getPath('select data path')
     par = readParams('{}/processing_parameters.ini'.format(data_path))  # optional
     data = load_obj('dataset', data_path)
@@ -194,31 +202,65 @@ if __name__ == '__main__':
     Z = np.arange(0, 10, dz)
         
     # Load dataset
-    ret = data.singleROI('TiO15ml', fit='single', I=3e3, norm=None)
+    ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     # bm = ret['par_ave'][:, 1]  # average measured scattering slope
+    
+    phi = fluence(Z, mua, mus, fx, g=0)**2
+    phi_d = fluence_d(Z, mua, mus/0.2, fx)**2
+    sum_phi = np.sum(phi*dz, axis=-1)
+    sum_phid = np.sum(phi_d*dz, axis=-1)
+    # obtain alpha
+    thick = np.ones(mus.shape, dtype=float)*-1
+    alpha = np.zeros(mus.shape, dtype=float)
+    
+    # Approach 2: use mus[0] as top layer scattering and mus[-1] as bottom layer scattering
+    for _f in range(mus.shape[0]):  # loop frequencies
+        for _w in range(mus.shape[1]):  # loop wavelengths
+            opt = minimize(weights_fun2, x0=np.array([.5]),
+                           args=(mus[_f, _w], mus[0, _w], mus[-1, _w]),
+                           method='Nelder-Mead',
+                           bounds=Bounds([0], [1]),
+                           options={'maxiter':3000, 'adaptive':False})
+            alpha[_f, _w] = opt['x']  # fitted alpha
+            # for _z, z in enumerate(Z):  # loop dept to find the value of z that best approximates alpha
+            #     if np.sqrt((np.sum(phi_d[_f,_w,:_z]*dz)/sum_phid[_f,_w] - alpha[_f,_w])**2) <= 1e-3:
+            #         thick[_f,_w] = z
+    
+    #%% ITERATIVE fitting for alpha, mus1, mus2 and d
+    dz = 0.0001  # 0.1 um
+    Z = np.arange(0, 10, dz)
+        
+    # Load dataset
+    ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
+    mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
+    mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     
     phi = fluence(Z, mua, mus, fx, g=0)
     phi_d = fluence_d(Z, mua, mus/0.2, fx)
     sum_phi = np.sum(phi*dz, axis=-1)
     sum_phid = np.sum(phi_d*dz, axis=-1)
     # obtain alpha
-    thick = np.ones(mus.shape, dtype=float)*-1
-    alpha = np.zeros(mus.shape, dtype=float)
-    for _f in range(mus.shape[0]):  # loop frequencies
-        for _w in range(mus.shape[1]):  # loop wavelengths
-            opt = minimize(weights_fun2, x0=np.array([.5]),
-                           args=(mus[_f,_w], mus_TiO[_w], mus_AlO[_w]),
-                           method='Nelder-Mead',
-                           # bounds=Bounds([0], [1]),
-                           options={'maxiter':3000, 'adaptive':False})
-            alpha[_f, _w] = opt['x']  # fitted alpha
-            for _z, z in enumerate(Z):  # loop dept to find the value of z that best approximates alpha
-                if np.sqrt((np.sum(phi_d[_f,_w,:_z]*dz)/sum_phid[_f,_w] - alpha[_f,_w])**2) <= 1e-3:
-                    thick[_f,_w] = z
-    
-    
+    thick = np.ones([mus.shape[1]], dtype=float)*-1
+    alpha = np.zeros([mus.shape[1]], dtype=float)
+    mus_1 = np.zeros([mus.shape[1]], dtype=float)
+    mus_2 = np.zeros([mus.shape[1]], dtype=float)
+    for _w in range(mus.shape[1]):  # loop wavelengths
+        opt = minimize(weights_fun3, x0=np.array([.1, 1., 1.]),
+                       args=(mus[:, _w]),
+                       method='Nelder-Mead',
+                       bounds=Bounds([0, 0, 0], [1, np.inf, np.inf]),
+                       options={'maxiter':3000})
+        alpha[_w] = opt['x'][0]  # fitted alpha
+        mus_1[_w] = opt['x'][1]  # fitted mus1
+        mus_2[_w] = opt['x'][2]  # fitted mus2
+        
+        # for _z, z in enumerate(Z):  # loop dept to find the value of z that best approximates alpha
+        #     if np.sqrt((np.sum(phi[_f,_w,:_z]*dz)/sum_phi[_f,_w] - alpha[_f,_w])**2) <= 1e-3:
+        #         thick[_f,_w] = z
+
+
     #%% plot fluence over fx
     plt.figure(1)
     plt.plot(Z, phi[:,2,:].T)
@@ -240,4 +282,13 @@ if __name__ == '__main__':
     plt.xlim([0, 10])
     plt.ylim([0, 3.8])
     plt.legend([r'{:.3f} mm$^-1$'.format(x) for x in fx])
+    plt.tight_layout()
+    
+    #%% Plot mus over fx
+    plt.figure(22)
+    plt.plot(fx, mus, '*', linestyle='solid')
+    plt.grid(True, linestyle=':')
+    plt.xlabel('fx')
+    plt.ylabel(r"$\mu'_s$")
+    plt.legend([str(x)+'nm' for x in data.par['wv']], title=r'$\lambda$')
     plt.tight_layout()
