@@ -93,14 +93,14 @@ def weights_fun2(x, mus, mus1, mus2):
         measured scattering coefficient of individual layers"""
     return np.sum(np.sqrt((x*mus1 + (1-x)*mus2 - mus)**2))
 
-def weights_fun3(x, mus):
+def weights_fun3(x, mus, lamb=0):
     """Function to fit 2-layer scattering slope to a linear combination: mus = x*mus1 + (1-x)*mus2
     - x: FLOAT array
         (alpha, mus1, mus2)
     - mus: FLOAT
         measured scattering coefficient of 2-layer"""
     alpha, mus1, mus2 = x  # Unpack
-    return np.sum(np.sqrt(((alpha*mus1 + (1-alpha)*mus2)/2 - mus)**2))
+    return np.sum(((alpha*mus1 + (1-alpha)*mus2)/2 - mus)**2) + lamb*np.sum(x**2)
     
 def alpha_diff(d, mua, mus, fx, g=0.8, n=1.4):
     """
@@ -233,7 +233,7 @@ if __name__ == '__main__':
     Z = np.arange(0, 10, dz)
         
     # Load dataset
-    ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
+    ret = data.singleROI('TiO20ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     
@@ -242,19 +242,20 @@ if __name__ == '__main__':
     sum_phi = np.sum(phi*dz, axis=-1)
     sum_phid = np.sum(phi_d*dz, axis=-1)
     # obtain alpha
-    thick = np.ones([mus.shape[1]], dtype=float)*-1
-    alpha = np.zeros([mus.shape[1]], dtype=float)
-    mus_1 = np.zeros([mus.shape[1]], dtype=float)
-    mus_2 = np.zeros([mus.shape[1]], dtype=float)
-    for _w in range(mus.shape[1]):  # loop wavelengths
-        opt = minimize(weights_fun3, x0=np.array([.1, 1., 1.]),
-                       args=(mus[:, _w]),
-                       method='Nelder-Mead',
-                       bounds=Bounds([0, 0, 0], [1, np.inf, np.inf]),
-                       options={'maxiter':3000})
-        alpha[_w] = opt['x'][0]  # fitted alpha
-        mus_1[_w] = opt['x'][1]  # fitted mus1
-        mus_2[_w] = opt['x'][2]  # fitted mus2
+    thick = np.ones(mus.shape, dtype=float)*-1
+    alpha = np.zeros(mus.shape, dtype=float)
+    mus_1 = np.zeros(mus.shape, dtype=float)
+    mus_2 = np.zeros(mus.shape, dtype=float)
+    for _f in range(mus.shape[0]):
+        for _w in range(mus.shape[1]):  # loop wavelengths
+            opt = minimize(weights_fun3, x0=np.array([.1, 1., 1.]),
+                           args=(mus[_f, _w], 1),
+                           method='Nelder-Mead',
+                           bounds=Bounds([0, 0, 0], [1, np.inf, np.inf]),
+                           options={'maxiter':3000})
+            alpha[_f,_w] = opt['x'][0]  # fitted alpha
+            mus_1[_f,_w] = opt['x'][1]  # fitted mus1
+            mus_2[_f,_w] = opt['x'][2]  # fitted mus2
         
         # for _z, z in enumerate(Z):  # loop dept to find the value of z that best approximates alpha
         #     if np.sqrt((np.sum(phi[_f,_w,:_z]*dz)/sum_phi[_f,_w] - alpha[_f,_w])**2) <= 1e-3:
