@@ -72,7 +72,7 @@ def fluence_d(z, mua, mus, fx, n=1.4, g=0.8):
     
     exp1 = np.exp(-muts[:,:,np.newaxis]*z)
     exp2 = np.exp(-mueff1[:,:,np.newaxis]*z)
-    phi = A[:,:,np.newaxis]*exp1 + B[:,:,np.newaxis]*exp2
+    phi = (1+A[:,:,np.newaxis])*exp1 + B[:,:,np.newaxis]*exp2
     return phi
     
 def weights_fun(x, Bm, B1, B2):
@@ -99,7 +99,11 @@ def weights_fun3(x, mus, lamb=0):
         (alpha, mus1, mus2)
     - mus: FLOAT
         measured scattering coefficient of 2-layer"""
-    alpha, mus1, mus2 = x  # Unpack
+    # alpha, mus1, mus2 = x  # Unpack
+    alpha = x[0]
+    mus1 = x[1:len(mus)+1]
+    mus2 = x[len(mus)+1:]
+    # import pdb; pdb.set_trace()
     return np.sum(((alpha*mus1 + (1-alpha)*mus2)/2 - mus)**2) + lamb*np.sum(x**2)
     
 def alpha_diff(d, mua, mus, fx, g=0.8, n=1.4):
@@ -154,6 +158,60 @@ ____2____  |---
     
     return alpha, phi, mueff1
     
+def alpha_p1(d, mua, mus, fx, g=0.8, n=1.4):
+    """
+    Function to calculate the expected weigth (alpha) and fluence (phi) in a 2 layer model using
+    the diffusion approximtion, given the thickness d and the measured optical properties.
+
+Model:
+__________
+____1_____ | |----(alpha)
+           |---
+           |---(1-alpha)
+____2____  |---
+
+    Parameters
+    ----------
+    d : FLOAT
+        Thickness of the thin layer.
+    mua : FLOAT array (MxN)
+        Absorption coefficient, dependent on wavelength and fx.
+    mus : FLOAT array (MxN)
+        Scattering coefficient, dependent on wavelength and fx.
+    fx :FLOAT array (Mx1)
+        Array with spatial frequencies
+    g : FLOAT, optional
+        Anysotropy coefficient. The default is 0.8.
+    n : FLOAT, optional
+        Index of refraction. The default is 1.4.
+
+    Returns
+    -------
+    alpha : FLOAT array (MxN)
+        Expected partial volume in a 2-layer model.
+        M: number of spatial frequencies
+        N: number of wavelengths
+"""
+    # Coefficients. N: number of wavelengths, M: number of fx
+    C = -0.13755*n**3 + 4.339*n**2 - 4.90366*n + 1.6896
+    gs = g/(g+1)
+    muss = mus*(1-g**2)
+    mut = mua + mus  # transport coefficient MxN
+    muts = mua + muss  # transport coefficient* MxN
+    mueff=np.sqrt(3*mua*mut)  # effective transport coefficient MxN
+    mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
+    h = muts*2/3
+    
+    A = 3*muss*(muts + gs*mua)/(mueff1**2 - muts**2)
+    B = (-A*(1 + C*h*muts) - 3*C*h*gs*muss)/(1 + C*h*mueff1)
+    
+    exp1 = np.exp(-muts*d)
+    exp2 = np.exp(-mueff1*d)
+    alpha = -((1+A)/muts*exp1 + B/mueff1*exp2)/((1+A)/muts + B/mueff1) + 1
+    phi = (1+A)*exp1 + B*exp2
+    
+    return alpha, phi, mueff1
+    
 #%% Load pre-processed data
 if __name__ == '__main__':
     data_path = getPath('select data path')
@@ -172,7 +230,7 @@ if __name__ == '__main__':
     mus_AlO = np.mean(AlO['op_ave'][:,:,1], axis=0)
     par_AlO = np.mean(AlO['par_ave'], axis=0)
     #%% Load dataset
-    ret = data.singleROI('TiO05ml', fit='single', I=3e3, norm=None)
+    ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     bm = ret['par_ave'][:, 1]  # average measured scattering slope
@@ -193,8 +251,9 @@ if __name__ == '__main__':
             alpha[_f, _w] = opt['x']
        
     # expected values of alpha for thickness d
-    d = 0.125  # mm
-    al, _, mueff1 = alpha_diff(d, mua, mus, fx, g=0)
+    d = 1.17  # mm
+    al, _, mueff1 = alpha_diff(d, mua, mus/0.2, fx)
+    alp, _, _ = alpha_p1(d, mua, mus/0.2, fx)
     delta = 1/mueff1
     
     #%% ITERATIVE fitting for d
@@ -202,7 +261,7 @@ if __name__ == '__main__':
     Z = np.arange(0, 10, dz)
         
     # Load dataset
-    ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
+    ret = data.singleROI('TiO05ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     # bm = ret['par_ave'][:, 1]  # average measured scattering slope
@@ -230,32 +289,38 @@ if __name__ == '__main__':
     
     #%% ITERATIVE fitting for alpha, mus1, mus2 and d
     dz = 0.0001  # 0.1 um
+    d = 1.17
     Z = np.arange(0, 10, dz)
-        
+    idx = np.where(Z >= d)[0][0]
+    
     # Load dataset
-    ret = data.singleROI('TiO20ml', fit='single', I=3e3, norm=None)
+    ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     
-    phi = fluence(Z, mua, mus, fx, g=0)
+    phi = fluence(Z, mua, mus/0.2, fx)
     phi_d = fluence_d(Z, mua, mus/0.2, fx)
     sum_phi = np.sum(phi*dz, axis=-1)
     sum_phid = np.sum(phi_d*dz, axis=-1)
+    al = np.sum(phi[:,:,:idx]*dz, axis=-1)/sum_phi
+    alp = np.sum(phi_d[:,:,:idx]*dz, axis=-1)/sum_phid
+    
     # obtain alpha
-    thick = np.ones(mus.shape, dtype=float)*-1
-    alpha = np.zeros(mus.shape, dtype=float)
-    mus_1 = np.zeros(mus.shape, dtype=float)
-    mus_2 = np.zeros(mus.shape, dtype=float)
-    for _f in range(mus.shape[0]):
-        for _w in range(mus.shape[1]):  # loop wavelengths
-            opt = minimize(weights_fun3, x0=np.array([.1, 1., 1.]),
-                           args=(mus[_f, _w], 1),
-                           method='Nelder-Mead',
-                           bounds=Bounds([0, 0, 0], [1, np.inf, np.inf]),
-                           options={'maxiter':3000})
-            alpha[_f,_w] = opt['x'][0]  # fitted alpha
-            mus_1[_f,_w] = opt['x'][1]  # fitted mus1
-            mus_2[_f,_w] = opt['x'][2]  # fitted mus2
+    # thick = np.ones(mus.shape, dtype=float)*-1
+    # alpha = np.zeros(mus.shape[0], dtype=float)
+    # mus_1 = np.zeros(mus.shape, dtype=float)
+    # mus_2 = np.zeros(mus.shape, dtype=float)
+    # for _f in range(mus.shape[0]):
+    #     opt = minimize(weights_fun3, x0=np.concatenate((np.array([.1]),
+    #                                                    np.ones(mus_1.shape[1]),
+    #                                                    np.ones(mus_1.shape[1]))),
+    #                    args=(mus[_f, :], 0.5),
+    #                    method='Nelder-Mead',
+    #                    bounds=Bounds([0]*(mus.shape[1]*2 + 1), [1]+[np.inf]*mus.shape[1]*2),
+    #                    options={'maxiter':3000})
+    #     alpha[_f] = opt['x'][0]  # fitted alpha
+    #     mus_1[_f,:] = opt['x'][1:mus.shape[1]+1]  # fitted mus1
+    #     mus_2[_f,:] = opt['x'][mus.shape[1]+1:]  # fitted mus2
         
         # for _z, z in enumerate(Z):  # loop dept to find the value of z that best approximates alpha
         #     if np.sqrt((np.sum(phi[_f,_w,:_z]*dz)/sum_phi[_f,_w] - alpha[_f,_w])**2) <= 1e-3:
