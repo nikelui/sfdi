@@ -7,6 +7,7 @@ email: luigi.belcastro@liu.se
 """
 import pickle
 import numpy as np
+from scipy.optimize import curve_fit
 from scipy.optimize import minimize
 from scipy.optimize import Bounds
 from matplotlib import pyplot as plt
@@ -17,6 +18,10 @@ def load_obj(name, path):
     """Utility function to load python objects using pickle module"""
     with open('{}/obj/{}.pkl'.format(path, name), 'rb') as f:
         return pickle.load(f)
+
+def scatter_fun(lamb, a, b):
+    """Power law function to fit scattering data to"""
+    return a * np.power(lamb, -b)
 
 def depth_diff(mua, mus, fx):
     """Function to calculate effective penetration depth based on diffusion approximation
@@ -212,6 +217,42 @@ ____2____  |---
     
     return alpha, phi, mueff1
     
+def fit_fun(x, mua, mus, fx, wv, g=0.8, n=1.4):
+    """Function to minimize and fit for d, mus1, mus2
+alpha is derived from delta-P1 approximation."""
+    # unpack
+    d = x[0]
+    a1 = 10**x[1]
+    b1 = x[2]
+    a2 = 10**x[3]
+    b2 = x[4]
+    # mus1 = x[1:mus.shape[1]+1]
+    # mus2 = x[mus.shape[1]+1:]
+    mus1 = scatter_fun(wv, a1, b1)
+    mus2 = scatter_fun(wv, a2, b2)
+    
+    # Coefficients. N: number of wavelengths, M: number of fx
+    C = -0.13755*n**3 + 4.339*n**2 - 4.90366*n + 1.6896
+    gs = g/(g+1)
+    musp = mus*(1-g)
+    muss = mus*(1-g**2)
+    mut = mua + mus  # transport coefficient MxN
+    muts = mua + muss  # transport coefficient* MxN
+    mueff=np.sqrt(3*mua*mut)  # effective transport coefficient MxN
+    mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
+    h = muts*2/3
+    
+    A = 3*muss*(muts + gs*mua)/(mueff1**2 - muts**2)
+    B = (-A*(1 + C*h*muts) - 3*C*h*gs*muss)/(1 + C*h*mueff1)
+    exp1 = np.exp(-muts*d)
+    exp2 = np.exp(-mueff1*d)
+    # import pdb; pdb.set_trace()
+    
+    min_fun = ((((1+A)/muts + B/mueff1 - ((1+A)/muts*exp1 + B/mueff1*exp2))*(mus1 - mus2)) /
+                ((1+A)/muts + B/mueff1) + mus2 - musp)
+    return np.sum(min_fun**2)
+    
+
 #%% Load pre-processed data
 if __name__ == '__main__':
     data_path = getPath('select data path')
@@ -219,6 +260,7 @@ if __name__ == '__main__':
     data = load_obj('dataset', data_path)
     data.par = par
     fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
+    wv = np.array([458,520,536,556,626])  # wavelengths
     
     TiO = data.singleROI('TiObaseTop', fit='single', I=3e3, norm=None)
     mua_TiO = np.mean(TiO['op_ave'][:,:,0], axis=0)  # averages over fx for homogeneous phantom
@@ -261,7 +303,7 @@ if __name__ == '__main__':
     Z = np.arange(0, 10, dz)
         
     # Load dataset
-    ret = data.singleROI('TiO05ml', fit='single', I=3e3, norm=None)
+    ret = data.singleROI('TiO10ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     # bm = ret['par_ave'][:, 1]  # average measured scattering slope
@@ -287,40 +329,40 @@ if __name__ == '__main__':
             #     if np.sqrt((np.sum(phi_d[_f,_w,:_z]*dz)/sum_phid[_f,_w] - alpha[_f,_w])**2) <= 1e-3:
             #         thick[_f,_w] = z
     
-    #%% ITERATIVE fitting for alpha, mus1, mus2 and d
-    dz = 0.0001  # 0.1 um
-    d = 1.17
-    Z = np.arange(0, 10, dz)
-    idx = np.where(Z >= d)[0][0]
+    #%% ITERATIVE fitting for mus1, mus2 and d
+    # dz = 0.0001  # 0.1 um
+    # d = 0.125
+    # Z = np.arange(0, 10, dz)
+    # idx = np.where(Z >= d)[0][0]
     
     # Load dataset
     ret = data.singleROI('TiO30ml', fit='single', I=3e3, norm=None)
     mua = ret['op_ave'][:,:,0]  # average measured absorption coefficient
     mus = ret['op_ave'][:,:,1]  # average measured scattering coefficient
     
-    phi = fluence(Z, mua, mus/0.2, fx)
-    phi_d = fluence_d(Z, mua, mus/0.2, fx)
-    sum_phi = np.sum(phi*dz, axis=-1)
-    sum_phid = np.sum(phi_d*dz, axis=-1)
-    al = np.sum(phi[:,:,:idx]*dz, axis=-1)/sum_phi
-    alp = np.sum(phi_d[:,:,:idx]*dz, axis=-1)/sum_phid
+    # phi = fluence(Z, mua, mus/0.2, fx)
+    # phi_d = fluence_d(Z, mua, mus/0.2, fx)
+    # sum_phi = np.sum(phi*dz, axis=-1)
+    # sum_phid = np.sum(phi_d*dz, axis=-1)
+    # al = np.sum(phi[:,:,:idx]*dz, axis=-1)/sum_phi
+    # alp = np.sum(phi_d[:,:,:idx]*dz, axis=-1)/sum_phid
     
     # obtain alpha
-    # thick = np.ones(mus.shape, dtype=float)*-1
-    # alpha = np.zeros(mus.shape[0], dtype=float)
-    # mus_1 = np.zeros(mus.shape, dtype=float)
-    # mus_2 = np.zeros(mus.shape, dtype=float)
+    thick = np.ones(mus.shape[1], dtype=float)*-1
+    mus_1 = np.ones(mus.shape[1], dtype=float)*-1
+    mus_2 = np.ones(mus.shape[1], dtype=float)*-1
     # for _f in range(mus.shape[0]):
-    #     opt = minimize(weights_fun3, x0=np.concatenate((np.array([.1]),
-    #                                                    np.ones(mus_1.shape[1]),
-    #                                                    np.ones(mus_1.shape[1]))),
-    #                    args=(mus[_f, :], 0.5),
-    #                    method='Nelder-Mead',
-    #                    bounds=Bounds([0]*(mus.shape[1]*2 + 1), [1]+[np.inf]*mus.shape[1]*2),
-    #                    options={'maxiter':3000})
-    #     alpha[_f] = opt['x'][0]  # fitted alpha
-    #     mus_1[_f,:] = opt['x'][1:mus.shape[1]+1]  # fitted mus1
-    #     mus_2[_f,:] = opt['x'][mus.shape[1]+1:]  # fitted mus2
+    # opt = minimize(fit_fun, x0=np.concatenate((np.array([.1]),
+    #                                                 np.ones(mus_1.shape),
+    #                                                 np.ones(mus_1.shape))),
+    opt = minimize(fit_fun, x0=np.array([.1, 2, 1, 2, 1]),
+                    args=(mua, mus, fx, wv),
+                    method='Nelder-Mead',
+                    bounds=Bounds([0]*5, [np.inf]*5),
+                    options={'maxiter':3000})
+    thick = opt['x'][0]  # fitted alpha
+    mus_1 = scatter_fun(wv, 10**opt['x'][1], opt['x'][2])
+    mus_2 = scatter_fun(wv, 10**opt['x'][3], opt['x'][4])
         
         # for _z, z in enumerate(Z):  # loop dept to find the value of z that best approximates alpha
         #     if np.sqrt((np.sum(phi[_f,_w,:_z]*dz)/sum_phi[_f,_w] - alpha[_f,_w])**2) <= 1e-3:
