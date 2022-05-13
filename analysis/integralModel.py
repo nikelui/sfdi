@@ -13,6 +13,7 @@ from scipy.optimize import Bounds
 from matplotlib import pyplot as plt
 from sfdi.common.getPath import getPath
 from sfdi.common.readParams import readParams
+import addcopyfighandler
 
 def load_obj(name, path):
     """Utility function to load python objects using pickle module"""
@@ -68,9 +69,9 @@ def fluence_d(z, mua, mus, fx, n=1.4, g=0.8):
     muss = mus*(1-g**2)
     mut = mua + mus  # transport coefficient MxN
     muts = mua + muss  # transport coefficient* MxN
-    mueff=np.sqrt(3*mua*mut)  # effective transport coefficient MxN
+    mueff=np.sqrt(3*mua*muts)  # effective transport coefficient MxN
     mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
-    h = muts*2/3
+    h = mut*2/3
     
     A = 3*muss*(muts + gs*mua)/(mueff1**2 - muts**2)
     B = (-A*(1 + C*h*muts) - 3*C*h*gs*muss)/(1 + C*h*mueff1)
@@ -80,6 +81,52 @@ def fluence_d(z, mua, mus, fx, n=1.4, g=0.8):
     phi = (1+A[:,:,np.newaxis])*exp1 + B[:,:,np.newaxis]*exp2
     return phi
     
+def fluence_vasen(z, mua, mus, fx, n=1.4, g=0.8):
+    """Fluence estimation with delta-P1 approximation, as seen in Seo thesis.
+NOTE: only the AC component of fluence is derived in the thesis."""
+    R = -0.13755*n**3 + 4.339*n**2 - 4.90366*n + 1.6896
+    # gs = g/(g+1)
+    muss = mus*(1-g**2)
+    mut = mua + mus  # transport coefficient MxN
+    muts = mua + muss  # transport coefficient* MxN
+    mueff=np.sqrt(3*mua*mut)  # effective transport coefficient MxN
+    mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
+    h = mut*2/3
+    
+    C = muss/(h*mueff1)
+    zb = h*R
+    
+    exp1 = np.exp(-muts[:,:,np.newaxis]*z)
+    exp2 = np.exp(-mueff1[:,:,np.newaxis]*z)
+    exp3 = np.exp(-mueff1[:,:,np.newaxis]*(z+2*zb))
+    
+    phi = (C[:,:,np.newaxis]/(mueff1[:,:,np.newaxis] - muts) * (exp1 - exp2) +
+           C[:,:,np.newaxis]/(mueff1[:,:,np.newaxis] + muts) * (exp1 - exp3))
+    return phi
+
+def diffuse_vasen(z, mua, mus, fx, n=1.4, g=0.8):
+    musp = mus*(1-g)  # reduced scattering coefficient
+    Reff = 0.493
+    mut = mua + musp  # transport coefficient (1xN)
+    A = (1-Reff)/(2*(1+Reff))
+    mueff = np.sqrt(3*mua*mut)  # effective transport coefficient (1xN)
+    mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
+    Cp_dc = 3*mut*musp/(mueff**2-mut**2)
+    Cp_ac = 3*mut*musp/(mueff1**2-mut**2)
+    Ch_dc = -Cp_dc*(3*A+1)/(mueff/mut + 3*A)
+    Ch_ac = -Cp_ac*(3*A+1)/(mueff1/mut + 3*A)
+    
+    exp1 = np.exp(-mueff[:,:,np.newaxis]*z)
+    exp2 = np.exp(-mut[:,:,np.newaxis]*z)
+    exp3 = np.exp(-mueff1[:,:,np.newaxis]*z)
+    
+    phi_dc = Ch_dc[:,:,np.newaxis] * exp1 + Cp_dc[:,:,np.newaxis] * exp2
+    phi_ac = Ch_ac[:,:,np.newaxis] * exp3 + Cp_ac[:,:,np.newaxis] * exp2
+    
+    phi = phi_dc + phi_ac
+    
+    return phi, phi_dc, phi_ac
+
 def weights_fun(x, Bm, B1, B2):
     """Function to fit 2-layer scattering slope to a linear combination: B = x*B1 + (1-x)*B2
     - x: FLOAT
@@ -399,4 +446,49 @@ if __name__ == '__main__':
     plt.xlabel('fx')
     plt.ylabel(r"$\mu'_s$")
     plt.legend([str(x)+'nm' for x in data.par['wv']], title=r'$\lambda$')
+    plt.tight_layout()
+
+    #%% Plot to compare fluence
+    Z = np.arange(0, 10, 0.01)
+    mua = np.array([[0.75]])  # mm^-1
+    mus = np.array([[5]]) # mm^-1
+    fx = np.arange(0, 0.31, 0.05)  # mm^-1
+    
+    diffusion = fluence(Z, mua, mus, fx)
+    diff_v,_,_ = diffuse_vasen(Z, mua, mus, fx)
+    delta_p1 = fluence_d(Z, mua, mus, fx)
+    vasen = fluence_vasen(Z, mua, mus, fx)
+    
+    fig, ax = plt.subplots(2, 2, num=1, figsize=(14,8))
+    
+    text1 = r'$\mu_a$ = {:.2f}mm$^{{-1}}$'.format(mua[0][0])
+    text2 = r'$\mu_s$ = {:.1f}mm$^{{-1}}$'.format(mus[0][0])
+    
+    ax[0][0].plot(Z, np.squeeze(diffusion).T)
+    ax[0][0].set_xlim([0, 3])
+    ax[0][0].set_title('Diffusion')
+    ax[0][0].set_xlabel('mm')
+    ax[0][0].set_ylabel('Fluence')
+    ax[0][0].grid(True, linestyle=':')
+    ax[0][0].legend([r'{:.1f}mm$^{{-1}}$'.format(x) for x in fx])
+    
+    ax[0][1].plot(Z, np.squeeze(diff_v).T)
+    ax[0][1].set_xlim([0, 3])
+    ax[0][1].set_title(r'Diffusion - Vasen')
+    ax[0][1].set_xlabel('mm')
+    ax[0][1].text(2, 0.6, '{}\n{}'.format(text1, text2), fontsize=14)
+    ax[0][1].grid(True, linestyle=':')
+    
+    ax[1][0].plot(Z, np.squeeze(delta_p1).T)
+    ax[1][0].set_xlim([0, 3])
+    ax[1][0].set_title(r'$\delta$-P1 - Luigi')
+    ax[1][0].set_xlabel('mm')
+    ax[1][0].grid(True, linestyle=':')
+    
+    ax[1][1].plot(Z, np.squeeze(vasen).T)
+    ax[1][1].set_xlim([0, 3])
+    ax[1][1].set_title(r'$\delta$-P1 - Seo')
+    ax[1][1].set_xlabel('mm')
+    ax[1][1].grid(True, linestyle=':')
+    
     plt.tight_layout()
