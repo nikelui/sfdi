@@ -450,21 +450,23 @@ if __name__ == '__main__':
 
     #%% Plot to compare fluence
     Z = np.arange(0, 10, 0.01)
-    mua = np.array([[0.75]])  # mm^-1
-    mus = np.array([[5]]) # mm^-1
+    mua = np.array([[0.05]])  # mm^-1
+    mus = np.array([[0.2]]) # mm^-1
     fx = np.arange(0, 0.31, 0.05)  # mm^-1
     
-    diffusion = fluence(Z, mua, mus, fx)
+    diffusion = np.squeeze(fluence(Z, mua, mus, fx))
     diff_v,_,_ = diffuse_vasen(Z, mua, mus, fx)
-    delta_p1 = fluence_d(Z, mua, mus, fx)
-    vasen = fluence_vasen(Z, mua, mus, fx)
+    diff_v = np.squeeze(diff_v)
+    delta_p1 = np.squeeze(fluence_d(Z, mua, mus, fx))
+    vasen = np.squeeze(fluence_vasen(Z, mua, mus, fx))
     
     fig, ax = plt.subplots(2, 2, num=1, figsize=(14,8))
     
     text1 = r'$\mu_a$ = {:.2f}mm$^{{-1}}$'.format(mua[0][0])
     text2 = r'$\mu_s$ = {:.1f}mm$^{{-1}}$'.format(mus[0][0])
     
-    ax[0][0].plot(Z, np.squeeze(diffusion).T)
+    # New: normalize fluence to total area
+    ax[0][0].plot(Z, diffusion.T / np.sum(diffusion*0.01, axis=-1))
     ax[0][0].set_xlim([0, 3])
     ax[0][0].set_title('Diffusion')
     ax[0][0].set_xlabel('mm')
@@ -472,20 +474,20 @@ if __name__ == '__main__':
     ax[0][0].grid(True, linestyle=':')
     ax[0][0].legend([r'{:.1f}mm$^{{-1}}$'.format(x) for x in fx])
     
-    ax[0][1].plot(Z, np.squeeze(diff_v).T)
+    ax[0][1].plot(Z, diff_v.T / np.sum(diff_v*0.01, axis=-1))
     ax[0][1].set_xlim([0, 3])
     ax[0][1].set_title(r'Diffusion - Vasen')
     ax[0][1].set_xlabel('mm')
     ax[0][1].text(2, 0.6, '{}\n{}'.format(text1, text2), fontsize=14)
     ax[0][1].grid(True, linestyle=':')
     
-    ax[1][0].plot(Z, np.squeeze(delta_p1).T)
+    ax[1][0].plot(Z, delta_p1.T / np.sum(delta_p1*0.01, axis=-1))
     ax[1][0].set_xlim([0, 3])
     ax[1][0].set_title(r'$\delta$-P1 - Luigi')
     ax[1][0].set_xlabel('mm')
     ax[1][0].grid(True, linestyle=':')
     
-    ax[1][1].plot(Z, np.squeeze(vasen).T)
+    ax[1][1].plot(Z, vasen.T / np.sum(vasen*0.01, axis=-1))
     ax[1][1].set_xlim([0, 3])
     ax[1][1].set_title(r'$\delta$-P1 - Seo')
     ax[1][1].set_xlabel('mm')

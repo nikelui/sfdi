@@ -107,7 +107,7 @@ def diffusion_v(z, mua, mus, fx, n=1.4, g=0.8):
     return phi#, phi_dc, phi_ac
 
 if __name__ == "__main__":
-    Z = np.arange(0, 100, 0.01)
+    Z = np.arange(0, 50, 0.01)
     fx = np.arange(0, 0.31, 0.05)
     
     cdflevels=[10, 25, 50, 75, 90]  # CDF level tables
@@ -117,8 +117,8 @@ if __name__ == "__main__":
               0.075, 0.08, 0.09, 0.1, 0.12, 0.125, 0.14, 0.15, 0.16,
               0.175, 0.18, 0.2, 0.25, 0.3, 0.5, 0.7])  # Monte Carlo fx
         
-    mua = np.array([[0.00332226]])
-    muspmua = 300
+    mua = np.array([[0.05]])
+    muspmua = 100
     musp = muspmua * mua[0][0]
     mus = np.array([[musp*0.2]])
     lstar = 1/(mua+musp)
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     for _i, cdf in enumerate(cdflevels):
         # load each CDF level table
         table = np.genfromtxt('{}/cdflevel{}table.csv'.format(dep_path._path[0], cdf), delimiter=',')
-        f = interp2d(tablemuspmua, tablefxs, table.T, kind='linear')
+        f = interp2d(tablemuspmua, tablefxs/lstar, table.T*lstar, kind='linear')
         depths_MC[_i,:] = f(muspmua, fx).T
         
         for _j, freq in enumerate(fx):
