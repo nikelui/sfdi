@@ -450,8 +450,8 @@ if __name__ == '__main__':
 
     #%% Plot to compare fluence
     Z = np.arange(0, 10, 0.01)
-    mua = np.array([[0.05]])  # mm^-1
-    mus = np.array([[0.2]]) # mm^-1
+    mua = np.array([[0.1]])  # mm^-1
+    mus = np.array([[20]]) # mm^-1
     fx = np.arange(0, 0.31, 0.05)  # mm^-1
     
     diffusion = np.squeeze(fluence(Z, mua, mus, fx))

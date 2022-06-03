@@ -117,11 +117,11 @@ if __name__ == "__main__":
               0.075, 0.08, 0.09, 0.1, 0.12, 0.125, 0.14, 0.15, 0.16,
               0.175, 0.18, 0.2, 0.25, 0.3, 0.5, 0.7])  # Monte Carlo fx
         
-    mua = np.array([[0.05]])
-    muspmua = 100
+    mua = np.array([[0.2]])
+    muspmua = 75
     musp = muspmua * mua[0][0]
     mus = np.array([[musp*0.2]])
-    lstar = 1/(mua+musp)
+    lstar = 1/(mua+mus)
     
     idx_fx = np.array([0,6,12,16,20,21,22])
     idx_muspmua = np.where(tablemuspmua == muspmua)[0]
@@ -159,18 +159,18 @@ if __name__ == "__main__":
             idx = np.where(dp1_v.cumsum[_j,:] >= dp1_v.phitot[_j]*cdf/100)[0][0]
             depths_dp1_v[_i, _j] = Z[idx]
         
-        
-    for _i, freq in enumerate(fx[0:1]):
-        plt.figure(1, figsize=(8,5.5))
-        plt.plot(depths_MC[:,_i], cdflevels, '--sk', markersize=8, label='Monte Carlo')  # reference: MC
-        plt.plot(depths_sda[:,_i], cdflevels, '--^', markersize=8, label='SDA')  # diffusion
-        plt.plot(depths_sda_v[:,_i], cdflevels, '--v', markersize=8, label='SDA_Vasen')  # diffusion_vasen
-        plt.plot(depths_dp1[:,_i], cdflevels, '--*', markersize=8, label=r'$\delta$-P1')  # delta-p1
-        plt.plot(depths_dp1_v[:,_i], cdflevels, '--p', markersize=8, label=r'$\delta$-P1_Vasen')  # delta-p1_vasen
-        
-        plt.grid(True, linestyle=':')
-        plt.legend(loc='lower right')
-        plt.title(r"$\mu_s'$/$\mu_a$ = {}".format(muspmua))
-        plt.xlabel('depth (mm)')
-        plt.ylabel('% of photons')
-        plt.tight_layout()
+    _i = 6
+    freq = fx[_i]
+    plt.figure(1, figsize=(8,5.5))
+    plt.plot(depths_MC[:,_i], cdflevels, '--sk', markersize=8, label='Monte Carlo')  # reference: MC
+    plt.plot(depths_sda[:,_i], cdflevels, '--^', markersize=8, label='SDA')  # diffusion
+    plt.plot(depths_sda_v[:,_i], cdflevels, '--v', markersize=8, label='SDA_Vasen')  # diffusion_vasen
+    plt.plot(depths_dp1[:,_i], cdflevels, '--*', markersize=8, label=r'$\delta$-P1')  # delta-p1
+    plt.plot(depths_dp1_v[:,_i], cdflevels, '--p', markersize=8, label=r'$\delta$-P1_Vasen')  # delta-p1_vasen
+    
+    plt.grid(True, linestyle=':')
+    plt.legend(loc='lower right')
+    plt.title(r"$\mu_s'$/$\mu_a$ = {}".format(muspmua))
+    plt.xlabel('depth (mm)')
+    plt.ylabel('% of photons')
+    plt.tight_layout()
