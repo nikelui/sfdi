@@ -20,10 +20,9 @@ class XiCam:
         super().__delattr__()
         self.cam.close()
     
-    def __init__(self, num=0, res='640p', fps=60.0, **kwargs):
+    def __init__(self, fps=60.0, **kwargs):
         # Number of the camera color channels (1 for monochrome, 3 for RGB and N for multispectral)
-        self.nchannels = 3
-        # Camera horizontal and vertical resolution (pixel)
+        self.nchannels = 9
         self.cam = xiapi.Camera()
         self.cam.open_device()
         self.cam.set_imgdataformat('XI_MONO8')
@@ -32,10 +31,12 @@ class XiCam:
         self.cam.set_acq_timing_mode('XI_ACQ_TIMING_MODE_FRAME_RATE')
         self.cam.set_framerate(fps)
         self.cam.set_exposure(50.0e3)  # in us
-        
+
+        # Camera horizontal and vertical resolution (pixel)
         self.xRes = self.cam.get_width_maximum()
         self.yRes = self.cam.get_height_maximum()
-        self.rois = []  # here place the 9 cam ROIs after calibrarion/alignment
+        # TODO: insert ROIs
+        self.rois = []  # here place the 9 cam ROIs after calibrarion/realignment
         
     def capture(self):
         """This function should acquire one frame from the camera and return it as
@@ -46,6 +47,7 @@ class XiCam:
         self.cam.stop_acquisition()
         data = img.get_image_data_numpy()
         
+        # TODO: split the data in 9 color channels, using the self.rois list
         return data.astype('uint8')
     
     def getResolution(self):
