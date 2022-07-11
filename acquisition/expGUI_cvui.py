@@ -8,7 +8,7 @@ email: luigi.belcastro@liu.se
 import numpy as np
 import cv2 as cv
 import cvui
-from sfdi.acquisition.acquisitionRoutine import acquisitionRoutine
+from sfdi.acquisition.acquisitionRoutine_keynote import acquisitionRoutine
 
 class expGUI_cvui:
     """A class to implement a simple GUI in openCV for brightness control (Point Grey version).
@@ -83,25 +83,25 @@ syntax: gui = expGUI_cvui(cam,[window])
             tstep = 0.5
 
         ## Create and show reference picture
-        self.reference(xRes=853,yRes=480)
+        self.reference(xRes=self.par['xres'],yRes=self.par['yres'])
         
         while(True):
             ## Calibration loop
             ## Capture image from camera
             for i in range(10): # number of retries
-                frame = self.cam.capture(nframes=1, save=False)
+                frame = self.cam.preview(nframes=1, save=False)
                 break # break if image was retrieved successfully
             height, width = frame.shape[:2]  # image has 3 dimensions
 
             ## Clean background
             self.bg[:,:,:] = (20,20,20)
             
-            ## If resolution is 1280p, downsample to 640p
-            if (width == 1280):
+            ## If resolution is larger than 640p, downsample to 640p
+            if (width > 640 or height > 480):
                 frame = cv.resize(frame,(640,480),cv.INTER_NEAREST)
             
             ## Draw frame on main window
-            cvui.image(self.bg,0,50,frame)
+            cvui.image(self.bg,0,50,cv.cvtColor(frame,cv.COLOR_GRAY2RGB))
 
             ## Draw trackbar for exposure and adjust value if changed
             cvui.text(self.bg,20,20,'Exposure(ms)')
@@ -128,19 +128,28 @@ syntax: gui = expGUI_cvui(cam,[window])
 #            self.set_red()
             cvui.imshow(self.wname,self.ref)
             
-            ## calculate histograms
-            hist_im = np.zeros((300,512,3),dtype=np.uint8) # background
-            hist_b = cv.calcHist([frame],[0],None,[256],[0,256]) # BLUE histogram
-            cv.normalize(hist_b,hist_b,alpha=0,beta=300,norm_type=cv.NORM_MINMAX)
-            hist_g = cv.calcHist([frame],[1],None,[256],[0,256]) # GREEN histogram
-            cv.normalize(hist_g,hist_g,alpha=0,beta=300,norm_type=cv.NORM_MINMAX)
-            hist_r = cv.calcHist([frame],[2],None,[256],[0,256]) # RED histogram
-            cv.normalize(hist_r,hist_r,alpha=0,beta=300,norm_type=cv.NORM_MINMAX)
+            ## calculate RGB histograms
+            if frame.shape[-1] == 3:
+                hist_im = np.zeros((300,512,3),dtype=np.uint8) # background
+                hist_b = cv.calcHist([frame],[0],None,[256],[0,256]) # BLUE histogram
+                cv.normalize(hist_b,hist_b,alpha=0,beta=300,norm_type=cv.NORM_MINMAX)
+                hist_g = cv.calcHist([frame],[1],None,[256],[0,256]) # GREEN histogram
+                cv.normalize(hist_g,hist_g,alpha=0,beta=300,norm_type=cv.NORM_MINMAX)
+                hist_r = cv.calcHist([frame],[2],None,[256],[0,256]) # RED histogram
+                cv.normalize(hist_r,hist_r,alpha=0,beta=300,norm_type=cv.NORM_MINMAX)    
+                ## Draw histograms
+                cvui.sparkline(hist_im,hist_b,0,0,512,300,0x0000ff)
+                cvui.sparkline(hist_im,hist_g,0,0,512,300,0x00ff00)
+                cvui.sparkline(hist_im,hist_r,0,0,512,300,0xff0000)
+            
+            ## for now, assume monochrome and calculate B/W histogram
+            else:
+                hist_im = np.zeros((300,512),dtype=np.uint8) # background
+                hist = cv.calcHist([frame],[0],None,[256],[0,256]) # B/W histogram
+                cv.normalize(hist,hist,alpha=0,beta=300,norm_type=cv.NORM_MINMAX)
+                ## Draw histogram
+                cvui.sparkline(hist_im,hist,0,0,512,300,0xffffff)
 
-            ## Draw histograms
-            cvui.sparkline(hist_im,hist_b,0,0,512,300,0x0000ff)
-            cvui.sparkline(hist_im,hist_g,0,0,512,300,0x00ff00)
-            cvui.sparkline(hist_im,hist_r,0,0,512,300,0xff0000)
             cvui.imshow('histogram',hist_im)
 
             ## Get button input
@@ -184,6 +193,6 @@ syntax: gui = expGUI_cvui(cam,[window])
                                self.par['nphase'],self.par['dt'],self.correction,self.par['bb'],
                                self.par['bg'],self.par['br'],outPath=self.par['outpath'],
                                name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq,
-                               blueBoost=self.blueboost)
+                               nchannels=self.cam.nchannels,blueBoost=self.blueboost)
             self.n_acq += 1 # increase counter
             self.stop[0] = ret # use return value to break from loop

@@ -33,11 +33,12 @@ this way multiple time-points can be processed easily.
 # NOTE: the folder containing sfdi must be in your PYTHONPATH
 import os
 import cv2 as cv
-from numpy import genfromtxt
+from numpy import genfromtxt, array
 
 from sfdi.acquisition.setWindow import setWindow
 from sfdi.acquisition.expGUI_cvui import expGUI_cvui
-from sfdi.camera.pointGrey import PointGrey as Camera  # Change this as appropriate
+# from sfdi.camera.pointGrey import PointGrey as Camera  # Change this as appropriate
+from sfdi.camera.xiCam import XiCam as Camera
 from sfdi.common.readParams import readParams
 from sfdi.acquisition import __path__ as par_path
 
@@ -47,14 +48,14 @@ par = readParams('{}/parameters.ini'.format(par_path[0]))
 if par['cpath']:
     par['gamma'] = genfromtxt(par['cpath'], delimiter=',')
 else:
-    par['gamma'] = None
+    par['gamma'] = array([])
 
 ## Check if out folder exist, if not, create it
 if not os.path.exists(par['outpath']):
     os.makedirs(par['outpath'])
 
 ### Setting up camera ###
-cam = Camera(num=0, res=par['res'], fps=par['res'])  # set-up camera
+cam = Camera(num=0, res=par['res'], fps=par['fps'])  # set-up camera
 #TODO: automatically detect screen size
 setWindow('pattern', size=(par['xres'],par['yres']),pos=(par['w'], 0))  # Set-up window on second monitor
 #TODO: new GUI, with extra functionality (remove opencv)
@@ -71,3 +72,4 @@ if not os.path.exists(par_file):
         pFile.write('wv={}\n'.format([458,460,461,520,536,556,600,601,626]))  # adjust this depening on hardware
 
 cv.destroyAllWindows()
+cam.close()

@@ -8,6 +8,7 @@ email: luigi.belcastro@liu.se
 import numpy as np
 from ximea import xiapi
 import PIL.Image  # trying not to use OpenCV
+from sfdi.processing.crop import crop
 
 
 class XiCam:
@@ -33,21 +34,42 @@ class XiCam:
         self.cam.set_exposure(50.0e3)  # in us
 
         # Camera horizontal and vertical resolution (pixel)
-        self.xRes = self.cam.get_width_maximum()
-        self.yRes = self.cam.get_height_maximum()
-        # TODO: insert ROIs
-        self.rois = []  # here place the 9 cam ROIs after calibrarion/realignment
+        # This is actually the ROI resolution, after cropping the image
+        self.xRes = 600
+        self.yRes = 600
+        # here place the 9 cam ROIs after calibrarion/realignment
+        self.rois = [
+            (36,33,600,600),     # Cam1
+            (718,38,600,600),    # Cam2
+            (1394,49,600,600),   # Cam3
+            (30,721,600,600),    # Cam4
+            (712,722,600,600),   # Cam5
+            (1390,729,600,600),  # Cam6
+            (26,1393,600,600),   # Cam7
+            (706,1400,600,600),  # Cam8
+            (1386,1407,600,600), # Cam9
+            ]
         
-    def capture(self):
+    def capture(self, **kwargs):
         """This function should acquire one frame from the camera and return it as
-        a numpy array (uint8: values from 0-255)"""
+        a numpy array (uint8: values from 0-255). Multiple color channels are stacked
+        into a single B/W image (for multi-spectral)"""
         img = xiapi.Image()
         self.cam.start_acquisition()
         self.cam.get_image(img)
         self.cam.stop_acquisition()
         data = img.get_image_data_numpy()
-        
-        # TODO: split the data in 9 color channels, using the self.rois list
+        frame = np.array([crop(data, ROI) for ROI in self.rois]).transpose((1,2,0))
+        return frame.astype('uint8')
+    
+    def preview(self, **kwargs):
+        """This function should acquire one frame from the camera and return it as
+        a numpy array (uint8: values from 0-255)."""
+        img = xiapi.Image()
+        self.cam.start_acquisition()
+        self.cam.get_image(img)
+        self.cam.stop_acquisition()
+        data = img.get_image_data_numpy()
         return data.astype('uint8')
     
     def getResolution(self):
@@ -83,8 +105,13 @@ class XiCam:
         self.cam.close_device()
     
 if __name__ == '__main__':
+    from matplotlib import pyplot as plt
     asd = XiCam()
     frame = asd.capture()
+    asd.close()
     
-    img = PIL.Image.fromarray(frame, 'L')
-    img.show()
+    for _i in range(9):
+        plt.figure()
+        plt.imshow(frame[:,:,_i])
+    # img = PIL.Image.fromarray(frame, 'L')
+    # img.show()

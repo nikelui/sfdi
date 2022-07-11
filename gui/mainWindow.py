@@ -250,5 +250,13 @@ class MainWindow(tk.Tk):
             print('You should not be here!')
         
 # if __name__ == "__main__":
-#     win = MainWindow()
+#     from sfdi.acquisition import __path__ as par_path
+#     from sfdi.common.readParams import readParams
+#     # Only works with raspberry pi camera
+#     # from sfdi.camera.DummyCam import DummyCam 
+    
+#     par = readParams('{}/parameters.ini'.format(par_path[0]))
+#     cam = DummyCam()
+    
+#     win = MainWindow(cam, par)
 #     win.mainloop()
