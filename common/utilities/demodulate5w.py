@@ -12,9 +12,9 @@ sys.path.append('C:/PythonX/Lib/site-packages') ## Add PyCapture2 installation f
 
 import sfdi
 
-from rawDataLoad import rawDataLoad
-from stackPlot import stackPlot
-from sfdi.readParams3 import readParams
+from sfdi.processing.rawDataLoad import rawDataLoad
+from sfdi.processing.stackPlot import stackPlot
+from sfdi.common.readParams import readParams
 
 par = readParams('../../processing/parameters.ini')
 AC,_ = rawDataLoad(par,'Select data folder')

@@ -67,5 +67,41 @@ Color images are 3D float arrays of size (yRes,xRes,3) with values normalized to
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
     
-    pattern,_,_,_ = sinPattern(720, 481, 110, 0.2, 2/3*np.pi, channels='',diagonal=True)
-    plt.imshow(pattern, cmap='gray')
+    pattern,_,_,_ = sinPattern(720, 481, 110, 0.4, 2/3*np.pi, channels='',diagonal=False)
+    pattern *= 255
+    # pattern = np.ceil(pattern/4).astype('uint8')
+    plt.suptitle(r'fx = 0.4mm$^{-1}$')
+    plt.subplot(2,1,1)
+    plt.imshow(pattern[0:30,0:100].astype('uint8'), cmap='gray')
+    plt.title('8-bit')
+    plt.subplot(2,1,2)
+    pattern /= 4
+    plt.imshow(pattern[0:30,0:100].astype('uint8'), cmap='gray')
+    plt.title('6-bit')
+    plt.tight_layout()
+    
+    
+    #%% demodulation test
+    pattern1,_,_,_ = sinPattern(720, 481, 110, 0.1, 0, channels='',diagonal=False)
+    pattern2,_,_,_ = sinPattern(720, 481, 110, 0.1, 2/3*np.pi, channels='',diagonal=False)
+    pattern3,_,_,_ = sinPattern(720, 481, 110, 0.1, 4/3*np.pi, channels='',diagonal=False)
+    pattern1 *= 255/1
+    pattern2 *= 255/1
+    pattern3 *= 255/1
+    dem = 2/3* np.sqrt(pattern1**2 + pattern2**2 + pattern3**2)
+    
+    
+    plt.figure(11)
+    plt.subplot(2,2,1)
+    plt.imshow(pattern1[:50,:50].astype('uint8'), cmap='gray')
+    plt.title('phase 0')
+    plt.subplot(2,2,2)
+    plt.imshow(pattern2[:50,:50].astype('uint8'), cmap='gray')
+    plt.title('phase 1')
+    plt.subplot(2,2,3)
+    plt.imshow(pattern3[:50,:50].astype('uint8'), cmap='gray')
+    plt.title('phase 2')
+    plt.subplot(2,2,4)
+    plt.imshow(dem[:50,:50].astype('uint8'), cmap='gray')
+    plt.title('demodulate')
+    plt.tight_layout()

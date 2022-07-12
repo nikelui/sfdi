@@ -193,6 +193,7 @@ syntax: gui = expGUI_cvui(cam,[window])
                                self.par['nphase'],self.par['dt'],self.correction,self.par['bb'],
                                self.par['bg'],self.par['br'],outPath=self.par['outpath'],
                                name=self.par['name'],fname=self.par['fname'],n_acq=self.n_acq,
-                               nchannels=self.cam.nchannels,blueBoost=self.blueboost)
+                               nchannels=self.cam.nchannels,blueBoost=self.blueboost,
+                               diagonal=self.par['diagonal'])
             self.n_acq += 1 # increase counter
             self.stop[0] = ret # use return value to break from loop
