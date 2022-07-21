@@ -32,10 +32,10 @@ Need a .txt file with the phantom known optical properties."""
     
     ## NEW interpolation (with weighted average over bands)
     else:
-        data = np.genfromtxt('{}/overlaps_calibrated.csv'.format(over_path[0]),
+        data = np.genfromtxt('{}/{}'.format(over_path[0], par['channels']),
                                delimiter=',') # load overlaps spectrum
         wv = data[0,:] # wavelength axis
-        spec = data[(9,8,7,6,5,4,3,2,1),:] # 9 channels
+        spec = data[1:,:] # cross-channels
         
         # Interpolate phantom to whole spectrum
         f = interp1d(test[:,0],test[:,1],kind='cubic',fill_value='extrapolate') # absorption coefficient

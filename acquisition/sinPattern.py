@@ -88,7 +88,8 @@ if __name__ == '__main__':
     pattern1 *= 255/1
     pattern2 *= 255/1
     pattern3 *= 255/1
-    dem = 2/3* np.sqrt(pattern1**2 + pattern2**2 + pattern3**2)
+    dem = np.sqrt(2)/3* np.sqrt((pattern2-pattern1)**2 + (pattern3-pattern2)**2 +
+                                (pattern1-pattern3)**2)
     
     
     plt.figure(11)

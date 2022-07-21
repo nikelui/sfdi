@@ -43,12 +43,6 @@ from sfdi.common.phantoms import __path__ as ph_path  # phantoms reference data 
 
 par = readParams('{}/parameters.ini'.format(par_path[0]))
 
-if len(par['freq_used']) == 0:  # use all frequencies if empty
-    par['freq_used'] = list(np.arange(len(par['freqs'])))
-
-if len(par['wv_used']) == 0:  # use all wavelengths if empty
-    par['wv_used'] = list(np.arange(len(par['wv'])))
-
 ## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
 phantom_path = getPath('Select calibration phantom data folder')
 # Update parameter if acquisition_parameters is found
@@ -58,6 +52,12 @@ if os.path.exists(a_path):
     par['freqs'] = apar['fx']
     par['nphase'] = apar['nphase']
     par['wv'] = apar['wv']
+
+if len(par['freq_used']) == 0:  # use all frequencies if empty
+    par['freq_used'] = list(np.arange(len(par['freqs'])))
+
+if len(par['wv_used']) == 0:  # use all wavelengths if empty
+    par['wv_used'] = list(np.arange(len(par['wv'])))
 ACph,_ = rawDataLoad(par, phantom_path, batch=True)
 
 path = getPath('Select base folder')
@@ -66,7 +66,7 @@ if path:  # check for empty path
     ##############################################################################
     ##  Define the folders to process here. Leave empty for interactive prompt  ##
     ##############################################################################
-    toProcess = ['TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml']
+    toProcess = ['TiObase', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml']
     if(not toProcess):  # In case you define by hand
         regex = input('Input base name to match (end with empty line): ').lower()  # only process matching directories
         while (regex != ''):  # End with an empty name

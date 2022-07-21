@@ -38,17 +38,16 @@ class XiCam:
         self.xRes = 600
         self.yRes = 600
         # here place the 9 cam ROIs after calibrarion/realignment
-        self.rois = [
-            (36,33,600,600),     # Cam1
-            (718,38,600,600),    # Cam2
-            (1394,49,600,600),   # Cam3
-            (30,721,600,600),    # Cam4
-            (712,722,600,600),   # Cam5
-            (1390,729,600,600),  # Cam6
-            (26,1393,600,600),   # Cam7
-            (706,1400,600,600),  # Cam8
-            (1386,1407,600,600), # Cam9
-            ]
+        self.rois = [(13,52,600,600),    # cam1
+                     (697,41,600,600),   # cam2
+                     (1375,36,600,600),  # cam3 
+                     (28,736,600,600),   # cam4
+                     (712,722,600,600),  # cam5
+                     (1390,712,600,600), # cam6
+                     (38,1418,600,600),  # cam7
+                     (722,1407,600,600), # cam8
+                     (1405,1398,600,600) # cam9      
+                     ]
         
     def capture(self, **kwargs):
         """This function should acquire one frame from the camera and return it as
@@ -109,7 +108,7 @@ if __name__ == '__main__':
     asd = XiCam()
     frame = asd.capture()
     asd.close()
-    
+#%%    
     for _i in range(9):
         plt.figure()
         plt.imshow(frame[:,:,_i])

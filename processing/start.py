@@ -43,14 +43,22 @@ from sfdi.common.phantoms import __path__ as ph_path  # phantoms reference data 
 
 par = readParams('{}/parameters.ini'.format(par_path[0]))
 
+## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
+phantom_path = getPath('Select calibration phantom data folder')
+# Update parameter if acquisition_parameters is found
+a_path = '{}/acquisition_parameters.ini'.format('/'.join(phantom_path.split('/')[:-1]))
+if os.path.exists(a_path):
+    apar = readParams(a_path)
+    par['fx'] = apar['fx']
+    par['nphase'] = apar['nphase']
+    par['wv'] = apar['wv']
+
 if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
 
 if len(par['wv_used']) == 0: # use all wavelengths if empty
     par['wv_used'] = list(np.arange(len(par['wv'])))
 
-## Load calibration phantom data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
-phantom_path = getPath('Select calibration phantom data folder')
 ACph,_ = rawDataLoad(par, phantom_path, batch=True)
 
 ## Load tissue data. Note: if ker > 1 in the parameters, it will apply a Gaussian smoothing
@@ -62,14 +70,6 @@ if False:
 
 if (len(par['chrom_used']) > 0):
     cfile = getFile('Select chromophores reference file')
-
-# Update parameter if acquisition_parameters is found
-a_path = '{}/acquisition_parameters.ini'.format('/'.join(phantom_path.split('/')[:-1]))
-if os.path.exists(a_path):
-    apar = readParams(a_path)
-    par['fx'] = apar['fx']
-    par['nphase'] = apar['nphase']
-    par['wv'] = apar['wv']
 
 # get processing parameters, if exist from previous datasets
 p_path = '{}/processing_parameters.ini'.format(par['savefile'])
@@ -115,7 +115,7 @@ if True:  # multi-frequencies approach
 else:
     FX = [par['freq_used']]
 
-## Save processing prameters to file
+## Save processing parameters to file
 params = {'wv': np.array(par['wv'])[par['wv_used']],  # processed wavelengths
           'binsize': par['binsize'],  # pixel binning
           'ROI': list(ROI),  # processed ROI

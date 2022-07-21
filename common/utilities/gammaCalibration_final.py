@@ -71,6 +71,8 @@ z = np.polyfit(levels, raw_data, deg=6)
 f = np.poly1d(z)
 
 levels_input = f(levels_out)
+levels_input -= np.min(levels_input)
+levels_input *= (255/np.max(levels_input))
 # plt.plot(levels, raw_data, '*r')
 # plt.plot(levels_out, levels_input)
 # plt.grid(True, linestyle=':')
@@ -79,9 +81,9 @@ levels_input = f(levels_out)
 # plt.legend(['raw_data', 'fitted curve'])
 
 # invert the curve
-# ff = interp1d(levels_input, levels_out, kind='linear',
+# ff = interp1d(levels_input, levels_out, kind='linear',   # interpolation doesn't work very well
 #               assume_sorted=True, fill_value='extrapolate')
-zz = np.polyfit(raw_data, levels, deg=8)
+zz = np.polyfit(raw_data, levels, deg=8)  # adjust degree of polynomial until it looks ok
 ff = np.poly1d(zz)
 gamma_correction = ff(levels_out)
 gamma_correction -= np.min(gamma_correction)
@@ -103,5 +105,5 @@ plt.legend(['raw_data', 'fitted curve'])
 # plt.xlabel('INPUT')
 # plt.ylabel('OUTPUT')
 
-np.savetxt('gammaCorrection_keynote.csv', gamma_correction, fmt='%.5f', delimiter=',',
+np.savetxt('gamma_keynote.csv', levels_input, fmt='%.5f', delimiter=',',
             newline=',')

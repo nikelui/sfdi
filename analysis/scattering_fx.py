@@ -102,7 +102,7 @@ else:
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_mus('AlO05ml')
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
-ret = data.singleROI('TiO30ml', norm=None, fit='single', f=[0,1,2,3,4], I=3e3)
+ret = data.singleROI('TiObase', norm=None, fit='single', f=[0,1,2,3,4], I=3e3)
 
 #%% plotting
 if False:
