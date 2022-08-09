@@ -152,7 +152,7 @@ for _f, fx in enumerate(FX):
         WV = np.array(par['wv'])[par['wv_used'], np.newaxis]
         op_guess = np.append(WV, op_guess, axis=1)  # use mua, mus at f0 as initial guess
     else:
-        op_fit_maps = fitOps(crop(cal_R, ROI), par, guess=op_guess, homogeneous=True)
+        op_fit_maps = fitOps(crop(cal_R, ROI), par, guess=op_guess, homogeneous=False)
     
     if (len(par['chrom_used']) > 0):
         chrom_map = chromFit(op_fit_maps, par, cfile) # linear fitting for chromofores

@@ -107,7 +107,7 @@ class dataDict(dict):
                     op_map = self[key][fx]['op_fit_maps'][:,:,_j,_i]
                     vmin = 0
                     if _i == 0:
-                        vmax = 0.5
+                        vmax = 0.1
                     else:
                         vmax = 5
                     im = ax[_i, _j].imshow(op_map, cmap='magma', vmax=vmax, vmin=vmin)
@@ -388,6 +388,7 @@ class dataDict(dict):
         what = kwargs.pop('what', 'mus')
         wv = kwargs.pop('wv', 2)
         vmax = kwargs.pop('vmax', 3)
+        vmin = kwargs.pop('vmin', 1)
         f_used = kwargs.pop('f', list(range(len(self[key]))))  # Default: use all frequencies
         f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
         wv_used = kwargs.pop('wv', list(range(len(self.par['wv']))))
@@ -400,12 +401,12 @@ class dataDict(dict):
         
         # fx = list(self[key].keys())  # list of fx ranges
         fig, ax = plt.subplots(num=600, nrows=2, ncols=len(f_used), figsize=(15, 6))
-        rect_colors = ['cyan', 'lime', 'blue']
+        rect_colors = ['cyan', 'lime', 'blue', 'magenta']
         for _i,_j in enumerate(f_used):
             if what == 'mus':
                 #TODO: implement fit to power law
                 im = ax[0,_i].imshow(self[key][f'f{_j}']['op_fit_maps'][:,:,wv,1],
-                                     vmin=0.5, vmax=vmax, cmap='magma')
+                                     vmin=vmin, vmax=vmax, cmap='magma')
                 cb = colourbar(im)
                 for _r, roi in enumerate(ROI):
                     rect = patches.Rectangle((roi[0], roi[1]), roi[2], roi[3], linewidth=1,
@@ -415,7 +416,7 @@ class dataDict(dict):
                                   '-d', linewidth=1.5, color=rect_colors[_r])
                 ax[0,_i].axis('off')
                 ax[1,_i].grid(True, linestyle=':')
-                ax[1,_i].set_ylim([0, vmax])
+                ax[1,_i].set_ylim([vmin, vmax])
         plt.tight_layout()
 
             #TODO: implement this for a,b params

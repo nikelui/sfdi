@@ -31,22 +31,22 @@ class XiCam:
         self.cam.disable_auto_wb()  # white balance
         self.cam.set_acq_timing_mode('XI_ACQ_TIMING_MODE_FRAME_RATE')
         self.cam.set_framerate(fps)
-        self.cam.set_exposure(50.0e3)  # in us
+        self.cam.set_exposure(100.0e3)  # in us
 
         # Camera horizontal and vertical resolution (pixel)
         # This is actually the ROI resolution, after cropping the image
         self.xRes = 600
         self.yRes = 600
         # here place the 9 cam ROIs after calibrarion/realignment
-        self.rois = [(13,52,600,600),    # cam1
-                     (697,41,600,600),   # cam2
-                     (1375,36,600,600),  # cam3 
-                     (28,736,600,600),   # cam4
-                     (712,722,600,600),  # cam5
-                     (1390,712,600,600), # cam6
-                     (38,1418,600,600),  # cam7
-                     (722,1407,600,600), # cam8
-                     (1405,1398,600,600) # cam9      
+        self.rois = [(1,42,self.xRes,self.yRes),    # cam1
+                     (702,31,self.xRes,self.yRes),   # cam2
+                     (1389,26,self.xRes,self.yRes),  # cam3 
+                     (20,732,self.xRes,self.yRes),   # cam4
+                     (712,722,self.xRes,self.yRes),  # cam5
+                     (1400,712,self.xRes,self.yRes), # cam6
+                     (28,1428,self.xRes,self.yRes),  # cam7
+                     (722,1417,self.xRes,self.yRes), # cam8
+                     (1415,1408,self.xRes,self.yRes) # cam9      
                      ]
         
     def capture(self, **kwargs):
@@ -56,6 +56,7 @@ class XiCam:
         img = xiapi.Image()
         self.cam.start_acquisition()
         self.cam.get_image(img)
+        self.cam.get_image(img)  # do it twice, to avoid synch problems
         self.cam.stop_acquisition()
         data = img.get_image_data_numpy()
         frame = np.array([crop(data, ROI) for ROI in self.rois]).transpose((1,2,0))
@@ -106,11 +107,14 @@ class XiCam:
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
     asd = XiCam()
+    asd.setExposure(100)
     frame = asd.capture()
     asd.close()
-#%%    
+#%%
     for _i in range(9):
         plt.figure()
         plt.imshow(frame[:,:,_i])
     # img = PIL.Image.fromarray(frame, 'L')
-    # img.show()
+    # # img.show()
+    # plt.figure(666)
+    # plt.imshow(frame[:,:,4])

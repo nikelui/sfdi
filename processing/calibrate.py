@@ -38,11 +38,11 @@ Need a .txt file with the phantom known optical properties."""
         spec = data[1:,:] # cross-channels
         
         # Interpolate phantom to whole spectrum
-        f = interp1d(test[:,0],test[:,1],kind='cubic',fill_value='extrapolate') # absorption coefficient
+        f = interp1d(test[:,0],test[:,1],kind='quadratic',fill_value='extrapolate') # absorption coefficient
         MUA = f(wv)
-        f = interp1d(test[:,0],test[:,2],kind='cubic',fill_value='extrapolate') # scattering coefficient
+        f = interp1d(test[:,0],test[:,2],kind='quadratic',fill_value='extrapolate') # scattering coefficient
         MUS = f(wv)
-        f = interp1d(test[:,0],test[:,3],kind='cubic',fill_value='extrapolate') # refraction index
+        f = interp1d(test[:,0],test[:,3],kind='quadratic',fill_value='extrapolate') # refraction index
         N = f(wv)
         
         mua = np.zeros(len(par['wv'])) # initialize

@@ -102,13 +102,33 @@ else:
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_mus('AlO05ml')
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
-ret = data.singleROI('TiObase', norm=None, fit='single', f=[0,1,2,3,4], I=3e3)
+ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4,5], I=3e3)
 
 #%% plotting
+from matplotlib import pyplot as plt
+import addcopyfighandler
+
+cal_path = [x for x in os.listdir(data_path) if 'calR' in x and 'TiObase' in x]
+calR =loadmat(f'{data_path}/{cal_path[0]}')
+calR = calR['cal_R']
+H,W = calR.shape[:2]
+Rd = np.nanmean(calR[H//2-10:H//2+10,W//2-10:W//2+10,:,:], axis=(0,1))
+fx = np.arange(0, 0.51, 0.05)
+# fx = np.array([np.mean(x) for x in [par[f'f{y}'] for y in range(8)]])
+# wv_used = np.array([0,3,4,5,8])
+plt.figure(22, figsize=(7,4))
+plt.plot(fx, Rd[:,:].T)
+plt.legend([r'{:d} nm'.format(x) for x in par['wv']])
+plt.grid(True, linestyle=':')
+plt.xlabel(r'Spatial frequency (mm$^{{-1}}$')
+plt.xlim([0,0.5])
+plt.title('Calibrated reflectance')
+plt.tight_layout()
+
 if False:
-    from matplotlib import pyplot as plt
+    
     from sfdi.common.phantoms import __path__ as ph_path
-    TS2 = np.genfromtxt('{}/TS2.txt'.format(ph_path._path[0]))  # reference
+    ref = np.genfromtxt('{}/TS2.txt'.format(ph_path._path[0]))  # reference
     plt.figure(figsize=(10,4))
     labels = ['f0','f1','f2','f3','f4','f5','f6','f7']
     for _j in range(ret['op_ave'].shape[0]-3):
@@ -123,19 +143,19 @@ if False:
         plt.grid(True, linestyle=':')
     
     plt.subplot(1,2,1)
-    plt.plot(TS2[:4,0], TS2[:4,1], '*k', linestyle='--', label='TS2', linewidth=2, zorder=100, markersize=10)
+    plt.plot(ref[:4,0], ref[:4,1], '*k', linestyle='--', label='reference', linewidth=2, zorder=100, markersize=10)
     plt.title(r'$\mu_a$')
     plt.xlabel('nm')
     plt.legend()
     plt.subplot(1,2,2)
-    plt.plot(TS2[:4,0], TS2[:4,2], '*k', linestyle='--', label='TS2', linewidth=2, zorder=100, markersize=10)
+    plt.plot(ref[:4,0], ref[:4,2], '*k', linestyle='--', label='reference', linewidth=2, zorder=100, markersize=10)
     plt.title(r"$\mu'_s$")
     plt.xlabel('nm')
     plt.tight_layout()
 
 #%%
 if False:
-    for key in ['TiObaseTop', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml', 'AlObaseTop']:
+    for key in ['TiObase', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml', 'AlObase']:
         print(key)
         for fx in ['f0', 'f1', 'f2', 'f3', 'f4']:
             print('{} -> A: {:.2f}\tB:{:.4f}'.format(fx, data[key][fx]['sfds']['par'][0], data[key][fx]['sfds']['par'][1]))

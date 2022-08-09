@@ -82,11 +82,24 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
     
     pshift = 2*np.pi/nPhase # phase shift for demodulation [default = 2/3 pi]
     
+    # acquire dark image to subtract
+    y,x = cam.getResolution()
+    dark = np.zeros((y, x, cam.nchannels), dtype=float)
+    Im = np.ones((yRes, xRes), dtype='uint8') * 255
+    cv.imshow('pattern', Im)
+    cv.waitKey(1)
+    for _i in range(10):
+        frame = cam.capture(nframes=1, save=False)
+        dark += frame
+    dark /= 10  # average
+    
+    time.sleep(0.5)
+    
     # Acquire, white light
     for i in range(nFreq+1):
         for p in range(nPhase):
             t1 = cv.getTickCount()
-            I,_,_,_ = sinPattern(xRes,yRes,w,f[i],pshift*p,Bb,correction,'b')
+            I,_,_,_ = sinPattern(xRes,yRes,w,f[i],pshift*p,Bb,correction,'',diagonal)
             I = 255 - I  # images are inverted # DEBUG: remember to remove it
             # DEBUG
             #Ib = debugPrint(xRes,yRes,'%d_%d%d%d' % (n_acq,0,i,p))
@@ -105,6 +118,7 @@ NOTE: to work correctly, you need to have an OpenCV window called 'pattern' show
                 time.sleep(dt/1000)
             t5 = cv.getTickCount()
             frame = cam.capture(nframes=1, save=False)
+            frame = frame.astype(float) - dark
             t6 = cv.getTickCount()
             # Change approach: keep everything in a big matrix and save later
             for ch in range(nchannels):
