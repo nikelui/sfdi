@@ -91,10 +91,10 @@ NOTE: only the AC component of fluence is derived in the thesis."""
     muts = mua + muss  # transport coefficient* MxN
     mueff=np.sqrt(3*mua*mut)  # effective transport coefficient MxN
     mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
-    h = mut*2/3
+    # h = mut*2/3
     
-    C = muss/(h*mueff1)
-    zb = h*R
+    C = 3/2 * muss*mut/(mueff1)
+    zb = 2/(3*mut)*R
     
     exp1 = np.exp(-muts[:,:,np.newaxis]*z)
     exp2 = np.exp(-mueff1[:,:,np.newaxis]*z)
