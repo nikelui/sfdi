@@ -51,7 +51,7 @@ def phi_diff(mua, mus, fx, z, n=1.4, g=0.8):
     return fluence
 
 
-def phi_deltaP1(z, mua, mus, fx, n=1.4, g=0.8):
+def phi_deltaP1(mua, mus, fx, z, n=1.4, g=0.8):
     """Function to calculate fluence of light in depth based on the delta-P1 approximation.
     - mua, mus: vectors of optical properties (N x M). Note, mus is the scattering coefficient,
                 not the reduced scattering coefficient (multiply by (1-g))
@@ -84,7 +84,7 @@ def phi_deltaP1(z, mua, mus, fx, n=1.4, g=0.8):
     return fluence
 
 
-def phi_dP1(z, mua, mus, fx, n=1.4, g=0.8):
+def phi_dP1(mua, mus, fx, z, n=1.4, g=0.8):
     """Fluence estimation with delta-P1 approximation, as seen in Seo thesis.
 NOTE: only the AC component of fluence is derived in the thesis.
     - mua, mus: vectors of optical properties (N x M). Note, mus is the scattering coefficient,
@@ -114,10 +114,11 @@ NOTE: only the AC component of fluence is derived in the thesis.
     
     exp1 = np.exp(-muts[:,:,np.newaxis]*z)
     exp2 = np.exp(-mueff1[:,:,np.newaxis]*z)
-    exp3 = np.exp(-mueff1[:,:,np.newaxis]*(z+2*zb))
+    exp3 = np.exp(-mueff1[:,:,np.newaxis]*(z+2*zb[:,:,np.newaxis]))
+    # import pdb; pdb.set_trace()
     
-    phi = (C[:,:,np.newaxis]/(mueff1[:,:,np.newaxis] - muts) * (exp1 - exp2) +
-           C[:,:,np.newaxis]/(mueff1[:,:,np.newaxis] + muts) * (exp1 - exp3))
+    phi = (C[:,:,np.newaxis]/(mueff1[:,:,np.newaxis] - muts[:,:,np.newaxis]) * (exp1 - exp2) +
+           C[:,:,np.newaxis]/(mueff1[:,:,np.newaxis] + muts[:,:,np.newaxis]) * (exp1 - exp3))
     return phi
 
 

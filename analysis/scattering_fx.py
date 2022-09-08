@@ -19,6 +19,7 @@ from scipy.optimize import curve_fit
 from sfdi.common.getPath import getPath
 from sfdi.analysis.dataDict import dataDict  # moved class to other file
 from sfdi.common.readParams import readParams
+from sfdi.common import models
 
 # support functions
 def save_obj(obj, name, path):
@@ -102,8 +103,27 @@ else:
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_mus('AlO05ml')
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
-ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4,5], I=3e3)
+# ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4,5], I=3e3)
 
+#%% plots of fluence
+dz = 0.01  # resolution
+asd = loadmat(f'{data_path}/SFDS_8fx.mat')
+fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
+z = np.arange(0, 10, dz)
+lamb = 500  # nm
+WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
+
+
+phi_diff = {}  # diffusion
+phi_deltaP1 = {}  # delta-P1, Vasen modified
+phi_dp1 = {}  # delta-P1, Seo original
+
+keys = [x for x in data.keys() if 'TiO' in x or 'AlObaseTop' in x]
+keys.remove('TiObaseBottom')
+for key in keys:
+   phi_diff[key] = models.phi_diff(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # diffusion
+   phi_deltaP1[key] = models.phi_deltaP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
+   phi_dp1[key] = models.phi_dP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Seo
 #%% plotting
 from matplotlib import pyplot as plt
 import addcopyfighandler
