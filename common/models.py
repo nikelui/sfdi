@@ -71,7 +71,7 @@ def phi_deltaP1(mua, mus, fx, z, n=1.4, g=0.8):
     muss = mus*(1-g**2)
     mut = mua + mus  # transport coefficient MxN
     muts = mua + muss  # transport coefficient* MxN
-    mueff=np.sqrt(3*mua*muts)  # effective transport coefficient MxN
+    mueff = np.sqrt(np.abs(3 * mua * mut))  # effective transport coefficient MxN
     mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
     h = mut*2/3
     
@@ -105,7 +105,7 @@ NOTE: only the AC component of fluence is derived in the thesis.
     muss = mus*(1-g**2)
     mut = mua + mus  # transport coefficient MxN
     muts = mua + muss  # transport coefficient* MxN
-    mueff=np.sqrt(3*mua*mut)  # effective transport coefficient MxN
+    mueff = np.sqrt(np.abs(3 * mua * mut))  # effective transport coefficient MxN
     mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)  # mueff, with fx (MxN)
     # h = mut*2/3
     
@@ -134,7 +134,7 @@ def phi_2lc(alpha, phi_bottom, phi_top):
     RETURN
     - fluence: fluence array given by linear combination of phi1, phi2 (N x M x Z x A)
 """
-    return alpha*phi_bottom[:,np.newaxis] + (1-alpha)*phi_top[:,np.newaxis]
+    return alpha*phi_bottom[...,np.newaxis] + (1-alpha)*phi_top[...,np.newaxis]
 
 
 

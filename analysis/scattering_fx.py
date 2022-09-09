@@ -106,6 +106,10 @@ else:
 # ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4,5], I=3e3)
 
 #%% plots of fluence
+from matplotlib import pyplot as plt
+from matplotlib import cm
+import addcopyfighandler
+
 dz = 0.01  # resolution
 asd = loadmat(f'{data_path}/SFDS_8fx.mat')
 fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
@@ -120,10 +124,155 @@ phi_dp1 = {}  # delta-P1, Seo original
 
 keys = [x for x in data.keys() if 'TiO' in x or 'AlObaseTop' in x]
 keys.remove('TiObaseBottom')
-for key in keys:
-   phi_diff[key] = models.phi_diff(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # diffusion
-   phi_deltaP1[key] = models.phi_deltaP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
-   phi_dp1[key] = models.phi_dP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+keys.sort()
+
+col = cm.get_cmap('Blues', len(keys))
+
+fig1, ax1 = plt.subplots(1,1, num=1, figsize=(6,4))
+fig2, ax2 = plt.subplots(1,1, num=2, figsize=(6,4))
+fig3, ax3 = plt.subplots(1,1, num=3, figsize=(6,4))
+for _i, key in enumerate(keys):
+    if _i == 0:
+        color = '#FF0000'
+    elif _i == len(keys)-1:
+        color = '#00FF00'
+    else:
+        color = col(_i)
+    
+    phi_diff[key] = models.phi_diff(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # diffusion
+    phi_deltaP1[key] = models.phi_deltaP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
+    phi_dp1[key] = models.phi_dP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+    
+    ax1.plot(z, phi_diff[key][0,WV,:], color=color, label=key)
+    ax2.plot(z, phi_dp1[key][0,WV,:], color=color, label=key)
+    ax3.plot(z, phi_deltaP1[key][0,WV,:], color=color, label=key)
+
+ax1.legend()
+ax1.set_xlabel('mm')
+ax1.set_ylabel(r'$\varphi$', fontsize=14)
+ax1.set_title('Diffusion')
+ax1.grid(True, linestyle=':')
+ax1.set_xlim([0,6])
+ax2.legend()
+ax2.set_xlabel('mm')
+ax2.set_ylabel(r'$\varphi$', fontsize=14)
+ax2.set_title(r'$\delta-P1$ - Seo thesis')
+ax2.grid(True, linestyle=':')
+ax2.set_xlim([0,6])
+ax3.legend()
+ax3.set_xlabel('mm')
+ax3.set_ylabel(r'$\varphi$', fontsize=14)
+ax3.set_title(r'$\delta-P1$ - Vasen modified')
+ax3.grid(True, linestyle=':')
+ax3.set_xlim([0,6])
+
+fig1.tight_layout()
+fig2.tight_layout()
+fig3.tight_layout()
+
+#%% plots of fluence - 2layer model
+from matplotlib import pyplot as plt
+from matplotlib import cm
+import addcopyfighandler
+
+dz = 0.01  # resolution
+asd = loadmat(f'{data_path}/SFDS_8fx.mat')
+fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
+z = np.arange(0, 10, dz)
+lamb = 500  # nm
+WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
+
+alpha = np.arange(.9,0,-0.2)
+
+phi_2ldiff = {}  # diffusion
+phi_2ldeltaP1 = {}  # delta-P1, Vasen modified
+phi_2ldp1 = {}  # delta-P1, Seo original
+
+keys = ['AlObaseTop', '0.1', '0.3', '0.5', '0.7', '0.9', 'TiObaseTop']
+col = cm.get_cmap('Blues', len(keys))
+
+fig1, ax1 = plt.subplots(1,1, num=1, figsize=(6,4))
+fig2, ax2 = plt.subplots(1,1, num=2, figsize=(6,4))
+fig3, ax3 = plt.subplots(1,1, num=3, figsize=(6,4))
+
+phi_2ldiff['AlObaseTop'] = models.phi_diff(asd['AlObaseTop'][:,:,0].T, 
+                                         asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # diffusion
+phi_2ldeltaP1['AlObaseTop'] = models.phi_deltaP1(asd['AlObaseTop'][:,:,0].T,
+                                               asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
+phi_2ldp1['AlObaseTop'] = models.phi_dP1(asd['AlObaseTop'][:,:,0].T,
+                                       asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+
+phi_2ldiff['TiObaseTop'] = models.phi_diff(asd['TiObaseTop'][:,:,0].T, 
+                                         asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # diffusion
+phi_2ldeltaP1['TiObaseTop'] = models.phi_deltaP1(asd['TiObaseTop'][:,:,0].T,
+                                               asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
+phi_2ldp1['TiObaseTop'] = models.phi_dP1(asd['TiObaseTop'][:,:,0].T,
+                                       asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+for _i, key in enumerate(keys):
+    if _i == 0:
+        color = '#FF0000'
+    elif _i == len(keys)-1:
+        color = '#00FF00'
+    else:
+        color = col(_i)
+        phi_2ldiff[key] = models.phi_2lc(alpha[_i-1], phi_2ldiff['AlObaseTop'], phi_2ldiff['TiObaseTop'])  # diffusion
+        phi_2ldeltaP1[key] = models.phi_2lc(alpha[_i-1], phi_2ldeltaP1['AlObaseTop'], phi_2ldeltaP1['TiObaseTop'])  # d-p1, Luigi
+        phi_2ldp1[key] = models.phi_2lc(alpha[_i-1], phi_2ldp1['AlObaseTop'], phi_2ldp1['TiObaseTop'])  # d-p1, Seo
+    
+    ax1.plot(z, phi_2ldiff[key][0,WV,:], color=color, label=key)
+    ax2.plot(z, phi_2ldp1[key][0,WV,:], color=color, label=key)
+    ax3.plot(z, phi_2ldeltaP1[key][0,WV,:], color=color, label=key)
+
+ax1.legend()
+ax1.set_xlabel('mm')
+ax1.set_ylabel(r'$\varphi$', fontsize=14)
+ax1.set_title('Diffusion')
+ax1.grid(True, linestyle=':')
+ax1.set_xlim([0, 6])
+ax2.legend()
+ax2.set_xlabel('mm')
+ax2.set_ylabel(r'$\varphi$', fontsize=14)
+ax2.set_title(r'$\delta-P1$ - Seo thesis')
+ax2.grid(True, linestyle=':')
+ax2.set_xlim([0, 6])
+ax3.legend()
+ax3.set_xlabel('mm')
+ax3.set_ylabel(r'$\varphi$', fontsize=14)
+ax3.set_title(r'$\delta-P1$ - Vasen modified')
+ax3.grid(True, linestyle=':')
+ax3.set_xlim([0, 6])
+
+fig1.tight_layout()
+fig2.tight_layout()
+fig3.tight_layout()
+
+#%% iterate and fit for alpha - diffusion
+from scipy.optimize import minimize
+from scipy.optimize import Bounds
+
+keys = [x for x in data.keys() if 'TiO' in x]
+keys.remove('TiObaseBottom')
+keys.remove('TiObaseTop')
+keys.sort()
+
+diff_TiO = phi_diff['TiObaseTop'][0,WV,:]  # for now @ 500nm
+diff_AlO = phi_diff['AlObaseTop'][0,WV,:]
+diff_meas = [phi_diff[key][0,WV,:] for key in keys]
+alpha = np.zeros(len(keys))
+
+# function to minimize: least square error
+min_fun = lambda alpha, phi_top, phi_bottom, phi_meas: np.sum(
+    (models.phi_2lc(alpha, phi_bottom, phi_top) - phi_meas)**2)
+
+for _i, meas in enumerate(diff_meas):
+    res = minimize(min_fun,  # target function
+                   np.array([0.5]),  # initial guess of alpha
+                   args=(diff_TiO, diff_AlO, meas),
+                   method='Nelder-Mead',
+                   bounds=Bounds(lb=0, ub=1),
+                   options= {'maxiter':500})
+    alpha[_i] = res.x
+
 #%% plotting
 from matplotlib import pyplot as plt
 import addcopyfighandler
