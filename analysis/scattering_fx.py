@@ -116,7 +116,7 @@ fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
 z = np.arange(0, 10, dz)
 lamb = 500  # nm
 WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
-
+F = 3  # spatial frequency to plot
 
 phi_diff = {}  # diffusion
 phi_deltaP1 = {}  # delta-P1, Vasen modified
@@ -143,9 +143,9 @@ for _i, key in enumerate(keys):
     phi_deltaP1[key] = models.phi_deltaP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
     phi_dp1[key] = models.phi_dP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Seo
     
-    ax1.plot(z, phi_diff[key][0,WV,:], color=color, label=key)
-    ax2.plot(z, phi_dp1[key][0,WV,:], color=color, label=key)
-    ax3.plot(z, phi_deltaP1[key][0,WV,:], color=color, label=key)
+    ax1.plot(z, phi_diff[key][F,WV,:], color=color, label=key)
+    ax2.plot(z, phi_dp1[key][F,WV,:], color=color, label=key)
+    ax3.plot(z, phi_deltaP1[key][F,WV,:], color=color, label=key)
 
 ax1.legend()
 ax1.set_xlabel('mm')
@@ -170,6 +170,35 @@ fig1.tight_layout()
 fig2.tight_layout()
 fig3.tight_layout()
 
+#%% iterate and fit for alpha, beta - diffusion
+from scipy.optimize import minimize
+from scipy.optimize import Bounds
+
+keys = [x for x in data.keys() if 'TiO' in x]
+keys.remove('TiObaseBottom')
+keys.remove('TiObaseTop')
+keys.sort()
+F = 0  # spatial frequency
+lam = 0  # Tikhonov regularization
+
+phi_TiO = phi_diff['TiObaseTop'][F,WV,:]  # for now @ 500nm
+phi_AlO = phi_diff['AlObaseTop'][F,WV,:]
+phi_meas = [phi_diff[key][F,WV,:] for key in keys]
+x = np.zeros((len(keys), 2))
+
+# function to minimize: least square error
+min_fun = lambda x, phi_top, phi_bottom, phi_meas: np.sum(
+    (models.phi_2lc_2(x, phi_bottom, phi_top) - phi_meas)**2) + np.sum((lam*x)**2)
+
+for _i, meas in enumerate(phi_meas):
+    res = minimize(min_fun,  # target function
+                   np.array([.8, .8]),  # initial guess of alpha
+                   args=(phi_TiO, phi_AlO, meas),
+                   method='Nelder-Mead',
+                   bounds=Bounds(lb=0, ub=1),
+                   options= {'maxiter':500})
+    x[_i,:] = res.x
+
 #%% plots of fluence - 2layer model
 from matplotlib import pyplot as plt
 from matplotlib import cm
@@ -182,7 +211,8 @@ z = np.arange(0, 10, dz)
 lamb = 500  # nm
 WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
 
-alpha = np.arange(.9,0,-0.2)
+# alpha = np.arange(.9,0,-0.2)
+alpha = x
 
 phi_2ldiff = {}  # diffusion
 phi_2ldeltaP1 = {}  # delta-P1, Vasen modified
@@ -196,32 +226,41 @@ fig2, ax2 = plt.subplots(1,1, num=2, figsize=(6,4))
 fig3, ax3 = plt.subplots(1,1, num=3, figsize=(6,4))
 
 phi_2ldiff['AlObaseTop'] = models.phi_diff(asd['AlObaseTop'][:,:,0].T, 
-                                         asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # diffusion
+                                          asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # diffusion
 phi_2ldeltaP1['AlObaseTop'] = models.phi_deltaP1(asd['AlObaseTop'][:,:,0].T,
-                                               asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
+                                                asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
 phi_2ldp1['AlObaseTop'] = models.phi_dP1(asd['AlObaseTop'][:,:,0].T,
-                                       asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+                                        asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Seo
 
 phi_2ldiff['TiObaseTop'] = models.phi_diff(asd['TiObaseTop'][:,:,0].T, 
-                                         asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # diffusion
+                                          asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # diffusion
 phi_2ldeltaP1['TiObaseTop'] = models.phi_deltaP1(asd['TiObaseTop'][:,:,0].T,
-                                               asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
+                                                asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
 phi_2ldp1['TiObaseTop'] = models.phi_dP1(asd['TiObaseTop'][:,:,0].T,
-                                       asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+                                        asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Seo
 for _i, key in enumerate(keys):
     if _i == 0:
         color = '#FF0000'
+        ax1.plot(z, phi_2ldiff[key][0,WV,:], color=color, label=key)
+        ax2.plot(z, phi_2ldp1[key][0,WV,:], color=color, label=key)
+        ax3.plot(z, phi_2ldeltaP1[key][0,WV,:], color=color, label=key)
     elif _i == len(keys)-1:
         color = '#00FF00'
+        ax1.plot(z, phi_2ldiff[key][0,WV,:], color=color, label=key)
+        ax2.plot(z, phi_2ldp1[key][0,WV,:], color=color, label=key)
+        ax3.plot(z, phi_2ldeltaP1[key][0,WV,:], color=color, label=key)
     else:
         color = col(_i)
-        phi_2ldiff[key] = models.phi_2lc(alpha[_i-1], phi_2ldiff['AlObaseTop'], phi_2ldiff['TiObaseTop'])  # diffusion
-        phi_2ldeltaP1[key] = models.phi_2lc(alpha[_i-1], phi_2ldeltaP1['AlObaseTop'], phi_2ldeltaP1['TiObaseTop'])  # d-p1, Luigi
-        phi_2ldp1[key] = models.phi_2lc(alpha[_i-1], phi_2ldp1['AlObaseTop'], phi_2ldp1['TiObaseTop'])  # d-p1, Seo
+        phi_2ldiff[key] = models.phi_2lc_2(alpha[_i-1], phi_2ldiff['AlObaseTop'], phi_2ldiff['TiObaseTop'])  # diffusion
+        phi_2ldeltaP1[key] = models.phi_2lc_2(alpha[_i-1], phi_2ldeltaP1['AlObaseTop'], phi_2ldeltaP1['TiObaseTop'])  # d-p1, Luigi
+        phi_2ldp1[key] = models.phi_2lc_2(alpha[_i-1], phi_2ldp1['AlObaseTop'], phi_2ldp1['TiObaseTop'])  # d-p1, Seo
     
-    ax1.plot(z, phi_2ldiff[key][0,WV,:], color=color, label=key)
-    ax2.plot(z, phi_2ldp1[key][0,WV,:], color=color, label=key)
-    ax3.plot(z, phi_2ldeltaP1[key][0,WV,:], color=color, label=key)
+        ax1.plot(z, phi_2ldiff[key][0,WV,:], color=color,
+                 label=r'$\alpha$={:.3f}, $\beta$={:.3f}'.format(alpha[_i-1,0], alpha[_i-1,1]))
+        ax2.plot(z, phi_2ldp1[key][0,WV,:], color=color,
+                 label=r'$\alpha$={:.3f}, $\beta$={:.3f}'.format(alpha[_i-1,0], alpha[_i-1,1]))
+        ax3.plot(z, phi_2ldeltaP1[key][0,WV,:], color=color,
+                 label=r'$\alpha$={:.3f}, $\beta$={:.3f}'.format(alpha[_i-1,0], alpha[_i-1,1]))
 
 ax1.legend()
 ax1.set_xlabel('mm')
@@ -246,81 +285,55 @@ fig1.tight_layout()
 fig2.tight_layout()
 fig3.tight_layout()
 
-#%% iterate and fit for alpha - diffusion
-from scipy.optimize import minimize
-from scipy.optimize import Bounds
-
-keys = [x for x in data.keys() if 'TiO' in x]
-keys.remove('TiObaseBottom')
-keys.remove('TiObaseTop')
-keys.sort()
-
-diff_TiO = phi_diff['TiObaseTop'][0,WV,:]  # for now @ 500nm
-diff_AlO = phi_diff['AlObaseTop'][0,WV,:]
-diff_meas = [phi_diff[key][0,WV,:] for key in keys]
-alpha = np.zeros(len(keys))
-
-# function to minimize: least square error
-min_fun = lambda alpha, phi_top, phi_bottom, phi_meas: np.sum(
-    (models.phi_2lc(alpha, phi_bottom, phi_top) - phi_meas)**2)
-
-for _i, meas in enumerate(diff_meas):
-    res = minimize(min_fun,  # target function
-                   np.array([0.5]),  # initial guess of alpha
-                   args=(diff_TiO, diff_AlO, meas),
-                   method='Nelder-Mead',
-                   bounds=Bounds(lb=0, ub=1),
-                   options= {'maxiter':500})
-    alpha[_i] = res.x
 
 #%% plotting
-from matplotlib import pyplot as plt
-import addcopyfighandler
+# from matplotlib import pyplot as plt
+# import addcopyfighandler
 
-cal_path = [x for x in os.listdir(data_path) if 'calR' in x and 'TiObase' in x]
-calR =loadmat(f'{data_path}/{cal_path[0]}')
-calR = calR['cal_R']
-H,W = calR.shape[:2]
-Rd = np.nanmean(calR[H//2-10:H//2+10,W//2-10:W//2+10,:,:], axis=(0,1))
-fx = np.arange(0, 0.51, 0.05)
-# fx = np.array([np.mean(x) for x in [par[f'f{y}'] for y in range(8)]])
-# wv_used = np.array([0,3,4,5,8])
-plt.figure(22, figsize=(7,4))
-plt.plot(fx, Rd[:,:].T)
-plt.legend([r'{:d} nm'.format(x) for x in par['wv']])
-plt.grid(True, linestyle=':')
-plt.xlabel(r'Spatial frequency (mm$^{{-1}}$')
-plt.xlim([0,0.5])
-plt.title('Calibrated reflectance')
-plt.tight_layout()
+# cal_path = [x for x in os.listdir(data_path) if 'calR' in x and 'TiObase' in x]
+# calR =loadmat(f'{data_path}/{cal_path[0]}')
+# calR = calR['cal_R']
+# H,W = calR.shape[:2]
+# Rd = np.nanmean(calR[H//2-10:H//2+10,W//2-10:W//2+10,:,:], axis=(0,1))
+# fx = np.arange(0, 0.51, 0.05)
+# # fx = np.array([np.mean(x) for x in [par[f'f{y}'] for y in range(8)]])
+# # wv_used = np.array([0,3,4,5,8])
+# plt.figure(22, figsize=(7,4))
+# plt.plot(fx, Rd[:,:].T)
+# plt.legend([r'{:d} nm'.format(x) for x in par['wv']])
+# plt.grid(True, linestyle=':')
+# plt.xlabel(r'Spatial frequency (mm$^{{-1}}$')
+# plt.xlim([0,0.5])
+# plt.title('Calibrated reflectance')
+# plt.tight_layout()
 
-if False:
+# if False:
     
-    from sfdi.common.phantoms import __path__ as ph_path
-    ref = np.genfromtxt('{}/TS2.txt'.format(ph_path._path[0]))  # reference
-    plt.figure(figsize=(10,4))
-    labels = ['f0','f1','f2','f3','f4','f5','f6','f7']
-    for _j in range(ret['op_ave'].shape[0]-3):
-        plt.subplot(1,2,1)
-        plt.errorbar(wv, ret['op_ave'][_j,:,0], yerr=ret['op_std'][_j,:,0], fmt='s', capsize=5,
-                     linestyle='solid', linewidth=2, label=labels[_j])
-        plt.grid(True, linestyle=':')
+#     from sfdi.common.phantoms import __path__ as ph_path
+#     ref = np.genfromtxt('{}/TS2.txt'.format(ph_path._path[0]))  # reference
+#     plt.figure(figsize=(10,4))
+#     labels = ['f0','f1','f2','f3','f4','f5','f6','f7']
+#     for _j in range(ret['op_ave'].shape[0]-3):
+#         plt.subplot(1,2,1)
+#         plt.errorbar(wv, ret['op_ave'][_j,:,0], yerr=ret['op_std'][_j,:,0], fmt='s', capsize=5,
+#                      linestyle='solid', linewidth=2, label=labels[_j])
+#         plt.grid(True, linestyle=':')
     
-        plt.subplot(1,2,2)
-        plt.errorbar(wv, ret['op_ave'][_j,:,1], yerr=ret['op_std'][_j,:,1], fmt='s', capsize=5,
-                     linestyle='solid', linewidth=2, label=labels[_j])
-        plt.grid(True, linestyle=':')
+#         plt.subplot(1,2,2)
+#         plt.errorbar(wv, ret['op_ave'][_j,:,1], yerr=ret['op_std'][_j,:,1], fmt='s', capsize=5,
+#                      linestyle='solid', linewidth=2, label=labels[_j])
+#         plt.grid(True, linestyle=':')
     
-    plt.subplot(1,2,1)
-    plt.plot(ref[:4,0], ref[:4,1], '*k', linestyle='--', label='reference', linewidth=2, zorder=100, markersize=10)
-    plt.title(r'$\mu_a$')
-    plt.xlabel('nm')
-    plt.legend()
-    plt.subplot(1,2,2)
-    plt.plot(ref[:4,0], ref[:4,2], '*k', linestyle='--', label='reference', linewidth=2, zorder=100, markersize=10)
-    plt.title(r"$\mu'_s$")
-    plt.xlabel('nm')
-    plt.tight_layout()
+#     plt.subplot(1,2,1)
+#     plt.plot(ref[:4,0], ref[:4,1], '*k', linestyle='--', label='reference', linewidth=2, zorder=100, markersize=10)
+#     plt.title(r'$\mu_a$')
+#     plt.xlabel('nm')
+#     plt.legend()
+#     plt.subplot(1,2,2)
+#     plt.plot(ref[:4,0], ref[:4,2], '*k', linestyle='--', label='reference', linewidth=2, zorder=100, markersize=10)
+#     plt.title(r"$\mu'_s$")
+#     plt.xlabel('nm')
+#     plt.tight_layout()
 
 #%%
 if False:

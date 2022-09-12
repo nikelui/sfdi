@@ -136,6 +136,22 @@ def phi_2lc(alpha, phi_bottom, phi_top):
 """
     return alpha*phi_bottom[...,np.newaxis] + (1-alpha)*phi_top[...,np.newaxis]
 
+def phi_2lc_2(x, phi_bottom, phi_top):
+    """Linear model of 2-layer fluence, with 2 parameters (moslty used to fit for alpha).
+    phi_2lc = alpha*phi_bottom + (1-alpha)*phi_top
+    - phi_bottom: fluence array of bottom layer (N x M x Z)
+    - phi_top: fluence array of top layer (N x M x Z)
+    - x: percentage (or "weight") of fluence contribution from top and bottom layer (2 x A)
+        N: number of frequencies
+        M: number of wavelengths
+        Z: number of depths
+    RETURN
+    - fluence: fluence array given by linear combination of phi1, phi2 (N x M x Z x A)
+"""
+    alpha = x[0]
+    beta = x[1]
+    return alpha*phi_bottom[...,np.newaxis] + beta*phi_top[...,np.newaxis]
+
 
 
 if __name__ == '__main__':
