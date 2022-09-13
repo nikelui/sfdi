@@ -9,6 +9,7 @@ A script to collect commonly used physics models of light transport
 
 Available functions:
 x    - phi_diff: fluence based on standard diffusion approximation (with fx)
+     - phi_diffusion: fluence based on SDA (Seo's thesis)
 x    - phi_deltaP1: fluence based on delta-P1 approximation (my approach, variation of Vasen original
                                                             with fx. To obtain the original
                                                             formulation, use fx=0)
@@ -50,6 +51,41 @@ def phi_diff(mua, mus, fx, z, n=1.4, g=0.8):
         C[:,:,np.newaxis] * np.exp(-mueff1[:,:,np.newaxis] * z[np.newaxis,:])    
     return fluence
 
+def phi_diffusion(mua, mus, fx, z, n=1.4, g=0.8):
+    """Function to calculate fluence of light in depth based on the SDA (from Seo's thesis).
+    - mua, mus: vectors of optical properties (N x M). Note, mus is the scattering coefficient,
+                not the reduced scattering coefficient (multiply by (1-g))
+    - fx: average fx in range (N x 1)
+    - z: depth (1 x Z)
+    - n: refractive index (default = 1.4)
+    - g: anisotropy coefficient (default = 0.8)
+        N: number of frequencies
+        M: number of wavelengths
+        Z: number of depths
+        
+    RETURN
+    - fluence: array of light fluences (N x M x Z)
+"""
+    musp = mus*(1-g)
+    mut = mua + musp
+    mueff = np.sqrt(np.abs(3*mua*mut))
+    mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)
+    a1 = musp/mut
+    Reff = 0.0636*n + 0.668 + 0.71/n - 1.44/n**2
+    Reff = 0.493
+    # NOTE: this polynomial for Reff evaluates to 0.5295, In Seo thesis is 0.493
+    A = (1 - Reff)/(2*(1 + Reff))  # coefficient
+    
+    Cp_dc = 3*mut*musp/(mueff**2 - mut**2)
+    Cp_ac = 3*mut*musp/(mueff1**2 - mut**2)
+    Ch_dc = -Cp_dc*(3*A+1) / ((mueff/mut) + 3*A)
+    Ch_ac = -Cp_ac*(3*A+1) / ((mueff1/mut) + 3*A)
+    
+    phi_dc = Ch_dc[:,:,np.newaxis] * np.exp(-mueff[:,:,np.newaxis]*z[np.newaxis,:]) +\
+        Cp_dc[:,:,np.newaxis] * np.exp(-mut[:,:,np.newaxis]*z[np.newaxis,:])
+    phi_ac = Ch_ac[:,:,np.newaxis] * np.exp(-mueff1[:,:,np.newaxis]*z[np.newaxis,:]) +\
+        Cp_ac[:,:,np.newaxis]*np.exp(-mut[:,:,np.newaxis]*z[np.newaxis,:])
+    return phi_dc + phi_ac
 
 def phi_deltaP1(mua, mus, fx, z, n=1.4, g=0.8):
     """Function to calculate fluence of light in depth based on the delta-P1 approximation.
