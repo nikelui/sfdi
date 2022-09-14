@@ -9,20 +9,19 @@ A script to collect commonly used physics models of light transport
 
 Available functions:
 x    - phi_diff: fluence based on standard diffusion approximation (with fx)
-     - phi_diffusion: fluence based on SDA (Seo's thesis)
+x    - phi_diffusion: fluence based on SDA (Seo's thesis)
 x    - phi_deltaP1: fluence based on delta-P1 approximation (my approach, variation of Vasen original
                                                             with fx. To obtain the original
                                                             formulation, use fx=0)
     
-x    - phi_dP1: fluence based on delta-P1 approximation (Seo's thesis, with fx)
+x   - phi_dP1: fluence based on delta-P1 approximation (Seo's thesis, with fx)
 
-    - phi_2lc: 2-layer model of fluence, continuous. phi = A*phi1 + (1-A)*phi2
+x   - phi_2lc: 2-layer model of fluence, continuous. phi = A*phi1 + (1-A)*phi2
     - phi_2lp: 2-layer model of fluence, piecewise continuous.
-    
 """
 import numpy as np
 
-def phi_diff(mua, mus, fx, z, n=1.4, g=0.8):
+def phi_diff(z, mua, mus, fx, n=1.4, g=0.8):
     """Function to calculate fluence of light in depth based on the standard diffuse approximation.
     - mua, mus: vectors of optical properties (N x M). Note, mus is the scattering coefficient,
                 not the reduced scattering coefficient (multiply by (1-g))
@@ -51,7 +50,7 @@ def phi_diff(mua, mus, fx, z, n=1.4, g=0.8):
         C[:,:,np.newaxis] * np.exp(-mueff1[:,:,np.newaxis] * z[np.newaxis,:])    
     return fluence
 
-def phi_diffusion(mua, mus, fx, z, n=1.4, g=0.8):
+def phi_diffusion(z, mua, mus, fx, n=1.4, g=0.8):
     """Function to calculate fluence of light in depth based on the SDA (from Seo's thesis).
     - mua, mus: vectors of optical properties (N x M). Note, mus is the scattering coefficient,
                 not the reduced scattering coefficient (multiply by (1-g))
@@ -72,7 +71,7 @@ def phi_diffusion(mua, mus, fx, z, n=1.4, g=0.8):
     mueff1 = np.sqrt(mueff**2 + (2*np.pi*fx[:,np.newaxis])**2)
     a1 = musp/mut
     Reff = 0.0636*n + 0.668 + 0.71/n - 1.44/n**2
-    Reff = 0.493
+    # Reff = 0.493
     # NOTE: this polynomial for Reff evaluates to 0.5295, In Seo thesis is 0.493
     A = (1 - Reff)/(2*(1 + Reff))  # coefficient
     
@@ -85,9 +84,9 @@ def phi_diffusion(mua, mus, fx, z, n=1.4, g=0.8):
         Cp_dc[:,:,np.newaxis] * np.exp(-mut[:,:,np.newaxis]*z[np.newaxis,:])
     phi_ac = Ch_ac[:,:,np.newaxis] * np.exp(-mueff1[:,:,np.newaxis]*z[np.newaxis,:]) +\
         Cp_ac[:,:,np.newaxis]*np.exp(-mut[:,:,np.newaxis]*z[np.newaxis,:])
-    return phi_dc + phi_ac
+    return phi_dc, phi_ac
 
-def phi_deltaP1(mua, mus, fx, z, n=1.4, g=0.8):
+def phi_deltaP1(z, mua, mus, fx, n=1.4, g=0.8):
     """Function to calculate fluence of light in depth based on the delta-P1 approximation.
     - mua, mus: vectors of optical properties (N x M). Note, mus is the scattering coefficient,
                 not the reduced scattering coefficient (multiply by (1-g))
@@ -120,7 +119,7 @@ def phi_deltaP1(mua, mus, fx, z, n=1.4, g=0.8):
     return fluence
 
 
-def phi_dP1(mua, mus, fx, z, n=1.4, g=0.8):
+def phi_dP1(z, mua, mus, fx, n=1.4, g=0.8):
     """Fluence estimation with delta-P1 approximation, as seen in Seo thesis.
 NOTE: only the AC component of fluence is derived in the thesis.
     - mua, mus: vectors of optical properties (N x M). Note, mus is the scattering coefficient,
@@ -189,6 +188,19 @@ def phi_2lc_2(x, phi_bottom, phi_top):
     return alpha*phi_bottom[...,np.newaxis] + beta*phi_top[...,np.newaxis]
 
 
+def alpha(phi, z, d):
+    """"Function to calculate the "weigth" of the contribution of a thin layer based on fluence.
+    
+Given the light fluence phi, alpha is calculated as 
+    
+    - phi: array of light fluence in depth
+    - z: depths array at which phi was calculated
+    - d: thickness of the thin layer at which alpha is calculated
+
+"""
+    dz = z[1] - z[0]
+    idx = np.where(z >= d)[0][0]
+    return np.sum(phi[:idx] * dz) / np.sum(phi * dz)
 
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
@@ -202,7 +214,7 @@ if __name__ == '__main__':
         z = np.arange(0,10,dz)
         fx = np.array([0, 0.1, 0.2, 0.3])
         
-        phi1 = phi_diff(mua, mus, fx, z)
+        phi1 = phi_diff(z, mua, mus, fx)
         phi2 = phi_deltaP1(z, mua, mus, fx)
         phi3 = phi_dP1(z, mua, mus, fx)
         

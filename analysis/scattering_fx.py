@@ -142,10 +142,10 @@ for _i, key in enumerate(keys):
     else:
         color = col(_i)
     
-    phi_diff[key] = models.phi_diff(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # diffusion
-    phi_diffusion[key] = models.phi_diffusion(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # diffusion, Seo
-    phi_deltaP1[key] = models.phi_deltaP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
-    phi_dp1[key] = models.phi_dP1(asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+    phi_diff[key] = models.phi_diff(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion
+    phi_diffusion[key] = models.phi_diffusion(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion, Seo
+    phi_deltaP1[key] = models.phi_deltaP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # d-p1, Luigi
+    phi_dp1[key] = models.phi_dP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # d-p1, Seo
     
     ax1.plot(z, phi_diff[key][F,WV,:], color=color, label=key)
     ax2.plot(z, phi_dp1[key][F,WV,:], color=color, label=key)
@@ -237,19 +237,19 @@ for _i, meas in enumerate(phi_meas):
 # fig2, ax2 = plt.subplots(1,1, num=2, figsize=(6,4))
 # fig3, ax3 = plt.subplots(1,1, num=3, figsize=(6,4))
 
-# phi_2ldiff['AlObaseTop'] = models.phi_diff(asd['AlObaseTop'][:,:,0].T, 
-#                                           asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # diffusion
-# phi_2ldeltaP1['AlObaseTop'] = models.phi_deltaP1(asd['AlObaseTop'][:,:,0].T,
-#                                                 asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
-# phi_2ldp1['AlObaseTop'] = models.phi_dP1(asd['AlObaseTop'][:,:,0].T,
-#                                         asd['AlObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+# phi_2ldiff['AlObaseTop'] = models.phi_diff(z, asd['AlObaseTop'][:,:,0].T, 
+#                                           asd['AlObaseTop'][:,:,1].T/0.2, fx)  # diffusion
+# phi_2ldeltaP1['AlObaseTop'] = models.phi_deltaP1(z, asd['AlObaseTop'][:,:,0].T,
+#                                                 asd['AlObaseTop'][:,:,1].T/0.2, fx)  # d-p1, Luigi
+# phi_2ldp1['AlObaseTop'] = models.phi_dP1(z, asd['AlObaseTop'][:,:,0].T,
+#                                         asd['AlObaseTop'][:,:,1].T/0.2, fx)  # d-p1, Seo
 
-# phi_2ldiff['TiObaseTop'] = models.phi_diff(asd['TiObaseTop'][:,:,0].T, 
-#                                           asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # diffusion
-# phi_2ldeltaP1['TiObaseTop'] = models.phi_deltaP1(asd['TiObaseTop'][:,:,0].T,
-#                                                 asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Luigi
-# phi_2ldp1['TiObaseTop'] = models.phi_dP1(asd['TiObaseTop'][:,:,0].T,
-#                                         asd['TiObaseTop'][:,:,1].T/0.2, fx, z)  # d-p1, Seo
+# phi_2ldiff['TiObaseTop'] = models.phi_diff(z, asd['TiObaseTop'][:,:,0].T, 
+#                                           asd['TiObaseTop'][:,:,1].T/0.2, fx)  # diffusion
+# phi_2ldeltaP1['TiObaseTop'] = models.phi_deltaP1(z, asd['TiObaseTop'][:,:,0].T,
+#                                                 asd['TiObaseTop'][:,:,1].T/0.2, fx)  # d-p1, Luigi
+# phi_2ldp1['TiObaseTop'] = models.phi_dP1(z, asd['TiObaseTop'][:,:,0].T,
+#                                         asd['TiObaseTop'][:,:,1].T/0.2, fx)  # d-p1, Seo
 # for _i, key in enumerate(keys):
 #     if _i == 0:
 #         color = '#FF0000'
