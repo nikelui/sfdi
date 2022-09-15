@@ -84,7 +84,7 @@ def phi_diffusion(z, mua, mus, fx, n=1.4, g=0.8):
         Cp_dc[:,:,np.newaxis] * np.exp(-mut[:,:,np.newaxis]*z[np.newaxis,:])
     phi_ac = Ch_ac[:,:,np.newaxis] * np.exp(-mueff1[:,:,np.newaxis]*z[np.newaxis,:]) +\
         Cp_ac[:,:,np.newaxis]*np.exp(-mut[:,:,np.newaxis]*z[np.newaxis,:])
-    return phi_dc, phi_ac
+    return phi_dc + phi_ac
 
 def phi_deltaP1(z, mua, mus, fx, n=1.4, g=0.8):
     """Function to calculate fluence of light in depth based on the delta-P1 approximation.
@@ -188,7 +188,7 @@ def phi_2lc_2(x, phi_bottom, phi_top):
     return alpha*phi_bottom[...,np.newaxis] + beta*phi_top[...,np.newaxis]
 
 
-def alpha(phi, z, d):
+def alpha(phi, z, d, ax=-1):
     """"Function to calculate the "weigth" of the contribution of a thin layer based on fluence.
     
 Given the light fluence phi, alpha is calculated as 
@@ -196,11 +196,13 @@ Given the light fluence phi, alpha is calculated as
     - phi: array of light fluence in depth
     - z: depths array at which phi was calculated
     - d: thickness of the thin layer at which alpha is calculated
+    - ax: axis containing the depth dimension, to perform the sum [default = -1]
 
 """
+    # import pdb; pdb.set_trace()    
     dz = z[1] - z[0]
     idx = np.where(z >= d)[0][0]
-    return np.sum(phi[:idx] * dz) / np.sum(phi * dz)
+    return np.sum(phi[...,:idx] * dz, axis=ax) / np.sum(phi * dz, axis=ax)
 
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
