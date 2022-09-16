@@ -197,9 +197,34 @@ if False:
         fig.tight_layout()
         if _i == 0:
             ax.legend()
-        
-# Plot mus
+
+# Plot relative errors
 if True:
+    plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.YlGn(np.linspace(1, 0.2, 5)))
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
+    for _i, key in enumerate(mus_meas.keys()):
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=_i+1)
+        err = np.abs(mus_model_diff[key][:,WV]-mus_meas[key][:,WV])/mus_meas[key][:,WV] * 100
+        ax.plot(fx, err, linestyle='solid', label='SDA')
+        err = np.abs(mus_model_diffusion[key][:,WV]-mus_meas[key][:,WV])/mus_meas[key][:,WV] * 100
+        ax.plot(fx, err, linestyle='dotted', label='Diffusion - Seo')
+        err = np.abs(mus_model_deltaP1[key][:,WV]-mus_meas[key][:,WV])/mus_meas[key][:,WV] * 100
+        ax.plot(fx, err, linestyle='dashed', label='delta-P1 - Luigi')
+        err = np.abs(mus_model_dp1[key][:,WV]-mus_meas[key][:,WV])/mus_meas[key][:,WV] * 100
+        ax.plot(fx, err, linestyle='dashdot', label='delta-P1 - Seo')
+        
+        # ax.plot(fx, mus_meas[key][:,WV], '*', label='Measured')
+        ax.set_title(f'{key}')
+        ax.grid(True, linestyle=':')
+        ax.set_xlabel(r'fx (mm$^{{-1}})$')
+        ax.set_ylabel('% error', fontsize=14)
+        fig.tight_layout()
+        # if _i == 0:
+        #     ax.legend()
+        #     ax.set_axis_off()
+        
+# Plot alpha
+if False:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.RdPu(np.linspace(1, 0.2, 5)))
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
     for _i, key in enumerate(mus_meas.keys()):
