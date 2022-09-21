@@ -188,6 +188,28 @@ def phi_2lc_2(x, phi_bottom, phi_top):
     return alpha*phi_bottom[...,np.newaxis] + beta*phi_top[...,np.newaxis]
 
 
+def phi_2lp(d, phi_top, phi_bottom, z):
+    """Piecewise-continuous model of 2-layer fluence.
+    - d: array with thickness of top layer (1 x A) [mm]
+    - phi_top, phi_bottom: fluence array of top and bottom layers (N x M x Z)
+    - z: array of depths at which fluence was calculated (1 x Z)
+        N: number of frequencies
+        M: number of wavelengths
+        Z: number of depths
+    RETURN
+    - phi: fluence array of 2-layer model, piecewise continuous (N x M x Z x A)
+    """
+    phi = np.zeros((phi_top.shape + d.shape))
+    for _i, _d in enumerate(d):
+        idx = np.where(z >= _d)[0][0]
+        phi[:, :, :idx, _i] = phi_top[:, :, :idx]
+        phi[:, :, idx:, _i] = phi_bottom[:, :, idx:] *\
+            phi_top[:,:,idx,np.newaxis] / phi_bottom[:,:,idx,np.newaxis]
+    return phi
+    
+    
+    
+
 def alpha(phi, z, d, ax=-1):
     """"Function to calculate the "weigth" of the contribution of a thin layer based on fluence.
     

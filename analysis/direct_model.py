@@ -43,7 +43,7 @@ if os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
     data = load_obj('dataset', data_path)
 
 #%% Get relevant datasets
-dz = 0.01  # resolution
+dz = 0.001  # resolution
 thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms
 asd = loadmat(f'{data_path}/SFDS_8fx.mat')
 fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
@@ -78,7 +78,7 @@ mus_model_diffusion = {}
 mus_model_deltaP1 = {}
 mus_model_dp1 = {}
 
-power = 2  # to quickly change from phi to phi**2
+power = 1  # to quickly change from phi to phi**2
 for _i, key in enumerate(keys):
     phi_diff[key] = models.phi_diff(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion
     phi_diffusion[key] = models.phi_diffusion(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion, Seo
@@ -95,6 +95,14 @@ for _i, key in enumerate(keys):
         mus_model_diffusion[key] = alpha_diffusion[key] * mus_top + (1-alpha_diffusion[key])* mus_bot
         mus_model_deltaP1[key] = alpha_deltaP1[key] * mus_top + (1-alpha_deltaP1[key])* mus_bot
         mus_model_dp1[key] = alpha_dp1[key] * mus_top + (1-alpha_dp1[key])* mus_bot
+
+if True:  # piecewise continuous model
+    phi2_diff = models.phi_2lp(thick, phi_diff['TiObaseTop'], phi_diff['AlObaseTop'], z)
+    phi2_diffusion = models.phi_2lp(thick, phi_diffusion['TiObaseTop'], phi_diffusion['AlObaseTop'], z)
+    phi2_deltaP1 = models.phi_2lp(thick, phi_deltaP1['TiObaseTop'], phi_deltaP1['AlObaseTop'], z)
+    phi2_dp1 = models.phi_2lp(thick, phi_dp1['TiObaseTop'], phi_dp1['AlObaseTop'], z)
+    
+    
 
 # %% Simulation
 # Plot fluence
@@ -179,6 +187,54 @@ if False:
     ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
     fig.tight_layout()
 
+# Plot fluence, piecewise continuous
+if False:
+    plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Blues(np.linspace(1, 0.2, len(thick))))
+    # SDA
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4), num=1)
+    ax.plot(z, phi2_diff[0, WV,:,:])
+    ax.grid(True, linestyle=':')
+    ax.set_xlim([0, 6])
+    ax.set_xlabel('mm')
+    ax.set_ylabel(r'$\varphi$', fontsize=14)
+    ax.set_title(r"Diffusion, SDA")
+    ax.legend(['d = {:.3f}mm'.format(x) for x in thick])
+    fig.tight_layout()
+    
+    # Diffusion - Seo
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4), num=2)
+    ax.plot(z, phi2_diffusion[0, WV,:,:])
+    ax.grid(True, linestyle=':')
+    ax.set_xlim([0, 6])
+    ax.set_xlabel('mm')
+    ax.set_ylabel(r'$\varphi$', fontsize=14)
+    ax.set_title(r"Diffusion, Seo")
+    ax.legend(['d = {:.3f}mm'.format(x) for x in thick])
+    fig.tight_layout()
+    
+    # deltaP1 - Luigi
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4), num=3)
+    ax.plot(z, phi2_deltaP1[0, WV,:,:])
+    ax.grid(True, linestyle=':')
+    ax.set_xlim([0, 6])
+    ax.set_xlabel('mm')
+    ax.set_ylabel(r'$\varphi$', fontsize=14)
+    ax.set_title(r"$\delta-P1$, Luigi")
+    ax.legend(['d = {:.3f}mm'.format(x) for x in thick])
+    fig.tight_layout()
+    
+    # deltaP1 - Seo
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4), num=4)
+    ax.plot(z, phi2_dp1[0, WV,:,:])
+    ax.grid(True, linestyle=':')
+    ax.set_xlim([0, 10])
+    ax.set_xlabel('mm')
+    ax.set_ylabel(r'$\varphi$', fontsize=14)
+    ax.set_title(r"$\delta-P1$, Seo")
+    ax.legend(['d = {:.3f}mm'.format(x) for x in thick])
+    fig.tight_layout()
+    
+
 # Plot mus
 if False:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
@@ -199,7 +255,7 @@ if False:
             ax.legend()
 
 # Plot relative errors
-if True:
+if False:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.YlGn(np.linspace(1, 0.2, 5)))
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
     for _i, key in enumerate(mus_meas.keys()):
