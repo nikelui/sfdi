@@ -43,7 +43,7 @@ if os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
     data = load_obj('dataset', data_path)
 
 #%% Get relevant datasets
-dz = 0.001  # resolution
+dz = 0.01  # resolution
 thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms
 asd = loadmat(f'{data_path}/SFDS_8fx.mat')
 fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
@@ -78,19 +78,19 @@ mus_model_diffusion = {}
 mus_model_deltaP1 = {}
 mus_model_dp1 = {}
 
-power = 1  # to quickly change from phi to phi**2
+power = 2  # to quickly change from phi to phi**2
 for _i, key in enumerate(keys):
     phi_diff[key] = models.phi_diff(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion
     phi_diffusion[key] = models.phi_diffusion(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion, Seo
     phi_deltaP1[key] = models.phi_deltaP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # d-p1, Luigi
     phi_dp1[key] = models.phi_dP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # d-p1, Seo
     
-    if _i > 0 and _i < len(keys)-1:
+    if _i > 0 and _i < len(keys)-1 and False:
         alpha_diff[key] = models.alpha(phi_diff[key]**power, z, thick[_i-1])
         alpha_diffusion[key] = models.alpha(phi_diffusion[key]**power, z, thick[_i-1])
         alpha_deltaP1[key] = models.alpha(phi_deltaP1[key]**power, z, thick[_i-1])
         alpha_dp1[key] = models.alpha(phi_dp1[key]**power, z, thick[_i-1])
-
+        
         mus_model_diff[key] = alpha_diff[key] * mus_top + (1-alpha_diff[key])* mus_bot
         mus_model_diffusion[key] = alpha_diffusion[key] * mus_top + (1-alpha_diffusion[key])* mus_bot
         mus_model_deltaP1[key] = alpha_deltaP1[key] * mus_top + (1-alpha_deltaP1[key])* mus_bot
@@ -102,7 +102,17 @@ if True:  # piecewise continuous model
     phi2_deltaP1 = models.phi_2lp(thick, phi_deltaP1['TiObaseTop'], phi_deltaP1['AlObaseTop'], z)
     phi2_dp1 = models.phi_2lp(thick, phi_dp1['TiObaseTop'], phi_dp1['AlObaseTop'], z)
     
-    
+    for _i, key in enumerate(keys):
+        if _i > 0 and _i < len(keys)-1:
+            alpha_diff[key] = models.alpha(phi2_diff[:,:,:,_i-1]**power, z, thick[_i-1])
+            alpha_diffusion[key] = models.alpha(phi2_diffusion[:,:,:,_i-1]**power, z, thick[_i-1])
+            alpha_deltaP1[key] = models.alpha(phi2_deltaP1[:,:,:,_i-1]**power, z, thick[_i-1])
+            alpha_dp1[key] = models.alpha(phi2_dp1[:,:,:,_i-1]**power, z, thick[_i-1])
+            
+            mus_model_diff[key] = alpha_diff[key] * mus_top + (1-alpha_diff[key])* mus_bot
+            mus_model_diffusion[key] = alpha_diffusion[key] * mus_top + (1-alpha_diffusion[key])* mus_bot
+            mus_model_deltaP1[key] = alpha_deltaP1[key] * mus_top + (1-alpha_deltaP1[key])* mus_bot
+            mus_model_dp1[key] = alpha_dp1[key] * mus_top + (1-alpha_dp1[key])* mus_bot
 
 # %% Simulation
 # Plot fluence
@@ -236,7 +246,7 @@ if False:
     
 
 # Plot mus
-if False:
+if True:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
     for _i, key in enumerate(mus_meas.keys()):
@@ -251,8 +261,8 @@ if False:
         ax.set_xlabel(r'fx (mm$^{{-1}})$')
         ax.set_ylabel(r"$\mu'_s$", fontsize=14)
         fig.tight_layout()
-        if _i == 0:
-            ax.legend()
+        # if _i == 0:
+            # ax.legend()
 
 # Plot relative errors
 if False:
