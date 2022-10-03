@@ -31,7 +31,9 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.par = par # container for parameters
         self.cam = cam # camera objects
         self.n = [1] # number of acquisitions
-        self.exposure = [50] # Arbitrary starting value
+        self.exposure = [2] # Arbitrary starting value
+        self.explist = np.arange(1/60, 0.51, 1/60)*1000  # list of discrete exposure times
+        # NOTE: limited exp to multiple of 60fps for synch issues
         self.stop = [False] # Boolean value for stop checkbox
         self.h = 0
         self.step = 1 # Step to increase counters
@@ -47,7 +49,7 @@ syntax: gui = expGUI_cvui(cam,[window])
 
     def set_exposure(self):
         """Control camera exposure."""
-        self.cam.setExposure(self.exposure[0])  # in ms
+        self.cam.setExposure(self.explist[self.exposure[0]])  # in ms
         
     def reference(self,xRes,yRes):
         """Use this function to control the brightness level of the three channels"""
@@ -81,7 +83,9 @@ syntax: gui = expGUI_cvui(cam,[window])
         if expMax > 500:
             expMax = 500
             tstep = 0.5
-
+        # limit exposure based on framerate
+        self.explist = self.explist[np.where(self.explist <= expMax + 0.1)[0]]
+        
         ## Create and show reference picture
         self.reference(xRes=self.par['xres'],yRes=self.par['yres'])
         
@@ -106,8 +110,8 @@ syntax: gui = expGUI_cvui(cam,[window])
             ## Draw trackbar for exposure and adjust value if changed
             cvui.text(self.bg,20,20,'Exposure(ms)')
             
-            if (cvui.trackbar(self.bg,130,0,700,self.exposure,expMin,expMax,1,"%.2Lf",\
-                              cvui.TRACKBAR_DISCRETE,tstep)):
+            if (cvui.trackbar(self.bg, 130, 0, 700, self.exposure, 0, len(self.explist)-1,
+                              1,"%d", cvui.TRACKBAR_DISCRETE, 1)):
                 self.set_exposure()
             
             ## Number of acquisitions
