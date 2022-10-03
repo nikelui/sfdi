@@ -160,7 +160,7 @@ NOTE: for now, most camera configurations are hard-coded in this module
     
         return frame.astype('uint8')
     
-    def preview(self):
+    def preview(self, **kwargs):
         """Support function, for multispectral cameras with more than RGB channels.
         Only returns 3 channels as RGB image."""
         frame = self.capture()

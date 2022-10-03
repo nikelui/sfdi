@@ -119,18 +119,16 @@ syntax: gui = expGUI_cvui(cam,[window])
                 self.set_exposure()
             
             ## Number of acquisitions
-            cvui.text(self.bg,700,60,'n. of acquisitions')
-            cvui.counter(self.bg,700,80,self.n,self.step,"%d")
+            cvui.text(self.bg, 700, 60, 'n. of acquisitions')
+            cvui.counter(self.bg, 700, 80, self.n, self.step, "%d")
             ## Check invalid values
             if (self.n[0] < 0):
                 self.n[0] = 0
-            
-#            cvui.endColumn()
 
             ## Draw main window
             cvui.imshow('gui',self.bg)
 
-#            ## Update pattern
+            ## Update pattern
             cvui.imshow(self.wname,self.ref)
             
             ## calculate RGB histograms
@@ -172,21 +170,23 @@ syntax: gui = expGUI_cvui(cam,[window])
                 raise SystemExit
             ## '+': increase exposure one step
             elif k == 43:
-                self.exposure[0] += tstep
-                self.set_exposure()
+                if self.exposure <= len(self.explist)-2:
+                    self.exposure[0] += 1
+                    self.set_exposure()
             ## '-': decrease exposure one step
             elif k == 45:
-                self.exposure[0] -= tstep
-                self.set_exposure()
-            ## '1': set step to 1
-            elif k == 49:
-                self.step = 1
-            ## '5': set step to 5
-            elif k == 53:
-                self.step = 5
-            ## '0': set step to 10
-            elif k == 48:
-                self.step = 10
+                if self.exposure > 0:
+                    self.exposure[0] -= 1
+                    self.set_exposure()
+            # ## '1': set step to 1
+            # elif k == 49:
+            #     self.step = 1
+            # ## '5': set step to 5
+            # elif k == 53:
+            #     self.step = 5
+            # ## '0': set step to 10
+            # elif k == 48:
+            #     self.step = 10
     
         self.n_acq = 0 # initialize counter
         f = self.par['fx'] # new version, put the frequencies in the parameters file

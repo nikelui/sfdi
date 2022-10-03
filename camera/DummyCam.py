@@ -23,7 +23,7 @@ class DummyCam:
         self.xRes = 640
         self.yRes = 480
         
-    def capture(self):
+    def capture(self, **kwargs):
         """This function should acquire one frame from the camera and return it as
         a numpy array (uint8: values from 0-255)"""
         # The dummy class returns a linear gradient, just to be more interesting
@@ -32,7 +32,7 @@ class DummyCam:
         C = np.stack((B, B, B), axis=2)
         return C.astype('uint8')
     
-    def preview(self):
+    def preview(self, **kwargs):
         """Support function, for multispectral cameras with more than RGB channels.
         Only returns 3 channels as RGB image."""
         frame = self.capture()
