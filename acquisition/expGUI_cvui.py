@@ -8,7 +8,7 @@ email: luigi.belcastro@liu.se
 import numpy as np
 import cv2 as cv
 import cvui
-from sfdi.acquisition.acquisitionRoutine_keynote import acquisitionRoutine
+from sfdi.acquisition.acquisitionRoutine import acquisitionRoutine
 
 class expGUI_cvui:
     """A class to implement a simple GUI in openCV for brightness control (Point Grey version).
@@ -114,7 +114,7 @@ syntax: gui = expGUI_cvui(cam,[window])
             exp = self.explist[self.exposure[0]]
             cvui.text(self.bg, 20, 20 ,'Exposure: {:.2f} ms'.format(exp))
             
-            if (cvui.trackbar(self.bg, 130, 0, 650, self.exposure, 0, len(self.explist)-1,
+            if (cvui.trackbar(self.bg, 180, 0, 650, self.exposure, 0, len(self.explist)-1,
                               1,"%d", cvui.TRACKBAR_DISCRETE, 1)):
                 self.set_exposure()
             
@@ -170,12 +170,12 @@ syntax: gui = expGUI_cvui(cam,[window])
                 raise SystemExit
             ## '+': increase exposure one step
             elif k == 43:
-                if self.exposure <= len(self.explist)-2:
+                if self.exposure[0] <= len(self.explist)-2:
                     self.exposure[0] += 1
                     self.set_exposure()
             ## '-': decrease exposure one step
             elif k == 45:
-                if self.exposure > 0:
+                if self.exposure[0] > 0:
                     self.exposure[0] -= 1
                     self.set_exposure()
             # ## '1': set step to 1

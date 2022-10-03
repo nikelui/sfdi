@@ -33,7 +33,8 @@ def debugPrint(xRes,yRes,text):
     return Im
     
 def acquisitionRoutine(cam,xRes,yRes,w,f,nFreq,nPhase=3,dt=100.,correction=[],Bb=255,Bg=255,Br=255,
-                       outPath='./',name='im',fname='test',n_acq=1,nchannels=3,blueBoost=False):
+                       outPath='./',name='im',fname='test',n_acq=1,nchannels=3,blueBoost=False,
+                       diagonal=False):
     """Routine to acquire a full SFDI image set and save data, now with threading.
 
 NOTE: to work correctly, you need to have an OpenCV window called 'pattern' showing fullscreen on your projector
