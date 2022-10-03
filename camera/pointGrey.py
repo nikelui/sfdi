@@ -159,7 +159,12 @@ NOTE: for now, most camera configurations are hard-coded in this module
         self.cam.stopCapture()
     
         return frame.astype('uint8')
-
+    
+    def preview(self):
+        """Support function, for multispectral cameras with more than RGB channels.
+        Only returns 3 channels as RGB image."""
+        frame = self.capture()
+        return frame
 
     def getResolution(self):
         """Function that returns a tuple with the camera resolution (heigth, widht)"""

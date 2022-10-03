@@ -15,7 +15,15 @@ Any contribution is welcome.
 - OpenCv
 - [cvui](https://dovyski.github.io/cvui/#:~:text=cvui%20is%20a%20(very)%20simple,it%20OpenGL%20enabled%2C%20for%20instance.) (already included)
 - PyInstaller (to build frozen binaries)
-...
+
+### NEW
+added a .yml file to easily build an anaconda environment with all the dependencies.
+```
+conda env create --name <environment_name> --file sfdi.yml
+conda activate <environment_name>
+```
+
+NOTE: some of the dependencies (e.g. Python version) are restricted by the installed camera drivers.
 
 ## Acquisition
 **Coming soon**
@@ -35,10 +43,10 @@ install the respective drivers/SDK and implement the camera class methods
 [SDK](https://www.flir.com/products/flycapture-sdk/?vertical=machine%20vision&segment=iis)
   - NOTE: this is obsolete software (last version is from 2019?). FLIR has released a new
 	SDK called [Spinnaker](https://www.flir.com/products/spinnaker-sdk/?vertical=machine%20vision&segment=iis),
-  which supports their new USB3 / GiGE cameras.
+	which supports their new USB3 / GiGE cameras (not implemented yet).
 - **piCam**: RaspbberryPi piCamera module (only works on linux arm system for RaspberryPi)
 - **IS**: Imaging Source camera [SDK](https://github.com/TheImagingSource)
-- **xiCam** [coming soon]: ximea camera [SDK](https://www.ximea.com/support/wiki/apis/Python)
+- **xiCam**: ximea camera [SDK](https://www.ximea.com/support/wiki/apis/Python)
 
 ## Planned
 - Substitute OpenCV / cvui with native python libraries

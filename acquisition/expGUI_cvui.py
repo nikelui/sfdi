@@ -31,7 +31,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.par = par # container for parameters
         self.cam = cam # camera objects
         self.n = [1] # number of acquisitions
-        self.exposure = [2] # Arbitrary starting value
+        self.exposure = [0] # Arbitrary starting value
         self.explist = np.arange(1/60, 0.51, 1/60)*1000  # list of discrete exposure times
         # NOTE: limited exp to multiple of 60fps for synch issues
         self.stop = [False] # Boolean value for stop checkbox
@@ -102,15 +102,19 @@ syntax: gui = expGUI_cvui(cam,[window])
             
             ## If resolution is larger than 640p, downsample to 640p
             if (width > 640 or height > 480):
-                frame = cv.resize(frame,(640,480),cv.INTER_NEAREST)
+                frame = cv.resize(frame, (640,480), cv.INTER_NEAREST)
             
             ## Draw frame on main window
-            cvui.image(self.bg,0,50,cv.cvtColor(frame,cv.COLOR_GRAY2RGB))
+            if len(frame.shape) == 2:  # if image is grayscale
+                cvui.image(self.bg, 0, 50, cv.cvtColor(frame, cv.COLOR_GRAY2RGB))
+            else:
+                cvui.image(self.bg, 0, 50, frame)
 
             ## Draw trackbar for exposure and adjust value if changed
-            cvui.text(self.bg,20,20,'Exposure(ms)')
+            exp = self.explist[self.exposure[0]]
+            cvui.text(self.bg, 20, 20 ,'Exposure: {:.2f} ms'.format(exp))
             
-            if (cvui.trackbar(self.bg, 130, 0, 700, self.exposure, 0, len(self.explist)-1,
+            if (cvui.trackbar(self.bg, 130, 0, 650, self.exposure, 0, len(self.explist)-1,
                               1,"%d", cvui.TRACKBAR_DISCRETE, 1)):
                 self.set_exposure()
             
@@ -127,9 +131,6 @@ syntax: gui = expGUI_cvui(cam,[window])
             cvui.imshow('gui',self.bg)
 
 #            ## Update pattern
-#            self.set_blue()
-#            self.set_green()
-#            self.set_red()
             cvui.imshow(self.wname,self.ref)
             
             ## calculate RGB histograms

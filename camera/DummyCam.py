@@ -32,6 +32,12 @@ class DummyCam:
         C = np.stack((B, B, B), axis=2)
         return C.astype('uint8')
     
+    def preview(self):
+        """Support function, for multispectral cameras with more than RGB channels.
+        Only returns 3 channels as RGB image."""
+        frame = self.capture()
+        return frame
+    
     def getResolution(self):
         """Return the horizontal and vertical resolution of the camera (int: pixel)"""
         return (self.yRes, self.xRes)
