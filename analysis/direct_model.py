@@ -70,7 +70,9 @@ alpha_dp1 = {}
 
 # Models of scattering
 mus_top = np.squeeze(asd['TiObaseTop'][:,:,1]).T
+# mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
 mus_bot = np.squeeze(asd['AlObaseTop'][:,:,1]).T
+# mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
 mus_meas = {k:asd[k][:,:,1].T for k in keys[1:-1]}
 
 mus_model_diff = {}
@@ -197,6 +199,45 @@ if False:
     ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
     fig.tight_layout()
 
+# Plot fluence, normalized
+if True:
+    mua = np.ones((1,1), dtype=float) * 0.1
+    mus = np.ones((1,1), dtype=float) * 1 / (0.2)  # convert musp to mus
+    
+    fx = np.arange(0, 0.3, 0.05)
+    dz = 0.01
+    z = np.arange(0, 10, dz)
+    
+    diff = np.squeeze(models.phi_diff(z, mua, mus, fx))
+    diff_dc, diff_ac = (np.squeeze(x) for x in models.phi_diffusion(z, mua, mus, fx))
+    diff_seo = diff_ac + diff_dc
+    deltaP1 = np.squeeze(models.phi_deltaP1(z, mua, mus, fx))
+    dp1 = np.squeeze(models.phi_dP1(z, mua, mus, fx))
+
+    # delta-P1 - SEO
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=5)
+    ax.plot(z, dp1.T / np.sum(dp1.T * dz, axis=0))
+    ax.grid(True, linestyle=':')
+    ax.set_xlim([0, 5])
+    ax.set_ylim([0, 0.9])
+    ax.set_xlabel('mm')
+    ax.set_ylabel(r'$\varphi$', fontsize=14)
+    ax.set_title(r"$\delta$-P1 - Seo ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
+    ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    fig.tight_layout()
+    
+    # delta-P1 - Luigi
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=6)
+    ax.plot(z, deltaP1.T / np.sum(deltaP1.T * dz, axis=0))
+    ax.grid(True, linestyle=':')
+    ax.set_xlim([0, 5])
+    ax.set_ylim([0, 0.9])
+    ax.set_xlabel('mm')
+    ax.set_ylabel(r'$\varphi$', fontsize=14)
+    ax.set_title(r"$\delta$-P1 - Luigi ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
+    ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    fig.tight_layout()
+
 # Plot fluence, piecewise continuous
 if False:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Blues(np.linspace(1, 0.2, len(thick))))
@@ -244,9 +285,8 @@ if False:
     ax.legend(['d = {:.3f}mm'.format(x) for x in thick])
     fig.tight_layout()
     
-
 # Plot mus
-if True:
+if False:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
     for _i, key in enumerate(mus_meas.keys()):
@@ -264,6 +304,32 @@ if True:
         # if _i == 0:
             # ax.legend()
 
+# Plot mus (only delta-P1) with top and bottom
+if False:
+    # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
+    cmap = cm.get_cmap('Dark2')
+    # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]
+    colors = ['lime', 'yellowgreen', 'sandybrown', 'skyblue', 'mediumorchid', 'gold' , 'orangered']
+    
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
+    ax.plot(fx, mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
+    ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
+    for _i, key in enumerate(mus_meas.keys()):
+        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
+                # label=r'{}'.format(key))
+        ax.plot(fx, mus_model_diff[key][:,WV], linestyle='dotted', color=colors[_i+1])
+        #         label=r'{}'.format(key))
+        ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
+                label=r'{}'.format(key))
+    ax.set_title(r'$\delta$-P1 - Comparison')
+    ax.grid(True, linestyle=':')
+    ax.set_xlabel(r'fx (mm$^{{-1}})$')
+    ax.set_ylabel(r"$\mu'_s$", fontsize=14)
+    fig.tight_layout()
+    # ax.legend(framealpha=1, ncol=4)
+    # ax.set_axis_off()
+        
 # Plot relative errors
 if False:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.YlGn(np.linspace(1, 0.2, 5)))
