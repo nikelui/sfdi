@@ -80,7 +80,7 @@ mus_model_diffusion = {}
 mus_model_deltaP1 = {}
 mus_model_dp1 = {}
 
-power = 2  # to quickly change from phi to phi**2
+power = 1  # to quickly change from phi to phi**2
 for _i, key in enumerate(keys):
     phi_diff[key] = models.phi_diff(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion
     phi_diffusion[key] = models.phi_diffusion(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion, Seo
@@ -98,7 +98,7 @@ for _i, key in enumerate(keys):
         mus_model_deltaP1[key] = alpha_deltaP1[key] * mus_top + (1-alpha_deltaP1[key])* mus_bot
         mus_model_dp1[key] = alpha_dp1[key] * mus_top + (1-alpha_dp1[key])* mus_bot
 
-if True:  # piecewise continuous model
+if False:  # piecewise continuous model
     phi2_diff = models.phi_2lp(thick, phi_diff['TiObaseTop'], phi_diff['AlObaseTop'], z)
     phi2_diffusion = models.phi_2lp(thick, phi_diffusion['TiObaseTop'], phi_diffusion['AlObaseTop'], z)
     phi2_deltaP1 = models.phi_2lp(thick, phi_deltaP1['TiObaseTop'], phi_deltaP1['AlObaseTop'], z)
@@ -200,11 +200,12 @@ if False:
     fig.tight_layout()
 
 # Plot fluence, normalized
-if True:
-    mua = np.ones((1,1), dtype=float) * 0.1
-    mus = np.ones((1,1), dtype=float) * 1 / (0.2)  # convert musp to mus
+if False:
+    mua = np.ones((1,1), dtype=float) * 0.02
+    mus = np.ones((1,1), dtype=float) * 3.1 / (0.2)  # convert musp to mus
     
-    fx = np.arange(0, 0.3, 0.05)
+    fx = np.arange(0, 0.51, 0.05)
+    fx = np.array([np.mean(fx[_i:_i+4]) for _i in range(len(fx)-3)])
     dz = 0.01
     z = np.arange(0, 10, dz)
     
@@ -213,17 +214,18 @@ if True:
     diff_seo = diff_ac + diff_dc
     deltaP1 = np.squeeze(models.phi_deltaP1(z, mua, mus, fx))
     dp1 = np.squeeze(models.phi_dP1(z, mua, mus, fx))
-
+    
+    plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Blues(np.linspace(1, 0.2, len(fx))))
     # delta-P1 - SEO
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=5)
     ax.plot(z, dp1.T / np.sum(dp1.T * dz, axis=0))
     ax.grid(True, linestyle=':')
     ax.set_xlim([0, 5])
-    ax.set_ylim([0, 0.9])
+    ax.set_ylim([0, 1.75])
     ax.set_xlabel('mm')
     ax.set_ylabel(r'$\varphi$', fontsize=14)
     ax.set_title(r"$\delta$-P1 - Seo ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
-    ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    ax.legend(['fx = {:.3f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
     fig.tight_layout()
     
     # delta-P1 - Luigi
@@ -231,12 +233,33 @@ if True:
     ax.plot(z, deltaP1.T / np.sum(deltaP1.T * dz, axis=0))
     ax.grid(True, linestyle=':')
     ax.set_xlim([0, 5])
-    ax.set_ylim([0, 0.9])
+    ax.set_ylim([0, 1.75])
     ax.set_xlabel('mm')
     ax.set_ylabel(r'$\varphi$', fontsize=14)
     ax.set_title(r"$\delta$-P1 - Luigi ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
-    ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    ax.legend(['fx = {:.3f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
     fig.tight_layout()
+
+# Plot fluence(fx) normalized
+if True:
+    plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Purples(np.linspace(1, 0.2, len(fx))))
+    for _i, key in enumerate(phi_deltaP1.keys()):
+        fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(7,8), num=_i+1)
+        ax[1].plot(z, phi_deltaP1[key][:,WV,:].T / np.sum(phi_deltaP1[key][:,WV,:].T*dz, axis=0))
+        ax[1].set_title(f'{key} - Luigi')
+        ax[1].grid(True, linestyle=':')
+        ax[1].set_xlabel('mm')
+        ax[1].set_ylabel(r'$\varphi$', fontsize=14)
+        ax[1].set_xlim([0, 5])
+        ax[1].set_ylim([0, 1.75])
+        ax[0].plot(z, phi_dp1[key][:,WV,:].T / np.sum(phi_dp1[key][:,WV,:].T*dz, axis=0))
+        ax[0].set_title(f'{key} - Seo')
+        ax[0].grid(True, linestyle=':')
+        # ax[0].set_xlabel('mm')
+        ax[0].set_ylabel(r'$\varphi$', fontsize=14)
+        ax[0].set_xlim([0, 5])
+        ax[0].set_ylim([0, 1.75])
+        fig.tight_layout()
 
 # Plot fluence, piecewise continuous
 if False:
