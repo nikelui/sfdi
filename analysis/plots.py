@@ -12,6 +12,32 @@ import numpy as np
 from matplotlib import pyplot as plt
 from zipfile import BadZipFile
 from sfdi.common.colourbar import colourbar
+import addcopyfighandler
+
+phantom_path = "C:\\Users\\luibe59\\Documents\\sfdi\\common\\phantoms\\"
+phantoms = ['TS1', 'TS1_SFDS', 'TS2', 'TS2_SFDS']
+
+ph = []
+for name in phantoms:
+    temp = np.genfromtxt('{}{}.txt'.format(phantom_path, name), delimiter='\t')
+    ph.append(temp[:,:-1])
+
+fig, ax = plt.subplots(1, 2, figsize=(10,4))
+ax[0].plot(ph[0][:,0], ph[0][:,1], 'ob', markerfacecolor="None", label='TS1_old')
+ax[0].plot(ph[1][:,0], ph[1][:,1], '-b', label='TS1_new')
+ax[0].plot(ph[2][:,0], ph[2][:,1], 'or', markerfacecolor="None", label='TS2_old')
+ax[0].plot(ph[3][:,0], ph[3][:,1], '-r', label='TS2_new')
+ax[0].grid(True, linestyle=':')
+ax[0].set_title(r'$\mu_a$')
+
+ax[1].plot(ph[0][:,0], ph[0][:,2], 'ob', markerfacecolor="None", label='TS1_old')
+ax[1].plot(ph[1][:,0], ph[1][:,2], '-b', label='TS1_new')
+ax[1].plot(ph[2][:,0], ph[2][:,2], 'or', markerfacecolor="None", label='TS2_old')
+ax[1].plot(ph[3][:,0], ph[3][:,2], '-r', label='TS2_new')
+ax[1].grid(True, linestyle=':')
+ax[1].set_title(r"$\mu'_s$")
+plt.legend()
+plt.tight_layout()
 
 fnames = [x for x in os.listdir(os.getcwd()) if x.endswith('npz')]
 data = []

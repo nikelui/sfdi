@@ -47,13 +47,20 @@ dz = 0.01  # resolution
 thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms
 asd = loadmat(f'{data_path}/SFDS_8fx.mat')
 
-df = 0.05  # mm^-1
+w = 110  # field of view [mm]
+dw = 0.2  # Difference in %
+
+# df = 0.05  # mm^-1
 fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
-fx_plus = fx + df
-fx_min = fx - df
+
+# fx_plus = fx + df
+# fx_min = fx - df
+
+fx_plus = fx * (w / (w*(1-dw)))
+fx_min = fx * (w / (w*(1+dw)))
 
 z = np.arange(0, 10, dz)
-lamb = 749  # nm
+lamb = 500  # nm
 WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
 F = 0  # spatial frequency to plot
 
@@ -86,9 +93,9 @@ alpha_dp1_plus = {}
 
 # Models of scattering
 mus_top = np.squeeze(asd['TiObaseTop'][:,:,1]).T
-mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
+# mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
 mus_bot = np.squeeze(asd['AlObaseTop'][:,:,1]).T
-mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
+# mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
 mus_meas = {k:asd[k][:,:,1].T for k in keys[1:-1]}
 
 mus_model_diff = {}
@@ -400,17 +407,17 @@ if True:
     ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
     for _i, key in enumerate(mus_meas.keys()):
         # Luigi d-P1
-        ax.fill_between(fx, mus_model_deltaP1_plus[key][:,WV], mus_model_deltaP1_min[key][:,WV],
-                        alpha=0.5, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
-        # Seo d-P1
-        # ax.fill_between(fx, mus_model_dp1_plus[key][:,WV], mus_model_dp1_min[key][:,WV],
+        # ax.fill_between(fx, mus_model_deltaP1_plus[key][:,WV], mus_model_deltaP1_min[key][:,WV],
         #                 alpha=0.5, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
+        # ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
+        # Seo d-P1
+        ax.fill_between(fx, mus_model_dp1_plus[key][:,WV], mus_model_dp1_min[key][:,WV],
+                        alpha=0.5, edgecolor=colors[_i+1], facecolor=colors[_i+1])
+        ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
         # Measured
         ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
                 label=r'{}'.format(key))
-    ax.set_title(r'$\delta$-P1 - Luigi'+'\n'+r'$\Delta f_x$={}mm$^{{-1}}$'.format(df))
+    ax.set_title(r'$\delta$-P1 - Seo'+'\n'+r'$\Delta$w={}%'.format(dw*100))
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
