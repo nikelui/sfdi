@@ -123,8 +123,8 @@ phi_diffusion = {}  # diffusion, Seo
 phi_deltaP1 = {}  # delta-P1, Vasen modified
 phi_dp1 = {}  # delta-P1, Seo original
 
-keys = [x for x in data.keys() if 'TiO' in x or 'AlObaseTop' in x]
-keys.remove('TiObaseBottom')
+keys = [x for x in asd.keys() if 'TiO' in x or 'AlObaseTop' in x]
+# keys.remove('TiObaseBottom')
 keys.sort()
 
 col = cm.get_cmap('Blues', len(keys))
@@ -187,8 +187,8 @@ from scipy.optimize import minimize
 from scipy.optimize import Bounds
 
 keys = [x for x in data.keys() if 'TiO' in x]
-keys.remove('TiObaseBottom')
-keys.remove('TiObaseTop')
+# keys.remove('TiObaseBottom')
+# keys.remove('TiObaseTop')
 keys.sort()
 F = 0  # spatial frequency
 lam = 0  # Tikhonov regularization

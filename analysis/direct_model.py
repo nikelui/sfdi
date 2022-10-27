@@ -65,7 +65,7 @@ WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
 F = 0  # spatial frequency to plot
 
 keys = [x for x in data.keys() if 'TiO' in x or 'AlObaseTop' in x]
-keys.remove('TiObaseBottom')
+# keys.remove('TiObaseBottom')
 keys.sort()
 
 # Models of fluence
@@ -350,7 +350,7 @@ if False:
     fig.tight_layout()
     
 # Plot mus
-if False:
+if True:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
     for _i, key in enumerate(mus_meas.keys()):
@@ -395,7 +395,7 @@ if False:
     # ax.set_axis_off()
 
 # Plot mus (only delta-P1) with top and bottom and errorbars
-if True:
+if False:
     # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     cmap = cm.get_cmap('Dark2')
     # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]

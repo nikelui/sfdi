@@ -15,10 +15,11 @@ def smooth(interval, window_size):
     window= np.ones(int(window_size))/float(window_size)
     return np.convolve(interval, window, 'same')
 
-def sfdsDataLoad(par,prompt='Select file'):
+def sfdsDataLoad(par,prompt='Select file',lim=[450, 750]):
     """Select a folder to load the images contained inside.
 par: Dictionary containing all the processing parameters
-prompt: optional string for file dialog"""
+prompt: optional string for file dialog
+lim: wavelength boundaries [low, high]"""
 
     names = list(getFiles(prompt)) # select one or more files
     names.sort() # sort them
@@ -32,7 +33,7 @@ prompt: optional string for file dialog"""
         # intT = float(fname.split('/')[-1].split('_')[-1][:-6]) # exposure time in ms, assuming the name
                                                                  # convention is correct
         intT = temp['intTime']
-        idx = np.where(np.all([wv >= 450,wv <= 750], axis=0))[0] # Limit the spatial range
+        idx = np.where(np.all([wv >= lim[0],wv <= lim[1]], axis=0))[0] # Limit the spatial range
         spec = spec[idx, :]
         wv = wv[idx]
     

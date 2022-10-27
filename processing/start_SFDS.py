@@ -28,6 +28,7 @@ from sfdi.processing.sfdsDataLoad import sfdsDataLoad
 from sfdi.processing.calibrate import calibrate
 from sfdi.processing.fitOps_sfds import fitOps_sfds
 from sfdi.processing.chromFit import chromFit
+import addcopyfighandler
 
 from sfdi.processing import __path__ as par_path  # processing parameters path
 par = readParams('{}/parameters.ini'.format(par_path[0]))
@@ -36,11 +37,11 @@ if len(par['freq_used']) == 0: # use all frequencies if empty
     par['freq_used'] = list(np.arange(len(par['freqs'])))
 
 # Load tissue data. Note: a 30-samples moving average is applied to smooth the data
-AC,wv,names = sfdsDataLoad(par, 'Select tissue data file')
+AC,wv,names = sfdsDataLoad(par, 'Select tissue data file', lim=[450,950])
 par['wv'] = wv # for SFDS
 
 # Load calibration phantom data. Note: a 30-samples moving average is applied to smooth the data
-ACph,wv,_ = sfdsDataLoad(par, 'Select calibration phantom data file')
+ACph,wv,_ = sfdsDataLoad(par, 'Select calibration phantom data file', lim=[450,950])
   
 ## TODO: process one dataset at a time (even if SFDS data does not take much memory)
 # Calibration step (in a loop)
@@ -92,7 +93,7 @@ savemat('{}/SFDS_{}fx.mat'.format(par['savefile'], len(FX)), to_save)
 
 #%%
 ## TODO: Plotting (Maybe put this in a function?)
-n = 4
+n = 6
 fig = plt.figure(1,figsize=(9,4))
 plt.subplot(1,2,1)
 plt.suptitle('{}'.format(nn[n]))
@@ -102,7 +103,7 @@ plt.title(r'Absorption coefficient ($\mu_A$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([-0.01,0.2])
+plt.ylim([0,0.05])
 
 plt.subplot(1,2,2)
 for i in range(1):
@@ -111,7 +112,7 @@ plt.title(r'Scattering coefficient ($\mu_S$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([0.5,2.5])
+plt.ylim([1.5, 3.75])
 plt.legend(['f0','f1','f2','f3','f4'])
 
 plt.tight_layout()
