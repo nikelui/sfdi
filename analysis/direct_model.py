@@ -350,7 +350,7 @@ if False:
     fig.tight_layout()
     
 # Plot mus
-if True:
+if False:
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
     for _i, key in enumerate(mus_meas.keys()):
@@ -369,7 +369,7 @@ if True:
             # ax.legend()
 
 # Plot mus (only delta-P1) with top and bottom
-if False:
+if True:
     # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     cmap = cm.get_cmap('Dark2')
     # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]
@@ -382,7 +382,7 @@ if False:
     for _i, key in enumerate(mus_meas.keys()):
         ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
                 # label=r'{}'.format(key))
-        ax.plot(fx, mus_model_diff[key][:,WV], linestyle='dotted', color=colors[_i+1])
+        ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
         #         label=r'{}'.format(key))
         ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
                 label=r'{}'.format(key))
@@ -391,7 +391,7 @@ if False:
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
     fig.tight_layout()
-    # ax.legend(framealpha=1, ncol=4)
+    ax.legend(framealpha=1, ncol=4)
     # ax.set_axis_off()
 
 # Plot mus (only delta-P1) with top and bottom and errorbars

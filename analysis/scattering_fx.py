@@ -54,10 +54,12 @@ if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)
 else:
     files = [x for x in os.listdir(data_path) if re.match(regex, x)]
     datasets = set(x.split('_')[-3] for x in files)  # sets have unique values
+    
     sfds_path = [x for x in os.listdir(data_path) if re.match(regex3, x)]  # should be only one
     if sfds_path:  # need a check, because it might not exist
         sfds = loadmat('{}/{}'.format(data_path,sfds_path[0]))
         par['wv_sfds'] = np.squeeze(sfds['wv'])
+    datasets = set(x for x in sfds.keys() if 'AlO' in x or 'TiO' in x)  # DEBUG (sfds-only)
     data = dataDict()
     data.par = par
     # load the SFDI data into a custom dictionary
