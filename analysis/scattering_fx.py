@@ -53,7 +53,7 @@ if '-load' in sys.argv and os.path.exists('{}/obj/dataset.pkl'.format(data_path)
 # If you need to process / modify it. NOTE: the old set will be overwritten
 else:
     files = [x for x in os.listdir(data_path) if re.match(regex, x)]
-    datasets = set(x.split('_')[-3] for x in files)  # sets have unique values
+    # datasets = set(x.split('_')[-3] for x in files)  # sets have unique values
     
     sfds_path = [x for x in os.listdir(data_path) if re.match(regex3, x)]  # should be only one
     if sfds_path:  # need a check, because it might not exist
@@ -67,12 +67,11 @@ else:
     for _d, dataset in enumerate(datasets, start=1):
         data[dataset] = {}  # need to initialize it
         temp = [x for x in files if dataset in x]   # get filenames
-        freqs = [x.split('_')[-1][:-4] for x in temp]  # get frequency range
+        # freqs = [x.split('_')[-1][:-4] for x in temp]  # get frequency range
+        regex4 = re.compile('f\d')  # get frequency range with regex
+        freqs = [x for x in par.keys() if re.match(regex4, x)]
         for file,fx in zip(temp, freqs):
             data[dataset][fx] = loadmat('{}/{}'.format(data_path, file))
-            if sfds_path and dataset in sfds.keys():
-                data[dataset][fx]['sfds'] = {}
-                data[dataset][fx]['sfds']['op_fit'] = sfds[dataset][:,freqs.index(fx),:]
             # here fit the data
             print('Fitting dataset {}_{}...[{} of {}]'.format(dataset, fx, _d, len(datasets)))
             # SFDI data
@@ -87,8 +86,12 @@ else:
                         continue
                     p_map[_i, _j, :] = temp
             data[dataset][fx]['par_map'] = p_map
-            # SFDS data
-            if sfds_path and dataset in sfds.keys():
+        # SFDS data
+        if sfds_path and dataset in sfds.keys():
+            for fx in freqs:
+                data[dataset][fx] = {}  # DEBUG - sfds only
+                data[dataset][fx]['sfds'] = {}
+                data[dataset][fx]['sfds']['op_fit'] = sfds[dataset][:,freqs.index(fx),:]
                 temp, _ = curve_fit(fit_fun, par['wv_sfds'], data[dataset][fx]['sfds']['op_fit'][:,1],
                                     p0=[10, 1], method='trf', loss='soft_l1', max_nfev=2000)
                 data[dataset][fx]['sfds']['par'] = temp
@@ -103,7 +106,7 @@ else:
 # Post- processing
 # data.mask_on()  # mask outliers
 # data.plot_cal('AlO05ml', data_path)
-# data.plot_mus('AlO05ml')
+data.plot_op_sfds('AlObaseTop_3', f=[0,1,2,3,4])
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
 # ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4,5], I=3e3)
 

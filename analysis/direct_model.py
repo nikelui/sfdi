@@ -46,9 +46,11 @@ if os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
 dz = 0.01  # resolution
 thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms
 asd = loadmat(f'{data_path}/SFDS_8fx.mat')
+asd_plus = loadmat(f'{data_path}/SFDS_8fx_plus5.mat')
+asd_minus = loadmat(f'{data_path}/SFDS_8fx_minus5.mat')
 
 w = 110  # field of view [mm]
-dw = 0.2  # Difference in %
+dw = 0.05  # Difference in %
 
 # df = 0.05  # mm^-1
 fx = np.array([np.mean(par['fx'][i:i+4]) for i in range(len(par['fx'])-3)])
@@ -67,6 +69,17 @@ F = 0  # spatial frequency to plot
 keys = [x for x in data.keys() if 'TiO' in x or 'AlObaseTop' in x]
 # keys.remove('TiObaseBottom')
 keys.sort()
+kkeys = [[x for x in keys if '_1' in x],
+         [x for x in keys if '_2' in x],
+         [x for x in keys if '_3' in x]]
+
+
+asd_mean = {}
+asd_std = {}
+for _i in range(len(kkeys[0])):
+    k = kkeys[0][_i][:-2]
+    asd_mean[k] = np.mean(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
+    asd_std[k] = np.std(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
 
 # Models of fluence
 phi_diff = {}  # diffusion
@@ -96,7 +109,9 @@ mus_top = np.squeeze(asd['TiObaseTop'][:,:,1]).T
 # mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
 mus_bot = np.squeeze(asd['AlObaseTop'][:,:,1]).T
 # mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
-mus_meas = {k:asd[k][:,:,1].T for k in keys[1:-1]}
+mus_meas = {k:asd[k][:,:,1].T for k in [x for x in asd.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
+mus_meas_plus = {k:asd_plus[k][:,:,1].T for k in [x for x in asd_plus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
+mus_meas_minus = {k:asd_minus[k][:,:,1].T for k in [x for x in asd_minus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
 
 mus_model_diff = {}
 mus_model_diffusion = {}
@@ -108,7 +123,7 @@ mus_model_dp1_plus = {}
 mus_model_dp1_min = {}
 
 power = 2  # to quickly change from phi to phi**2
-for _i, key in enumerate(keys):
+for _i, key in enumerate([x for x in asd.keys() if 'TiO' in x or 'AlObase' in x]):
     phi_diff[key] = models.phi_diff(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion
     phi_diffusion[key] = models.phi_diffusion(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion, Seo
     phi_deltaP1[key] = models.phi_deltaP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # d-p1, Luigi
@@ -120,7 +135,7 @@ for _i, key in enumerate(keys):
     
     
     
-    if _i > 0 and _i < len(keys)-1 and True:
+    if _i > 0 and _i < len([x for x in asd.keys() if 'TiO' in x or 'AlObase' in x])-1 and True:
         alpha_diff[key] = models.alpha(phi_diff[key]**power, z, thick[_i-1])
         alpha_diffusion[key] = models.alpha(phi_diffusion[key]**power, z, thick[_i-1])
         alpha_deltaP1[key] = models.alpha(phi_deltaP1[key]**power, z, thick[_i-1])
@@ -145,8 +160,8 @@ if False:  # piecewise continuous model
     phi2_deltaP1 = models.phi_2lp(thick, phi_deltaP1['TiObaseTop'], phi_deltaP1['AlObaseTop'], z)
     phi2_dp1 = models.phi_2lp(thick, phi_dp1['TiObaseTop'], phi_dp1['AlObaseTop'], z)
     
-    for _i, key in enumerate(keys):
-        if _i > 0 and _i < len(keys)-1:
+    for _i, key in enumerate(asd.keys()):
+        if _i > 0 and _i < len(asd.keys())-1:
             alpha_diff[key] = models.alpha(phi2_diff[:,:,:,_i-1]**power, z, thick[_i-1])
             alpha_diffusion[key] = models.alpha(phi2_diffusion[:,:,:,_i-1]**power, z, thick[_i-1])
             alpha_deltaP1[key] = models.alpha(phi2_deltaP1[:,:,:,_i-1]**power, z, thick[_i-1])
@@ -369,7 +384,7 @@ if False:
             # ax.legend()
 
 # Plot mus (only delta-P1) with top and bottom
-if True:
+if False:
     # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     cmap = cm.get_cmap('Dark2')
     # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]
@@ -380,22 +395,22 @@ if True:
     ax.plot(fx, mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
     ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
     for _i, key in enumerate(mus_meas.keys()):
-        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
+        # ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
                 # label=r'{}'.format(key))
         ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
         #         label=r'{}'.format(key))
         ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
                 label=r'{}'.format(key))
-    ax.set_title(r'$\delta$-P1 - Comparison')
+    ax.set_title(r'$\delta$-P1 - Seo')
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
     fig.tight_layout()
-    ax.legend(framealpha=1, ncol=4)
+    # ax.legend(framealpha=1, ncol=4)
     # ax.set_axis_off()
 
 # Plot mus (only delta-P1) with top and bottom and errorbars
-if False:
+if True:
     # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     cmap = cm.get_cmap('Dark2')
     # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]
@@ -409,15 +424,15 @@ if False:
         # Luigi d-P1
         # ax.fill_between(fx, mus_model_deltaP1_plus[key][:,WV], mus_model_deltaP1_min[key][:,WV],
         #                 alpha=0.5, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        # ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
+        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
         # Seo d-P1
-        ax.fill_between(fx, mus_model_dp1_plus[key][:,WV], mus_model_dp1_min[key][:,WV],
-                        alpha=0.5, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
+        ax.fill_between(fx, mus_meas_plus[key][:,WV], mus_meas_minus[key][:,WV],
+                        alpha=0.25, edgecolor=colors[_i+1], facecolor=colors[_i+1])
+        # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
         # Measured
         ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
                 label=r'{}'.format(key))
-    ax.set_title(r'$\delta$-P1 - Seo'+'\n'+r'$\Delta$w={}%'.format(dw*100))
+    ax.set_title(r'$\delta$-P1 [@500nm]'+'\n'+r'$\Delta$w={}%'.format(dw*100))
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)

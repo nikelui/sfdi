@@ -44,6 +44,11 @@ par['wv'] = wv # for SFDS
 ACph,wv,_ = sfdsDataLoad(par, 'Select calibration phantom data file', lim=[450,950])
   
 ## TODO: process one dataset at a time (even if SFDS data does not take much memory)
+# DEBUG: introducing fx error via FOV difference
+# dw = 0.01  # % error, set to zero for base value
+# dfx = 1/(1+dw)  # multiplying factor
+# par['freqs'] = [x*dfx for x in par['freqs']]
+
 # Calibration step (in a loop)
 cal_R = []
 for ac in AC:
@@ -68,7 +73,7 @@ for _c, cal in enumerate(cal_R):
             temp[:, _f, :] = fitOps_sfds(cal[:, par['freq_used']], par, homogeneous=False)
             op_guess = temp[:, _f, :]  # save [mua, mus] at f0 as initial guess
         else:
-            temp[:, _f, :] = fitOps_sfds(cal[:, par['freq_used']], par, guess= op_guess, homogeneous=True)
+            temp[:, _f, :] = fitOps_sfds(cal[:, par['freq_used']], par, guess= op_guess, homogeneous=False)
     op_fit_sfds.append(temp)
 
 # TODO: fix this fitting
@@ -93,7 +98,7 @@ savemat('{}/SFDS_{}fx.mat'.format(par['savefile'], len(FX)), to_save)
 
 #%%
 ## TODO: Plotting (Maybe put this in a function?)
-n = 6
+n = 12
 fig = plt.figure(1,figsize=(9,4))
 plt.subplot(1,2,1)
 plt.suptitle('{}'.format(nn[n]))
@@ -103,7 +108,7 @@ plt.title(r'Absorption coefficient ($\mu_A$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([0,0.05])
+# plt.ylim([0,0.05])
 
 plt.subplot(1,2,2)
 for i in range(1):
@@ -112,7 +117,7 @@ plt.title(r'Scattering coefficient ($\mu_S$)')
 plt.xlabel('wavelength (nm)')
 plt.grid(True,linestyle=':')
 plt.xlim([450,750])
-plt.ylim([1.5, 3.75])
+# plt.ylim([1.5, 3.75])
 plt.legend(['f0','f1','f2','f3','f4'])
 
 plt.tight_layout()
