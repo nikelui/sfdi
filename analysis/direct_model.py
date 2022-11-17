@@ -110,8 +110,8 @@ mus_top = np.squeeze(asd['TiObaseTop'][:,:,1]).T
 mus_bot = np.squeeze(asd['AlObaseTop'][:,:,1]).T
 # mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
 mus_meas = {k:asd[k][:,:,1].T for k in [x for x in asd.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
-mus_meas_plus = {k:asd_plus[k][:,:,1].T for k in [x for x in asd_plus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
-mus_meas_minus = {k:asd_minus[k][:,:,1].T for k in [x for x in asd_minus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
+# mus_meas_plus = {k:asd_plus[k][:,:,1].T for k in [x for x in asd_plus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
+# mus_meas_minus = {k:asd_minus[k][:,:,1].T for k in [x for x in asd_minus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
 
 mus_model_diff = {}
 mus_model_diffusion = {}
