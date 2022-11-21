@@ -378,7 +378,7 @@ class dataDict(dict):
         cmap.set_bad(color='cyan')
         plt.tight_layout()
         
-        ret_value = {'op_ave': op_ave, 'op_std': op_std, 'depths': depths, 'depths_std': depths_std,
+        ret_value = {'ROI':ROI, 'op_ave': op_ave, 'op_std': op_std, 'depths': depths, 'depths_std': depths_std,
                      'depth_phi': depth_phi, 'par_ave': par_ave, 'fluence':fluence, 'depth_MC':depth_MC}
         return ret_value
     

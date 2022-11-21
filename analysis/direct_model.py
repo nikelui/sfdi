@@ -20,6 +20,7 @@ from sfdi.analysis.dataDict import dataDict
 from sfdi.common.readParams import readParams
 from sfdi.analysis import dataDict
 from sfdi.common import models
+from sfdi.processing.crop import crop
 
 # support functions
 def load_obj(name, path):
@@ -44,11 +45,12 @@ if os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
 
 #%% Get relevant datasets
 dz = 0.01  # resolution
-thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms
+# thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms batch3
+thick = np.array([0.168, 0.196, 0.277, 0.479, 0.727])  # thickness of thin phantoms batch4
 asd = loadmat(f'{data_path}/SFDS_8fx.mat')
-asd_plus = loadmat(f'{data_path}/SFDS_8fx_plus5.mat')
-asd_minus = loadmat(f'{data_path}/SFDS_8fx_minus5.mat')
-
+# asd_plus = loadmat(f'{data_path}/SFDS_8fx_plus5.mat')
+# asd_minus = loadmat(f'{data_path}/SFDS_8fx_minus5.mat')
+ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
 w = 110  # field of view [mm]
 dw = 0.05  # Difference in %
 
@@ -62,24 +64,30 @@ fx_plus = fx * (w / (w*(1-dw)))
 fx_min = fx * (w / (w*(1+dw)))
 
 z = np.arange(0, 10, dz)
-lamb = 500  # nm
-WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
-F = 0  # spatial frequency to plot
 
 keys = [x for x in data.keys() if 'TiO' in x or 'AlObaseTop' in x]
 # keys.remove('TiObaseBottom')
 keys.sort()
-kkeys = [[x for x in keys if '_1' in x],
-         [x for x in keys if '_2' in x],
-         [x for x in keys if '_3' in x]]
 
+## Here, do an average for SFDS measurements in multiple locations
+# kkeys = [[x for x in keys if '_1' in x],
+#          [x for x in keys if '_2' in x],
+#          [x for x in keys if '_3' in x]]
+# asd_mean = {}
+# asd_std = {}
+# for _i in range(len(kkeys[0])):
+#     k = kkeys[0][_i][:-2]
+#     asd_mean[k] = np.mean(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
+#     asd_std[k] = np.std(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
 
-asd_mean = {}
-asd_std = {}
-for _i in range(len(kkeys[0])):
-    k = kkeys[0][_i][:-2]
-    asd_mean[k] = np.mean(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
-    asd_std[k] = np.std(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
+## Here, transform SFDI dataset to have the same format as SFDS for compatibility
+ROI = ret['ROI']  # for convenience
+temp = {}
+for key in keys:
+    temp[key] = np.zeros((5,8,2), dtype=float)
+    for _f, f in enumerate(data[key].keys()):
+        temp[key][:,_f,:] = np.mean(crop(data[key][f]['op_fit_maps'], ROI), axis=(0,1))
+asd = temp  # to use SFDI data without chaning the code
 
 # Models of fluence
 phi_diff = {}  # diffusion
@@ -173,6 +181,11 @@ if False:  # piecewise continuous model
             mus_model_dp1[key] = alpha_dp1[key] * mus_top + (1-alpha_dp1[key])* mus_bot
 
 # %% Simulation
+lamb = 500  # nm
+# WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
+WV = 4
+F = 4  # spatial frequency to plot
+
 # Plot fluence
 if False:
     mua = np.ones((1,1), dtype=float) * 0.1
@@ -417,28 +430,56 @@ if True:
     colors = ['lime', 'yellowgreen', 'sandybrown', 'skyblue', 'mediumorchid', 'gold' , 'orangered']
     
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4.5), num=1)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8,4.5), num=1)
     ax.plot(fx, mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
     ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
     for _i, key in enumerate(mus_meas.keys()):
         # Luigi d-P1
-        # ax.fill_between(fx, mus_model_deltaP1_plus[key][:,WV], mus_model_deltaP1_min[key][:,WV],
+        # ax.fill_between(fx, mus_model_'deltaP1_plus[key][:,WV], mus_model_deltaP1_min[key][:,WV],
         #                 alpha=0.5, edgecolor=colors[_i+1], facecolor=colors[_i+1])
         ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
         # Seo d-P1
-        ax.fill_between(fx, mus_meas_plus[key][:,WV], mus_meas_minus[key][:,WV],
-                        alpha=0.25, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
+        # ax.fill_between(fx, mus_meas_plus[key][:,WV], mus_meas_minus[key][:,WV],
+        #                 alpha=0.25, edgecolor=colors[_i+1], facecolor=colors[_i+1])
+        ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
         # Measured
         ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
                 label=r'{}'.format(key))
-    ax.set_title(r'$\delta$-P1 [@500nm]'+'\n'+r'$\Delta$w={}%'.format(dw*100))
+    ax.set_title(r'$\delta$-P1'.format(dw*100))
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
     fig.tight_layout()
     # ax.legend(framealpha=1, ncol=4)
     # ax.set_axis_off()
+
+# Plot mus(lambda) at a single fx
+if False:
+    wv = np.array(par['wv'])
+    colors = ['lime', 'yellowgreen', 'sandybrown', 'skyblue', 'mediumorchid', 'gold' , 'orangered']
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8,4.5), num=1)
+    ax.plot(wv, mus_top[F,:], linestyle='solid', color=colors[0], label=r'TiO$_2$')
+    ax.plot(wv, mus_bot[F,:], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
+    for _i, key in enumerate(mus_meas.keys()):
+        # Luigi d-P1
+        # ax.fill_between(fx, mus_model_deltaP1_plus[key][F,:], mus_model_deltaP1_min[key][F,:],
+        #                 alpha=0.5, edgecolor=colors[_i+1], facecolor=colors[_i+1])
+        ax.plot(wv, mus_model_deltaP1[key][F,:], linestyle='dashed', color=colors[_i+1])
+        # Seo d-P1
+        # ax.fill_between(wv, mus_meas_plus[key][F,:], mus_meas_minus[key][F,:],
+        #                 alpha=0.25, edgecolor=colors[_i+1], facecolor=colors[_i+1])
+        ax.plot(wv, mus_model_dp1[key][F,:], linestyle='dotted', color=colors[_i+1])
+        # Measured
+        ax.plot(wv, mus_meas[key][F,:], 'o', color=colors[_i+1],
+                label=r'{}'.format(key))
+    ax.set_title(r'$\delta$-P1'.format(dw*100))
+    ax.grid(True, linestyle=':')
+    ax.set_xlabel(r'wv (nm)')
+    ax.set_ylabel(r"$\mu'_s$", fontsize=14)
+    fig.tight_layout()
+    ax.legend(framealpha=1, ncol=4)
+    # ax.set_axis_off()
+    
 
 # Plot relative errors
 if False:
