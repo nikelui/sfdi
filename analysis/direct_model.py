@@ -183,8 +183,8 @@ if False:  # piecewise continuous model
 # %% Simulation
 lamb = 500  # nm
 # WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
-WV = 4
-F = 4  # spatial frequency to plot
+WV = 0
+F = 0  # spatial frequency to plot
 
 # Plot fluence
 if False:
@@ -431,21 +431,35 @@ if True:
     
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8,4.5), num=1)
-    ax.plot(fx, mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
-    ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
+    # ax.plot(fx, mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
+    # ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
+    ## Normalize top and bottom
+    ax.plot(fx, mus_top[:,WV]/mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
+    ax.plot(fx, mus_bot[:,WV]-mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
     for _i, key in enumerate(mus_meas.keys()):
+        scale_meas = (mus_meas[key]-mus_bot)/(mus_top-mus_bot)
+        scale_deltaP1 = (mus_model_deltaP1[key]-mus_bot)/(mus_top-mus_bot)
+        scale_dp1 = (mus_model_dp1[key]-mus_bot)/(mus_top-mus_bot)
+        scale_diff = (mus_model_diff[key]-mus_bot)/(mus_top-mus_bot)
         # Luigi d-P1
         # ax.fill_between(fx, mus_model_'deltaP1_plus[key][:,WV], mus_model_deltaP1_min[key][:,WV],
         #                 alpha=0.5, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
+        # ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
+        # ax.plot(fx, scale_deltaP1[:,WV], linestyle='dashed', color=colors[_i+1])  # Normalized
+        ax.plot(fx, scale_dp1[:,WV], linestyle='dashed', color=colors[_i+1])  # Normalized
+        # ax.plot(fx, scale_diff[:,WV], linestyle='dotted', color=colors[_i+1])  # Normalized
+
         # Seo d-P1
         # ax.fill_between(fx, mus_meas_plus[key][:,WV], mus_meas_minus[key][:,WV],
         #                 alpha=0.25, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
+        # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
         # Measured
-        ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
+        # ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
+        #         label=r'{}'.format(key))
+        ax.plot(fx, scale_meas[:,WV], 'o', color=colors[_i+1],  # Normalized
                 label=r'{}'.format(key))
-    ax.set_title(r'$\delta$-P1'.format(dw*100))
+
+    # ax.set_title(r'$\delta$-P1'.format(dw*100))
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
