@@ -84,7 +84,7 @@ def phi_diffusion(z, mua, mus, fx, n=1.4, g=0.8):
         Cp_dc[:,:,np.newaxis] * np.exp(-mut[:,:,np.newaxis]*z[np.newaxis,:])
     phi_ac = Ch_ac[:,:,np.newaxis] * np.exp(-mueff1[:,:,np.newaxis]*z[np.newaxis,:]) +\
         Cp_ac[:,:,np.newaxis]*np.exp(-mut[:,:,np.newaxis]*z[np.newaxis,:])
-    return phi_dc+phi_ac
+    return phi_dc, phi_ac
 
 def phi_deltaP1(z, mua, mus, fx, n=1.4, g=0.8):
     """Function to calculate fluence of light in depth based on the delta-P1 approximation.

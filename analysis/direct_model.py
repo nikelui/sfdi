@@ -269,9 +269,9 @@ if False:
     fig.tight_layout()
 
 # Plot fluence, normalized
-if False:
+if True:
     mua = np.ones((1,1), dtype=float) * 0.02
-    mus = np.ones((1,1), dtype=float) * 0.8 / (0.2)  # convert musp to mus
+    mus = np.ones((1,1), dtype=float) * 1 / (0.2)  # convert musp to mus
     
     fx = np.arange(0, 0.51, 0.05)
     fx = np.array([np.mean(fx[_i:_i+4]) for _i in range(len(fx)-3)])
@@ -284,30 +284,42 @@ if False:
     deltaP1 = np.squeeze(models.phi_deltaP1(z, mua, mus, fx))
     dp1 = np.squeeze(models.phi_dP1(z, mua, mus, fx))
     
+    # diffusion
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4), num=6)
+    ax.plot(z, diff.T / np.sum(diff.T * dz, axis=0))
+    # ax.grid(True, linestyle=':')
+    ax.set_xlim([0, 5])
+    ax.set_ylim([0, .9])
+    ax.set_xlabel('mm')
+    ax.set_ylabel(r'$\varphi$', fontsize=14)
+    ax.set_title(r"SDA ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
+    # ax.legend(['fx = {:.3f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    fig.tight_layout()
+    
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Blues(np.linspace(1, 0.2, len(fx))))
     # delta-P1 - SEO
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=5)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4), num=5)
     ax.plot(z, dp1.T / np.sum(dp1.T * dz, axis=0))
-    ax.grid(True, linestyle=':')
+    # ax.grid(True, linestyle=':')
     ax.set_xlim([0, 5])
-    ax.set_ylim([0, 1])
+    ax.set_ylim([0, .9])
     ax.set_xlabel('mm')
     ax.set_ylabel(r'$\varphi$', fontsize=14)
     ax.set_title(r"$\delta$-P1 - Seo ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
-    ax.legend(['fx = {:.3f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    # ax.legend(['fx = {:.3f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
     fig.tight_layout()
     
     # delta-P1 - Luigi
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=6)
-    ax.plot(z, deltaP1.T / np.sum(deltaP1.T * dz, axis=0))
-    ax.grid(True, linestyle=':')
-    ax.set_xlim([0, 5])
-    ax.set_ylim([0, 1])
-    ax.set_xlabel('mm')
-    ax.set_ylabel(r'$\varphi$', fontsize=14)
-    ax.set_title(r"$\delta$-P1 - Luigi ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
-    ax.legend(['fx = {:.3f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
-    fig.tight_layout()
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=6)
+    # ax.plot(z, deltaP1.T / np.sum(deltaP1.T * dz, axis=0))
+    # ax.grid(True, linestyle=':')
+    # ax.set_xlim([0, 5])
+    # ax.set_ylim([0, 1])
+    # ax.set_xlabel('mm')
+    # ax.set_ylabel(r'$\varphi$', fontsize=14)
+    # ax.set_title(r"$\delta$-P1 - Luigi ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
+    # ax.legend(['fx = {:.3f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    # fig.tight_layout()
 
 # Plot fluence(fx) normalized
 if False:
@@ -423,7 +435,7 @@ if False:
     # ax.set_axis_off()
 
 # Plot mus (only delta-P1) with top and bottom and errorbars
-if True:
+if False:
     # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     cmap = cm.get_cmap('Dark2')
     # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]
