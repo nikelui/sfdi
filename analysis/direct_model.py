@@ -13,6 +13,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm
 from scipy.io import loadmat  # new standard: work with Matlab files for compatibility
+from scipy.interpolate import interp1d
 import addcopyfighandler
 
 from sfdi.common.getPath import getPath
@@ -21,6 +22,8 @@ from sfdi.common.readParams import readParams
 from sfdi.analysis import dataDict
 from sfdi.common import models
 from sfdi.processing.crop import crop
+
+from sfdi.processing import __path__ as par_path  # processing parameters path
 
 # support functions
 def load_obj(name, path):
@@ -43,14 +46,19 @@ else:
 if os.path.exists('{}/obj/dataset.pkl'.format(data_path)):
     data = load_obj('dataset', data_path)
 
+with open('{}/overlaps_calibrated.csv'.format(par_path[0]), 'r') as channels:
+    ch_used = (0,1,4,5,6,9)  # channel 0 is wavelenghts
+    cross_ch = np.genfromtxt(channels, delimiter=',')
+    cross_ch = cross_ch[ch_used,70:]  # select non-empty channels and limit wavelength range
+    
 #%% Get relevant datasets
 dz = 0.01  # resolution
-# thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms batch3
-thick = np.array([0.168, 0.196, 0.277, 0.479, 0.727])  # thickness of thin phantoms batch4
+thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms batch3
+# thick = np.array([0.168, 0.196, 0.277, 0.479, 0.727])  # thickness of thin phantoms batch4
 asd = loadmat(f'{data_path}/SFDS_8fx.mat')
 # asd_plus = loadmat(f'{data_path}/SFDS_8fx_plus5.mat')
 # asd_minus = loadmat(f'{data_path}/SFDS_8fx_minus5.mat')
-ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
+# ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
 w = 110  # field of view [mm]
 dw = 0.05  # Difference in %
 
@@ -65,29 +73,28 @@ fx_min = fx * (w / (w*(1+dw)))
 
 z = np.arange(0, 10, dz)
 
-keys = [x for x in data.keys() if 'TiO' in x or 'AlObaseTop' in x]
+keys = [x for x in asd.keys() if 'TiO' in x or 'AlObaseTop' in x]
 # keys.remove('TiObaseBottom')
 keys.sort()
 
 ## Here, do an average for SFDS measurements in multiple locations
-# kkeys = [[x for x in keys if '_1' in x],
-#          [x for x in keys if '_2' in x],
-#          [x for x in keys if '_3' in x]]
-# asd_mean = {}
-# asd_std = {}
-# for _i in range(len(kkeys[0])):
-#     k = kkeys[0][_i][:-2]
-#     asd_mean[k] = np.mean(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
-#     asd_std[k] = np.std(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
-
+kkeys = [[x for x in keys if '_1' in x],
+          [x for x in keys if '_2' in x],
+          [x for x in keys if '_3' in x]]
+asd_mean = {}
+asd_std = {}
+for _i in range(len(kkeys[0])):
+    k = kkeys[0][_i][:-2]
+    asd_mean[k] = np.mean(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
+    asd_std[k] = np.std(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
 ## Here, transform SFDI dataset to have the same format as SFDS for compatibility
-ROI = ret['ROI']  # for convenience
-temp = {}
-for key in keys:
-    temp[key] = np.zeros((5,8,2), dtype=float)
-    for _f, f in enumerate(data[key].keys()):
-        temp[key][:,_f,:] = np.mean(crop(data[key][f]['op_fit_maps'], ROI), axis=(0,1))
-asd = temp  # to use SFDI data without chaning the code
+# ROI = ret['ROI']  # for convenience
+# temp = {}
+# for key in keys:
+#     temp[key] = np.zeros((5,8,2), dtype=float)
+#     for _f, f in enumerate(data[key].keys()):
+#         temp[key][:,_f,:] = np.mean(crop(data[key][f]['op_fit_maps'], ROI), axis=(0,1))
+# asd = temp  # to use SFDI data without chaning the code
 
 # Models of fluence
 phi_diff = {}  # diffusion
@@ -113,13 +120,27 @@ alpha_dp1_plus = {}
 
 
 # Models of scattering
-mus_top = np.squeeze(asd['TiObaseTop'][:,:,1]).T
+mus_top = np.squeeze(asd_mean['TiObaseTop'][:,:,1]).T
 # mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
-mus_bot = np.squeeze(asd['AlObaseTop'][:,:,1]).T
+mus_bot = np.squeeze(asd_mean['AlObaseTop'][:,:,1]).T
 # mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
-mus_meas = {k:asd[k][:,:,1].T for k in [x for x in asd.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
+mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
 # mus_meas_plus = {k:asd_plus[k][:,:,1].T for k in [x for x in asd_plus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
 # mus_meas_minus = {k:asd_minus[k][:,:,1].T for k in [x for x in asd_minus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
+
+if True:  # Wavelength band emulation
+    temp_top = np.zeros((len(mus_top), len(cross_ch)-1))
+    temp_bot = np.zeros((len(mus_top), len(cross_ch)-1))
+    temp_meas = {k:np.zeros((len(mus_top), len(cross_ch)-1)) for k in [x for x in asd_mean.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
+    for band in range(1, len(cross_ch)):
+        interp = interp1d(asd['wv'].squeeze(), mus_top, kind='linear', axis=1, fill_value='extrapolate')
+        temp = interp(cross_ch[0,:])
+        temp_top[:,band-1] = np.sum(cross_ch[band,:,np.newaxis]*temp.T, axis=0)/np.sum(cross_ch[band,:])
+        interp = interp1d(asd['wv'].squeeze(), mus_bot, kind='linear', axis=1, fill_value='extrapolate')
+        temp = interp(cross_ch[0,:])
+        temp_bot[:,band-1] = np.sum(cross_ch[band,:,np.newaxis]*temp.T, axis=0)/np.sum(cross_ch[band,:])    
+    mus_top = temp_top
+    mus_bot = temp_bot
 
 mus_model_diff = {}
 mus_model_diffusion = {}
@@ -130,20 +151,29 @@ mus_model_dp1 = {}
 mus_model_dp1_plus = {}
 mus_model_dp1_min = {}
 
+
 power = 2  # to quickly change from phi to phi**2
-for _i, key in enumerate([x for x in asd.keys() if 'TiO' in x or 'AlObase' in x]):
-    phi_diff[key] = models.phi_diff(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion
-    phi_diffusion[key] = models.phi_diffusion(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # diffusion, Seo
-    phi_deltaP1[key] = models.phi_deltaP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # d-p1, Luigi
-    phi_deltaP1_plus[key] = models.phi_deltaP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx_plus)
-    phi_deltaP1_min[key] = models.phi_deltaP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx_min)
-    phi_dp1[key] = models.phi_dP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx)  # d-p1, Seo
-    phi_dp1_plus[key] = models.phi_dP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx_plus)
-    phi_dp1_min[key] = models.phi_dP1(z, asd[key][:,:,0].T, asd[key][:,:,1].T/0.2, fx_min)
+for _i, key in enumerate([x for x in asd_mean.keys() if 'TiO' in x or 'AlObase' in x]):
+    if True:  # Wavelenght band emulation, for reducing SFDS spectral information
+        temp1 = np.zeros((len(cross_ch)-1, asd_mean[key].shape[1], asd_mean[key].shape[2]))
+        for band in range(1, len(cross_ch)):
+            interp = interp1d(asd['wv'].squeeze(), asd_mean[key], kind='linear', axis=0, fill_value='extrapolate')
+            temp = interp(cross_ch[0,:])
+            temp1[band-1,:,:] = np.sum(cross_ch[band,:,np.newaxis,np.newaxis]*temp, axis=0)/np.sum(cross_ch[band,:])
+        asd_mean[key] = temp1
+    
+    phi_diff[key] = models.phi_diff(z, asd_mean[key][:,:,0].T, asd_mean[key][:,:,1].T/0.2, fx)  # diffusion
+    phi_diffusion[key] = models.phi_diffusion(z, asd_mean[key][:,:,0].T, asd_mean[key][:,:,1].T/0.2, fx)  # diffusion, Seo
+    phi_deltaP1[key] = models.phi_deltaP1(z, asd_mean[key][:,:,0].T, asd_mean[key][:,:,1].T/0.2, fx)  # d-p1, Luigi
+    phi_deltaP1_plus[key] = models.phi_deltaP1(z, asd_mean[key][:,:,0].T, asd_mean[key][:,:,1].T/0.2, fx_plus)
+    phi_deltaP1_min[key] = models.phi_deltaP1(z, asd_mean[key][:,:,0].T, asd_mean[key][:,:,1].T/0.2, fx_min)
+    phi_dp1[key] = models.phi_dP1(z, asd_mean[key][:,:,0].T, asd_mean[key][:,:,1].T/0.2, fx)  # d-p1, Seo
+    phi_dp1_plus[key] = models.phi_dP1(z, asd_mean[key][:,:,0].T, asd_mean[key][:,:,1].T/0.2, fx_plus)
+    phi_dp1_min[key] = models.phi_dP1(z, asd_mean[key][:,:,0].T, asd_mean[key][:,:,1].T/0.2, fx_min)
     
     
     
-    if _i > 0 and _i < len([x for x in asd.keys() if 'TiO' in x or 'AlObase' in x])-1 and True:
+    if _i > 0 and _i < len([x for x in asd_mean.keys() if 'TiO' in x or 'AlObase' in x])-1 and True:
         alpha_diff[key] = models.alpha(phi_diff[key]**power, z, thick[_i-1])
         alpha_diffusion[key] = models.alpha(phi_diffusion[key]**power, z, thick[_i-1])
         alpha_deltaP1[key] = models.alpha(phi_deltaP1[key]**power, z, thick[_i-1])
@@ -162,14 +192,20 @@ for _i, key in enumerate([x for x in asd.keys() if 'TiO' in x or 'AlObase' in x]
         mus_model_dp1_plus[key] = alpha_dp1_plus[key] * mus_top + (1-alpha_dp1_plus[key])* mus_bot
         mus_model_dp1_min[key] = alpha_dp1_min[key] * mus_top + (1-alpha_dp1_min[key])* mus_bot
 
+mus_top = np.squeeze(asd_mean['TiObaseTop'][:,:,1]).T
+# mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
+mus_bot = np.squeeze(asd_mean['AlObaseTop'][:,:,1]).T
+# mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
+mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
+
 if False:  # piecewise continuous model
     phi2_diff = models.phi_2lp(thick, phi_diff['TiObaseTop'], phi_diff['AlObaseTop'], z)
     phi2_diffusion = models.phi_2lp(thick, phi_diffusion['TiObaseTop'], phi_diffusion['AlObaseTop'], z)
     phi2_deltaP1 = models.phi_2lp(thick, phi_deltaP1['TiObaseTop'], phi_deltaP1['AlObaseTop'], z)
     phi2_dp1 = models.phi_2lp(thick, phi_dp1['TiObaseTop'], phi_dp1['AlObaseTop'], z)
     
-    for _i, key in enumerate(asd.keys()):
-        if _i > 0 and _i < len(asd.keys())-1:
+    for _i, key in enumerate(asd_mean.keys()):
+        if _i > 0 and _i < len(asd_mean.keys())-1:
             alpha_diff[key] = models.alpha(phi2_diff[:,:,:,_i-1]**power, z, thick[_i-1])
             alpha_diffusion[key] = models.alpha(phi2_diffusion[:,:,:,_i-1]**power, z, thick[_i-1])
             alpha_deltaP1[key] = models.alpha(phi2_deltaP1[:,:,:,_i-1]**power, z, thick[_i-1])
@@ -183,7 +219,7 @@ if False:  # piecewise continuous model
 # %% Simulation
 lamb = 500  # nm
 # WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
-WV = 0
+WV = 2
 F = 0  # spatial frequency to plot
 
 # Plot fluence
@@ -269,7 +305,7 @@ if False:
     fig.tight_layout()
 
 # Plot fluence, normalized
-if True:
+if False:
     mua = np.ones((1,1), dtype=float) * 0.02
     mus = np.ones((1,1), dtype=float) * 1 / (0.2)  # convert musp to mus
     
@@ -409,24 +445,24 @@ if False:
             # ax.legend()
 
 # Plot mus (only delta-P1) with top and bottom
-if False:
+if True:
     # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     cmap = cm.get_cmap('Dark2')
     # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]
     colors = ['lime', 'yellowgreen', 'sandybrown', 'skyblue', 'mediumorchid', 'gold' , 'orangered']
     
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4.5), num=1)
     ax.plot(fx, mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
     ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
     for _i, key in enumerate(mus_meas.keys()):
-        # ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
-                # label=r'{}'.format(key))
-        ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
+        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
+        #         label=r'{}'.format(key))
+        # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
         #         label=r'{}'.format(key))
         ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
                 label=r'{}'.format(key))
-    ax.set_title(r'$\delta$-P1 - Seo')
+    ax.set_title(r'$\delta$-P1 - luigi')
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
