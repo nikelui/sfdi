@@ -107,7 +107,7 @@ class dataDict(dict):
                     op_map = self[key][fx]['op_fit_maps'][:,:,_j,_i]
                     vmin = 0
                     if _i == 0:
-                        vmax = 0.1
+                        vmax = 1
                     else:
                         vmax = 5
                     im = ax[_i, _j].imshow(op_map, cmap='magma', vmax=vmax, vmin=vmin)
@@ -267,6 +267,7 @@ class dataDict(dict):
         fluence = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2],
                             len(z)), dtype=float)
         par_ave = np.zeros((len(self[key]), 2), dtype=float)
+        par_std = np.zeros((len(self[key]), 2), dtype=float)
         
         # fx = list(self[key].keys())  # list of fx ranges
 
@@ -297,6 +298,13 @@ class dataDict(dict):
                         (A, B), _ = curve_fit(fit_fun, self.par['wv'][:], op_ave[_i,:,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
                         par_ave[_i,:] = (A, B)
+                        
+                        #### New approach?
+                        # (A, B) = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        # par_ave[_i,:] = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        # par_std[_i,:] = np.nanstd(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        ####
+                        
                         op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
                         # import pdb; pdb.set_trace()  # DEBUG start
                         print('{}\nA: {:.2f}, B: {:.4f}\nd: {:.4f}, df: {:.3f}'.format(
@@ -379,7 +387,8 @@ class dataDict(dict):
         plt.tight_layout()
         
         ret_value = {'ROI':ROI, 'op_ave': op_ave, 'op_std': op_std, 'depths': depths, 'depths_std': depths_std,
-                     'depth_phi': depth_phi, 'par_ave': par_ave, 'fluence':fluence, 'depth_MC':depth_MC}
+                     'depth_phi': depth_phi, 'par_ave': par_ave, 'par_std': par_std, 'fluence':fluence,
+                     'depth_MC':depth_MC}
         return ret_value
     
     def multiROI(self, key, **kwargs):

@@ -78,15 +78,15 @@ keys = [x for x in asd.keys() if 'TiO' in x or 'AlObaseTop' in x]
 keys.sort()
 
 ## Here, do an average for SFDS measurements in multiple locations
-kkeys = [[x for x in keys if '_1' in x],
-          [x for x in keys if '_2' in x],
-          [x for x in keys if '_3' in x]]
-asd_mean = {}
-asd_std = {}
-for _i in range(len(kkeys[0])):
-    k = kkeys[0][_i][:-2]
-    asd_mean[k] = np.mean(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
-    asd_std[k] = np.std(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
+# kkeys = [[x for x in keys if '_1' in x],
+#           [x for x in keys if '_2' in x],
+#           [x for x in keys if '_3' in x]]
+asd_mean = asd
+# asd_std = {}
+# for _i in range(len(kkeys[0])):
+#     k = kkeys[0][_i][:-2]
+#     asd_mean[k] = np.mean(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
+#     asd_std[k] = np.std(np.array([asd[kkeys[0][_i]], asd[kkeys[1][_i]],asd[kkeys[2][_i]]]), axis=0)
 ## Here, transform SFDI dataset to have the same format as SFDS for compatibility
 # ROI = ret['ROI']  # for convenience
 # temp = {}
@@ -121,9 +121,9 @@ alpha_dp1_plus = {}
 
 # Models of scattering
 mus_top = np.squeeze(asd_mean['TiObaseTop'][:,:,1]).T
-# mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
+mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
 mus_bot = np.squeeze(asd_mean['AlObaseTop'][:,:,1]).T
-# mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
+mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
 mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
 # mus_meas_plus = {k:asd_plus[k][:,:,1].T for k in [x for x in asd_plus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
 # mus_meas_minus = {k:asd_minus[k][:,:,1].T for k in [x for x in asd_minus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
@@ -223,9 +223,9 @@ WV = 2
 F = 0  # spatial frequency to plot
 
 # Plot fluence
-if False:
-    mua = np.ones((1,1), dtype=float) * 0.1
-    mus = np.ones((1,1), dtype=float) * 1 / (0.2)  # convert musp to mus
+if True:
+    mua = np.ones((1,1), dtype=float) * 0.01
+    mus = np.ones((1,1), dtype=float) * 5 / (0.2)  # convert musp to mus
     
     fx = np.arange(0, 0.3, 0.05)
     dz = 0.01
@@ -237,72 +237,76 @@ if False:
     deltaP1 = np.squeeze(models.phi_deltaP1(z, mua, mus, fx))
     dp1 = np.squeeze(models.phi_dP1(z, mua, mus, fx))
     
+    # Normalization
+    diff = diff / np.sum(diff*dz, axis=1)[:,np.newaxis]
+    dp1 = dp1 / np.sum(dp1*dz, axis=1)[:,np.newaxis]
+    
     # SDA
     plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Blues(np.linspace(1, 0.2, len(fx))))
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4), num=1)
     ax.plot(z, diff.T)
     ax.grid(True, linestyle=':')
-    ax.set_xlim([0, 10])
+    ax.set_xlim([0, 5])
     ax.set_xlabel('mm')
     ax.set_ylabel(r'$\varphi$', fontsize=14)
     ax.set_title(r"Diffusion, SDA ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
     ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
     fig.tight_layout()
     
-    # Diffusion - SEO AC
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=2)
-    ax.plot(z, diff_ac.T)
-    ax.grid(True, linestyle=':')
-    ax.set_xlim([0, 10])
-    ax.set_xlabel('mm')
-    ax.set_ylabel(r'$\varphi$', fontsize=14)
-    ax.set_title(r"Diffusion, Seo - AC ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
-    ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
-    fig.tight_layout()
+    # # Diffusion - SEO AC
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=2)
+    # ax.plot(z, diff_ac.T)
+    # ax.grid(True, linestyle=':')
+    # ax.set_xlim([0, 10])
+    # ax.set_xlabel('mm')
+    # ax.set_ylabel(r'$\varphi$', fontsize=14)
+    # ax.set_title(r"Diffusion, Seo - AC ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
+    # ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    # fig.tight_layout()
     
-    # Diffusion - SEO DC
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=3)
-    ax.plot(z, diff_dc.T)
-    ax.grid(True, linestyle=':')
-    ax.set_xlim([0, 10])
-    ax.set_xlabel('mm')
-    ax.set_ylabel(r'$\varphi$', fontsize=14)
-    ax.set_title(r"Diffusion, Seo - DC ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
-    ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
-    fig.tight_layout()
+    # # Diffusion - SEO DC
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=3)
+    # ax.plot(z, diff_dc.T)
+    # ax.grid(True, linestyle=':')
+    # ax.set_xlim([0, 10])
+    # ax.set_xlabel('mm')
+    # ax.set_ylabel(r'$\varphi$', fontsize=14)
+    # ax.set_title(r"Diffusion, Seo - DC ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
+    # ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    # fig.tight_layout()
     
-    # Diffusion - SEO
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=4)
-    ax.plot(z, (diff_dc + diff_ac).T)
-    ax.grid(True, linestyle=':')
-    ax.set_xlim([0, 10])
-    ax.set_xlabel('mm')
-    ax.set_ylabel(r'$\varphi$', fontsize=14)
-    ax.set_title(r"Diffusion, Seo ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
-    ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
-    fig.tight_layout()
+    # # Diffusion - SEO
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=4)
+    # ax.plot(z, (diff_dc + diff_ac).T)
+    # ax.grid(True, linestyle=':')
+    # ax.set_xlim([0, 10])
+    # ax.set_xlabel('mm')
+    # ax.set_ylabel(r'$\varphi$', fontsize=14)
+    # ax.set_title(r"Diffusion, Seo ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
+    # ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    # fig.tight_layout()
     
     # delta-P1 - SEO
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=5)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4), num=5)
     ax.plot(z, dp1.T)
     ax.grid(True, linestyle=':')
-    ax.set_xlim([0, 10])
+    ax.set_xlim([0, 5])
     ax.set_xlabel('mm')
     ax.set_ylabel(r'$\varphi$', fontsize=14)
     ax.set_title(r"$\delta$-P1 - Seo ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
     ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
     fig.tight_layout()
     
-    # delta-P1 - Vasen
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=6)
-    ax.plot(z, deltaP1.T)
-    ax.grid(True, linestyle=':')
-    ax.set_xlim([0, 10])
-    ax.set_xlabel('mm')
-    ax.set_ylabel(r'$\varphi$', fontsize=14)
-    ax.set_title(r"$\delta$-P1 - Vasen modified ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
-    ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
-    fig.tight_layout()
+    # # delta-P1 - Vasen
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=6)
+    # ax.plot(z, deltaP1.T)
+    # ax.grid(True, linestyle=':')
+    # ax.set_xlim([0, 10])
+    # ax.set_xlabel('mm')
+    # ax.set_ylabel(r'$\varphi$', fontsize=14)
+    # ax.set_title(r"$\delta$-P1 - Vasen modified ($\mu_a$ = {}, $\mu'_s$ = {})".format(mua[0][0], mus[0][0]*0.2))
+    # ax.legend(['fx = {:.2f} mm$^{{-1}}$'.format(x) for x in fx], fontsize=9)
+    # fig.tight_layout()
 
 # Plot fluence, normalized
 if False:
@@ -445,27 +449,27 @@ if False:
             # ax.legend()
 
 # Plot mus (only delta-P1) with top and bottom
-if True:
+if False:
     # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     cmap = cm.get_cmap('Dark2')
     # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]
     colors = ['lime', 'yellowgreen', 'sandybrown', 'skyblue', 'mediumorchid', 'gold' , 'orangered']
     
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4.5), num=1)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,5), num=1)
     ax.plot(fx, mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
     ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
     for _i, key in enumerate(mus_meas.keys()):
-        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])
-        #         label=r'{}'.format(key))
+        ax.plot(fx, mus_model_diff[key][:,WV], linestyle='dashed', color=colors[_i+1])
+                # label=r'{}'.format(key))
         # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])
         #         label=r'{}'.format(key))
         ax.plot(fx, mus_meas[key][:,WV], 'o', color=colors[_i+1],
                 label=r'{}'.format(key))
-    ax.set_title(r'$\delta$-P1 - luigi')
+    ax.set_title(r'SDA')
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
-    ax.set_ylabel(r"$\mu'_s$", fontsize=14)
+    ax.set_ylabel(r"$\mu'_s$ (mm$^{{-1}})$", fontsize=14)
     fig.tight_layout()
     # ax.legend(framealpha=1, ncol=4)
     # ax.set_axis_off()
