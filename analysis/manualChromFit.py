@@ -38,9 +38,22 @@ par_mat = np.zeros([2,5,3])
 titles = ['PC4 - week0', 'PC4 - week1', 'PC4 - week2']  # adjust titles to correct pig / wound
 labels = ['f{}'.format(x) for x in range(5)]
 colors = ['Blues_r', 'Greens_r','Oranges_r']
+
+########################################################
+#  Notes on dataset:                                   #
+#    - for plotting Hb (wound): skiprows=34, nrows=3   #
+#    - for plotting mua (530nm): 
+#    - for plotting mus (wound): skiprows=45, nrows=2  #
+#    - for plotting mus (skin): skiprows=121, nrows=2  #
+########################################################
+
+# Equalize axis
+ylim_a = [1e5, 1e8]
+ylim_b = [0, 3]
+
 for _i, col in enumerate(['C:G', 'M:Q', 'W:AA']):
     df = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
-                       engine='openpyxl', sheet_name='Pig4 - wound2', skiprows=120, nrows=2, usecols=col)
+                       engine='openpyxl', sheet_name='Pig4 - wound1', skiprows=121, nrows=2, usecols=col)
     par_mat[:,:,_i] = np.array(df)
     fig, ax = plt.subplots(1,2, figsize=(9,4.5), num=_i)
     cmap = plt.get_cmap(colors[_i])
@@ -48,9 +61,11 @@ for _i, col in enumerate(['C:G', 'M:Q', 'W:AA']):
     ax[0].bar(labels, par_mat[0,:,_i], color=my_cmap, width=1)
     ax[0].set_yscale('log')
     ax[0].set_title('A')
+    ax[0].set_ylim(ylim_a)
     ax[1].bar(labels, par_mat[1,:,_i], color=my_cmap, width=1)
     ax[1].set_title('B')
-    fig.suptitle('Wound 4 - week{}'.format(_i))
+    ax[1].set_ylim(ylim_b)
+    fig.suptitle('Wound 1 - week{}'.format(_i))
     plt.tight_layout()
     
 figb, axb = plt.subplots(1,2, figsize=(8,4), num=66)
@@ -63,10 +78,12 @@ axb[0].set_xticks(ticks=x)
 axb[0].set_xticklabels(X)
 axb[0].legend(['f0', 'f1'])
 axb[0].set_title('A')
+axb[0].set_ylim(ylim_a)
 axb[1].bar(x-0.25, par_mat[1,0,:], width=0.5)
 axb[1].bar(x+0.25, par_mat[1,1,:], width=0.5)
 axb[1].set_xticks(ticks=x)
 axb[1].set_xticklabels(X)
 axb[1].set_title('B')
-figb.suptitle('PC4')
+axb[1].set_ylim(ylim_b)
+figb.suptitle('PC1')
 plt.tight_layout()
