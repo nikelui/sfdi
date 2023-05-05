@@ -40,7 +40,7 @@ labels = ['f{}'.format(x) for x in range(5)]
 colors = ['Blues_r', 'Greens_r','Oranges_r']
 for _i, col in enumerate(['C:G', 'M:Q', 'W:AA']):
     df = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
-                       engine='openpyxl', sheet_name='Pig4 - wound4', skiprows=44, nrows=2, usecols=col)
+                       engine='openpyxl', sheet_name='Pig4 - wound2', skiprows=120, nrows=2, usecols=col)
     par_mat[:,:,_i] = np.array(df)
     fig, ax = plt.subplots(1,2, figsize=(9,4.5), num=_i)
     cmap = plt.get_cmap(colors[_i])
