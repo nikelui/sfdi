@@ -242,7 +242,7 @@ class dataDict(dict):
         f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
         #TODO: actually implement this. Might need to convert parameters to np.array
         wv_used = kwargs.pop('wv', list(range(len(self.par['wv']))))
-        im = self[key]['f0']['op_fit_maps'][:,:,-1,0]*I  # reference image
+        im = np.array(self[key]['f0']['op_fit_maps'])[:,:,-1,0]*I  # reference image
         im = cv.applyColorMap(im.astype('uint8'), get_mpl_colormap('magma'))  # apply matplotlib colormap
         z = np.arange(0, 4, 0.001)  # 1um resolution
         cv.namedWindow('select ROI', cv.WINDOW_NORMAL)
