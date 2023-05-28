@@ -450,9 +450,11 @@ if __name__ == '__main__':
 
     #%% Plot to compare fluence
     Z = np.arange(0, 10, 0.01)
-    mua = np.array([[0.1]])  # mm^-1
-    mus = np.array([[20]]) # mm^-1
-    fx = np.arange(0, 0.31, 0.05)  # mm^-1
+    mua = np.array([[0.05]])  # mm^-1
+    mus = np.array([[5]]) # mm^-1
+    fx = np.arange(0, 0.31, 0.1)  # mm^-1
+    linestyles = ['-', '--', '-.', ':']
+    
     
     diffusion = np.squeeze(fluence(Z, mua, mus, fx))
     diff_v,_,_ = diffuse_vasen(Z, mua, mus, fx)
@@ -460,37 +462,55 @@ if __name__ == '__main__':
     delta_p1 = np.squeeze(fluence_d(Z, mua, mus, fx))
     vasen = np.squeeze(fluence_vasen(Z, mua, mus, fx))
     
-    fig, ax = plt.subplots(2, 2, num=1, figsize=(14,8))
+    fig, ax = plt.subplots(1, 2, num=1, figsize=(9,4))
     
     text1 = r'$\mu_a$ = {:.2f}mm$^{{-1}}$'.format(mua[0][0])
     text2 = r'$\mu_s$ = {:.1f}mm$^{{-1}}$'.format(mus[0][0])
     
-    # New: normalize fluence to total area
-    ax[0][0].plot(Z, diffusion.T / np.sum(diffusion*0.01, axis=-1))
-    ax[0][0].set_xlim([0, 3])
-    ax[0][0].set_title('Diffusion')
-    ax[0][0].set_xlabel('mm')
-    ax[0][0].set_ylabel('Fluence')
-    ax[0][0].grid(True, linestyle=':')
-    ax[0][0].legend([r'{:.1f}mm$^{{-1}}$'.format(x) for x in fx])
+    # # New: normalize fluence to total area
+    # ax[0][0].plot(Z, diffusion.T / np.sum(diffusion*0.01, axis=-1))
+    # ax[0][0].set_xlim([0, 5])
+    # ax[0][0].set_title('Diffusion')
+    # ax[0][0].set_xlabel('mm')
+    # ax[0][0].set_ylabel('Fluence')
+    # ax[0][0].grid(True, linestyle=':')
+    # ax[0][0].legend([r'{:.1f}mm$^{{-1}}$'.format(x) for x in fx])
     
-    ax[0][1].plot(Z, diff_v.T / np.sum(diff_v*0.01, axis=-1))
-    ax[0][1].set_xlim([0, 3])
-    ax[0][1].set_title(r'Diffusion - Vasen')
-    ax[0][1].set_xlabel('mm')
-    ax[0][1].text(2, 0.6, '{}\n{}'.format(text1, text2), fontsize=14)
-    ax[0][1].grid(True, linestyle=':')
+    # ax[0][1].plot(Z, diff_v.T / np.sum(diff_v*0.01, axis=-1))
+    # ax[0][1].set_xlim([0, 5])
+    # ax[0][1].set_title(r'Diffusion - Vasen')
+    # ax[0][1].set_xlabel('mm')
+    # ax[0][1].text(2, 0.6, '{}\n{}'.format(text1, text2), fontsize=14)
+    # ax[0][1].grid(True, linestyle=':')
     
-    ax[1][0].plot(Z, delta_p1.T / np.sum(delta_p1*0.01, axis=-1))
-    ax[1][0].set_xlim([0, 3])
-    ax[1][0].set_title(r'$\delta$-P1 - Luigi')
-    ax[1][0].set_xlabel('mm')
-    ax[1][0].grid(True, linestyle=':')
+    # ax[1][0].plot(Z, delta_p1.T / np.sum(delta_p1*0.01, axis=-1))
+    # ax[1][0].set_xlim([0, 5])
+    # ax[1][0].set_title(r'$\delta$-P1 - Luigi')
+    # ax[1][0].set_xlabel('mm')
+    # ax[1][0].grid(True, linestyle=':')
     
-    ax[1][1].plot(Z, vasen.T / np.sum(vasen*0.01, axis=-1))
-    ax[1][1].set_xlim([0, 3])
-    ax[1][1].set_title(r'$\delta$-P1 - Seo')
-    ax[1][1].set_xlabel('mm')
-    ax[1][1].grid(True, linestyle=':')
+    # ax[1][1].plot(Z, vasen.T / np.sum(vasen*0.01, axis=-1))
+    # ax[1][1].set_xlim([0, 5])
+    # ax[1][1].set_title(r'$\delta$-P1 - Seo')
+    # ax[1][1].set_xlabel('mm')
+    # ax[1][1].grid(True, linestyle=':')
+    
+    ax[0].plot(Z, diffusion.T / np.sum(diffusion*0.01, axis=-1))
+    ax[0].set_xlim([0, 5])
+    ax[0].set_title('SDA')
+    ax[0].set_xlabel('z (mm)')
+    ax[0].set_ylabel(r'$\phi(z)$')
+    ax[0].grid(True, linestyle=':')
+    ax[0].set_ylim([0, 1])
+    ax[0].legend([r'{:.1f}mm$^{{-1}}$'.format(x) for x in fx], title='fx')
+    ax[0].set_prop_cycle(cycler('linestyle', linestyles))
+
+    ax[1].plot(Z, delta_p1.T / np.sum(delta_p1*0.01, axis=-1))
+    ax[1].set_xlim([0, 5])
+    ax[1].set_title(r'$\delta$-P1')
+    ax[1].set_xlabel('z (mm)')
+    ax[1].set_ylim([0, 1])
+    # ax[1].set_ylabel(r'$\phi(z)$')
+    ax[1].grid(True, linestyle=':')
     
     plt.tight_layout()

@@ -159,7 +159,7 @@ if __name__ == "__main__":
             idx = np.where(dp1_v.cumsum[_j,:] >= dp1_v.phitot[_j]*cdf/100)[0][0]
             depths_dp1_v[_i, _j] = Z[idx]
         
-    _i = 6
+    _i = 0
     freq = fx[_i]
     plt.figure(1, figsize=(8,5.5))
     plt.plot(depths_MC[:,_i], cdflevels, '--sk', markersize=8, label='Monte Carlo')  # reference: MC
