@@ -449,12 +449,13 @@ if __name__ == '__main__':
     plt.tight_layout()
 
     #%% Plot to compare fluence
+    from cycler import cycler
     Z = np.arange(0, 10, 0.01)
     mua = np.array([[0.05]])  # mm^-1
     mus = np.array([[5]]) # mm^-1
     fx = np.arange(0, 0.31, 0.1)  # mm^-1
     linestyles = ['-', '--', '-.', ':']
-    
+    colors = [plt.cm.tab10(i) for i in np.arange(0,0.4,0.1)]
     
     diffusion = np.squeeze(fluence(Z, mua, mus, fx))
     diff_v,_,_ = diffuse_vasen(Z, mua, mus, fx)
@@ -495,21 +496,26 @@ if __name__ == '__main__':
     # ax[1][1].set_xlabel('mm')
     # ax[1][1].grid(True, linestyle=':')
     
-    ax[0].plot(Z, diffusion.T / np.sum(diffusion*0.01, axis=-1))
+    ax[0].set_prop_cycle(cycler('linestyle', linestyles) + 
+                         cycler('color', colors))
+    ax[0].plot(Z, diffusion.T / np.sum(diffusion*0.01, axis=-1),
+               linewidth=2)
     ax[0].set_xlim([0, 5])
-    ax[0].set_title('SDA')
-    ax[0].set_xlabel('z (mm)')
-    ax[0].set_ylabel(r'$\phi(z)$')
+    ax[0].set_title('SDA', fontsize=14)
+    ax[0].set_xlabel('z (mm)', fontsize=12)
+    ax[0].set_ylabel(r'$\phi(z)$', fontsize=12)
     ax[0].grid(True, linestyle=':')
-    ax[0].set_ylim([0, 1])
+    ax[0].set_ylim([0, 0.9])
     ax[0].legend([r'{:.1f}mm$^{{-1}}$'.format(x) for x in fx], title='fx')
-    ax[0].set_prop_cycle(cycler('linestyle', linestyles))
-
-    ax[1].plot(Z, delta_p1.T / np.sum(delta_p1*0.01, axis=-1))
+    
+    ax[1].set_prop_cycle(cycler('linestyle', linestyles) + 
+                         cycler('color', colors))
+    ax[1].plot(Z, delta_p1.T / np.sum(delta_p1*0.01, axis=-1),
+               linewidth=2)
     ax[1].set_xlim([0, 5])
-    ax[1].set_title(r'$\delta$-P1')
-    ax[1].set_xlabel('z (mm)')
-    ax[1].set_ylim([0, 1])
+    ax[1].set_title(r'$\delta$-P1', fontsize=14)
+    ax[1].set_xlabel('z (mm)', fontsize=12)
+    ax[1].set_ylim([0, 0.9])
     # ax[1].set_ylabel(r'$\phi(z)$')
     ax[1].grid(True, linestyle=':')
     

@@ -300,9 +300,9 @@ class dataDict(dict):
                         par_ave[_i,:] = (A, B)
                         
                         #### New approach?
-                        # (A, B) = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
-                        # par_ave[_i,:] = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
-                        # par_std[_i,:] = np.nanstd(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        (A, B) = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        par_ave[_i,:] = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        par_std[_i,:] = np.nanstd(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
                         ####
                         
                         op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
