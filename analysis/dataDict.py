@@ -295,14 +295,16 @@ class dataDict(dict):
             if fit:
                 try:
                     if fit == 'single':
-                        (A, B), _ = curve_fit(fit_fun, self.par['wv'][:], op_ave[_i,:,1], p0=[100,1],
+                        (A, B), S = curve_fit(fit_fun, self.par['wv'][:], op_ave[_i,:,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
                         par_ave[_i,:] = (A, B)
+                        par_std[_i,:] = np.sqrt(np.diag(S))
+                        # import pdb; pdb.set_trace()
                         
                         #### New approach?
-                        (A, B) = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
-                        par_ave[_i,:] = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
-                        par_std[_i,:] = np.nanstd(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        # (A, B) = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        # par_ave[_i,:] = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        # par_std[_i,:] = np.nanstd(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
                         ####
                         
                         op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
@@ -446,20 +448,28 @@ class dataDict(dict):
         for dataset in [x for x in self if not x == 'parameters']:
             for fx in self[dataset]:
                 op_map = self[dataset][fx]['op_fit_maps']
+                par_map = self[dataset][fx]['par_map']
                 mask = np.zeros(op_map.shape, dtype=bool)  # initialize
+                mask2 = np.zeros(par_map.shape, dtype=bool)
                 for _i, _j in itertools.product(range(op_map.shape[-2]), range(op_map.shape[-1])):
                     # set mask to True if pixel values are outliers
                     mask[:,:,_i,_j] = np.logical_or(op_map[:,:,_i,_j] >= 15*mad(op_map[:,:,_i,_j]),
                                                     op_map[:,:,_i,_j] >= 20)  # hard limit
 #                    print('{}, {}: {}'.format(_i, _j, mad(op_map[:,:,_i,_j])))  # DEBUG
+                mask2[:,:,0] = np.abs(np.log10(par_map[:,:,0])) >= 1*mad(np.log10(par_map[:,:,0]))
+                mask2[:,:,1] = np.abs(par_map[:,:,1]) >= 1*mad(par_map[:,:,1])
+                
                 self[dataset][fx]['op_fit_maps'] = ma.masked_array(
                           data=op_map, mask=mask, fill_value=np.nan)
+                self[dataset][fx]['par_map'] = ma.masked_array(
+                          data=par_map, mask=mask2, fill_value=np.nan)
     
     def mask_off(self):
         for dataset in [x for x in self if not x == 'parameters']:
             for fx in self[dataset]:
-                self[dataset][fx]['op_fit_maps'] = self[dataset][fx]['op_fit_maps'].data
-    
+                self[dataset][fx]['op_fit_maps'] = np.array(self[dataset][fx]['op_fit_maps'].data)
+                self[dataset][fx]['par_map'] = np.array(self[dataset][fx]['par_map'].data)    
+
     def depth(self, mua, mus, fx):
         """Function to calculate effective penetration depth based on diffusion approximation
     - mua, mus: vectors (1 x wv)
