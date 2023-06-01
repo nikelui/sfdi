@@ -291,7 +291,7 @@ class dataDict(dict):
             # calculate depth based on Monte Carlo table
             temp = depthMC(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[f'f{_i}']))
             depth_MC[_i, :] = temp[4,:,:]  # index '4'-> assumes 90% of photons
-
+            # import pdb; pdb.set_trace()
             if fit:
                 try:
                     if fit == 'single':
@@ -299,7 +299,7 @@ class dataDict(dict):
                                               method='trf', loss='soft_l1', max_nfev=2000)
                         par_ave[_i,:] = (A, B)
                         par_std[_i,:] = np.sqrt(np.diag(S))
-                        # import pdb; pdb.set_trace()
+                        
                         
                         #### New approach?
                         # (A, B) = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))

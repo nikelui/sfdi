@@ -13,6 +13,5 @@ def crop(Im, ROI):
 - ROI is a tuple that defines a rectangle: (x,y,width,heigth),
   with x,y the coordinates of top-left corner
 """
-    Im = np.array(Im)
     I_ROI = Im[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2]] # works both for color and grayscale
     return I_ROI
