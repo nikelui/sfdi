@@ -36,7 +36,7 @@ for _i, skip in enumerate([2, 8, 14, 20, 26]):
 ## Plotting scattering parameters
 par_mat = np.zeros([4,5,3])
 par_norm = np.zeros([2,5,3])
-mua_mat = np.zeros([1,5,3])
+mua_mat = np.zeros([2,5,3])
 mua_norm = np.zeros([1,5,3])
 titles = ['PC4 - week0', 'PC4 - week1', 'PC4 - week2']  # adjust titles to correct pig / wound
 labels = ['f{}'.format(x) for x in range(5)]
@@ -58,12 +58,12 @@ colors = ['Blues_r', 'Greens_r','Oranges_r']
 # ylim_b = [-1.7, 6.1]
 ylim_a = [1e-5, 1e10]
 ylim_b = [0, 4.5]
-ylim_mua = [0, 0.25]
+ylim_mua = [0, 3]
 wound = 1
 for _i, col in enumerate(['C:G', 'M:Q', 'W:AA']):
     df = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
                        engine='openpyxl', sheet_name='Pig4 - wound{}'.format(wound),
-                       skiprows=49, nrows=4, usecols=col)
+                       skiprows=41, nrows=2, usecols=col)
     # df2 = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
     #                    engine='openpyxl', sheet_name='Pig4 - wound{}'.format(wound),
     #                    skiprows=125, nrows=1, usecols=col)
@@ -91,12 +91,16 @@ for _i, col in enumerate(['C:G', 'M:Q', 'W:AA']):
         fig.suptitle('Wound {} - week{}'.format(wound, _i))
         plt.tight_layout()
     
-    if False:  # mua
+    if True:  # mua
         mua_mat[:,:,_i] = np.array(df)
         # mua_norm[:,:,_i] = np.array(df2)
         fig, ax = plt.subplots(1,1, figsize=(6,4), num=_i)
         cmap = plt.get_cmap(colors[_i])
         my_cmap = cmap(np.arange(0.2,0.7,0.1))
+        # With errorbar
+        ax.bar(labels, mua_mat[0,:,_i], color=my_cmap, width=1, yerr=mua_mat[1,:,_i],
+               ecolor='k', capsize=5)
+        # Without errorbar
         ax.bar(labels, mua_mat[0,:,_i], color=my_cmap, width=1)
         # ax.set_yscale('log')
         ax.set_title(r'$\mu_a (530nm)$')
@@ -138,15 +142,15 @@ if False:  # mus
     figb.suptitle('PC{}'.format(wound))
     plt.tight_layout()
     
-if False:  # mua  
+if True:  # mua  
     figb, axb = plt.subplots(1,1, figsize=(6,4), num=66)
     x = np.array([0, 1.1, 2.2])
     X = list(f'week{x}' for x in range(3))
     # normalized
     # axb.bar(x-0.25, mua_mat[0,1,:]/mua_norm[0,1,:]*100, width=0.5)
     # axb.bar(x+0.25, mua_mat[0,2,:]/mua_norm[0,2,:]*100, width=0.5)
-    axb.bar(x-0.25, mua_mat[0,1,:], width=0.5)
-    axb.bar(x+0.25, mua_mat[0,2,:], width=0.5)
+    axb.bar(x-0.25, mua_mat[0,1,:], width=0.5, yerr=mua_mat[1,1,:], ecolor='k', capsize=5)
+    axb.bar(x+0.25, mua_mat[0,2,:], width=0.5, yerr=mua_mat[1,2,:], ecolor='k', capsize=5)
     # axb.set_yscale('log')
     axb.set_xticks(ticks=x)
     axb.set_xticklabels(X)

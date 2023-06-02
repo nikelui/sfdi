@@ -453,7 +453,7 @@ class dataDict(dict):
                 mask2 = np.zeros(par_map.shape, dtype=bool)
                 for _i, _j in itertools.product(range(op_map.shape[-2]), range(op_map.shape[-1])):
                     # set mask to True if pixel values are outliers
-                    mask[:,:,_i,_j] = np.logical_or(op_map[:,:,_i,_j] >= 15*mad(op_map[:,:,_i,_j]),
+                    mask[:,:,_i,_j] = np.logical_or(op_map[:,:,_i,_j] >= 10*mad(op_map[:,:,_i,_j]),
                                                     op_map[:,:,_i,_j] >= 20)  # hard limit
 #                    print('{}, {}: {}'.format(_i, _j, mad(op_map[:,:,_i,_j])))  # DEBUG
                 mask2[:,:,0] = np.abs(np.log10(par_map[:,:,0])) >= 1*mad(np.log10(par_map[:,:,0]))

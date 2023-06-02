@@ -111,7 +111,7 @@ data.mask_on()  # mask outliers
 # data.plot_op_sfds('TiO20ml', f=[0,1,2,3,4])
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
 # ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
-ret = data.singleROI('wound4', norm=None, fit="single", f=[0,1,2,3], I=2e3, zoom=3)
+ret = data.singleROI('wound4', norm=None, fit="single", f=[0,1,2,3,4], I=2e3, zoom=3)
 ret['par_ave'] = ret['par_ave'].T
 ret['par_std'] = ret['par_std'].T
 temp = np.stack([ret['op_ave'][:,:,0],ret['op_std'][:,:,0],
