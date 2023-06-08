@@ -234,7 +234,7 @@ if False:  # piecewise continuous model
 # %% Simulation
 lamb = 500  # nm
 # WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
-WV = 4
+WV = 2
 F = 0  # spatial frequency to plot
 
 # Plot fluence
@@ -498,7 +498,7 @@ if True:
     markers = ['o', 'v', '^', 's', 'd']
     
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8,4.5), num=1)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,4.5), num=1)
     ax.plot(fx, mus_top[:,WV], linestyle='solid', color=colors[0], label=r'TiO$_2$')
     ax.plot(fx, mus_bot[:,WV], linestyle='solid', color=colors[-1], label=r'Al$_2$O$_3$')
     ## Normalize top and bottom
@@ -520,7 +520,9 @@ if True:
         # Seo d-P1
         # ax.fill_between(fx, mus_meas_plus[key][:,WV], mus_meas_minus[key][:,WV],
         #                 alpha=0.25, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        ax.plot(fx, mus_model_diff[key][:,WV], linestyle='solid', color=colors[_i+1])
+        ax.plot(fx, mus_model_diff[key][:,WV], linestyle='solid', color=colors[_i+1])  # Diffusion
+        ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])  # Seo
+        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])  # Luigi
         # Measured
         ax.errorbar(fx, mus_meas[key][:,WV], yerr=mus_std[key][:,WV], marker=markers[_i],
                     color=colors[_i+1], markerfacecolor="None", linestyle="None",
@@ -529,12 +531,21 @@ if True:
         #         label=r'{}'.format(key))
 
     # ax.set_title(r'$\delta$-P1 [@{}nm]'.format(wv[WV]))
-    ax.set_title(r'SDA [@{}nm]'.format(wv[WV]))
+    ax.set_title(r'3 models[@{}nm]'.format(wv[WV]))
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
     fig.tight_layout()
-    # ax.legend(framealpha=1, ncol=4)
+    
+    # # get handles to remove errorbars from legend
+    # from matplotlib import lines
+    # handles, labels = ax.get_legend_handles_labels()
+    # # remove the errorbars
+    # handles = [h[0] if type(h) is not lines.Line2D else h for h in handles]
+    # # use them in the legend
+    # ax.legend(handles, labels, framealpha=1, ncol=4)
+
+    # # ax.legend(framealpha=1, ncol=1)
     # ax.set_axis_off()
 
 # Plot mus(lambda) at a single fx
