@@ -66,7 +66,7 @@ if path:  # check for empty path
     ##############################################################################
     ##  Define the folders to process here. Leave empty for interactive prompt  ##
     ##############################################################################
-    toProcess = ['AlObase', 'TiObase', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml']
+    toProcess = ['wound1_', 'wound2_', 'wound4_']
     if(not toProcess):  # In case you define by hand
         regex = input('Input base name to match (end with empty line): ').lower()  # only process matching directories
         while (regex != ''):  # End with an empty name
@@ -94,7 +94,7 @@ for _d, dataset in enumerate(dirs):
 
     ## Calibration step
     print('Calibrating {}...'.format(dataset))
-    if False:  # True to perform motion correction (slower)
+    if True:  # True to perform motion correction (slower)
         AC = motionCorrect(AC, par, edge='sobel', con=2, gauss=(7,5), debug=False)  # correct motion artifacts in raw data
         
     cal_R = calibrate(AC, ACph, par, path=cphantom)
@@ -121,7 +121,7 @@ for _d, dataset in enumerate(dirs):
     # TODO: this part is pretty computationally intensive, might be worth to optimize
     # Loop through different spatial frequencies
     if True:  # multi-frequencies approach
-        FX = list(list(range(_i, _i+4)) for _i in range(len(par['freqs']) - 3))
+        FX = list(list(range(_i, _i+4)) for _i in range(len(par['freqs']) - 3 - 5))
     else:
         FX = [par['freq_used']]
     

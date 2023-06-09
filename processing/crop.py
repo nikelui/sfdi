@@ -5,6 +5,7 @@ Created on Mon Jun 24 14:35:37 2019
 @author: Luigi Belcastro - Linköping University
 email: luigi.belcastro@liu.se
 """
+import numpy as np
 
 def crop(Im, ROI):
     """Simple function to crop images with ROI acquired in OpenCV.

@@ -107,7 +107,7 @@ class dataDict(dict):
                     op_map = self[key][fx]['op_fit_maps'][:,:,_j,_i]
                     vmin = 0
                     if _i == 0:
-                        vmax = 0.1
+                        vmax = 1
                     else:
                         vmax = 5
                     im = ax[_i, _j].imshow(op_map, cmap='magma', vmax=vmax, vmin=vmin)
@@ -242,7 +242,7 @@ class dataDict(dict):
         f_used = [x for x in f_used if 0 <= x < len(self[key])]  # add additional check to index
         #TODO: actually implement this. Might need to convert parameters to np.array
         wv_used = kwargs.pop('wv', list(range(len(self.par['wv']))))
-        im = self[key]['f0']['op_fit_maps'][:,:,-1,0]*I  # reference image
+        im = np.array(self[key]['f0']['op_fit_maps'])[:,:,-1,0]*I  # reference image
         im = cv.applyColorMap(im.astype('uint8'), get_mpl_colormap('magma'))  # apply matplotlib colormap
         z = np.arange(0, 4, 0.001)  # 1um resolution
         cv.namedWindow('select ROI', cv.WINDOW_NORMAL)
@@ -267,6 +267,7 @@ class dataDict(dict):
         fluence = np.zeros((len(self[key]), self[key]['f0']['op_fit_maps'].shape[2],
                             len(z)), dtype=float)
         par_ave = np.zeros((len(self[key]), 2), dtype=float)
+        par_std = np.zeros((len(self[key]), 2), dtype=float)
         
         # fx = list(self[key].keys())  # list of fx ranges
 
@@ -290,13 +291,22 @@ class dataDict(dict):
             # calculate depth based on Monte Carlo table
             temp = depthMC(op_ave[_i,:,0], op_ave[_i,:,1], np.mean(self.par[f'f{_i}']))
             depth_MC[_i, :] = temp[4,:,:]  # index '4'-> assumes 90% of photons
-
+            # import pdb; pdb.set_trace()
             if fit:
                 try:
                     if fit == 'single':
-                        (A, B), _ = curve_fit(fit_fun, self.par['wv'][:], op_ave[_i,:,1], p0=[100,1],
+                        (A, B), S = curve_fit(fit_fun, self.par['wv'][:], op_ave[_i,:,1], p0=[100,1],
                                               method='trf', loss='soft_l1', max_nfev=2000)
                         par_ave[_i,:] = (A, B)
+                        par_std[_i,:] = np.sqrt(np.diag(S))
+                        
+                        
+                        #### New approach?
+                        # (A, B) = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        # par_ave[_i,:] = np.nanmean(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        # par_std[_i,:] = np.nanstd(crop(self[key][f'f{_i}']['par_map'], ROI), axis=(0,1))
+                        ####
+                        
                         op_fit[_i,:] = fit_fun(np.linspace(self.par['wv'][0], self.par['wv'][-1], 100), A, B)
                         # import pdb; pdb.set_trace()  # DEBUG start
                         print('{}\nA: {:.2f}, B: {:.4f}\nd: {:.4f}, df: {:.3f}'.format(
@@ -378,8 +388,9 @@ class dataDict(dict):
         cmap.set_bad(color='cyan')
         plt.tight_layout()
         
-        ret_value = {'op_ave': op_ave, 'op_std': op_std, 'depths': depths, 'depths_std': depths_std,
-                     'depth_phi': depth_phi, 'par_ave': par_ave, 'fluence':fluence, 'depth_MC':depth_MC}
+        ret_value = {'ROI':ROI, 'op_ave': op_ave, 'op_std': op_std, 'depths': depths, 'depths_std': depths_std,
+                     'depth_phi': depth_phi, 'par_ave': par_ave, 'par_std': par_std, 'fluence':fluence,
+                     'depth_MC':depth_MC}
         return ret_value
     
     def multiROI(self, key, **kwargs):
@@ -437,20 +448,28 @@ class dataDict(dict):
         for dataset in [x for x in self if not x == 'parameters']:
             for fx in self[dataset]:
                 op_map = self[dataset][fx]['op_fit_maps']
+                par_map = self[dataset][fx]['par_map']
                 mask = np.zeros(op_map.shape, dtype=bool)  # initialize
+                mask2 = np.zeros(par_map.shape, dtype=bool)
                 for _i, _j in itertools.product(range(op_map.shape[-2]), range(op_map.shape[-1])):
                     # set mask to True if pixel values are outliers
-                    mask[:,:,_i,_j] = np.logical_or(op_map[:,:,_i,_j] >= 15*mad(op_map[:,:,_i,_j]),
+                    mask[:,:,_i,_j] = np.logical_or(op_map[:,:,_i,_j] >= 10*mad(op_map[:,:,_i,_j]),
                                                     op_map[:,:,_i,_j] >= 20)  # hard limit
 #                    print('{}, {}: {}'.format(_i, _j, mad(op_map[:,:,_i,_j])))  # DEBUG
+                mask2[:,:,0] = np.abs(np.log10(par_map[:,:,0])) >= 1*mad(np.log10(par_map[:,:,0]))
+                mask2[:,:,1] = np.abs(par_map[:,:,1]) >= 1*mad(par_map[:,:,1])
+                
                 self[dataset][fx]['op_fit_maps'] = ma.masked_array(
                           data=op_map, mask=mask, fill_value=np.nan)
+                self[dataset][fx]['par_map'] = ma.masked_array(
+                          data=par_map, mask=mask2, fill_value=np.nan)
     
     def mask_off(self):
         for dataset in [x for x in self if not x == 'parameters']:
             for fx in self[dataset]:
-                self[dataset][fx]['op_fit_maps'] = self[dataset][fx]['op_fit_maps'].data
-    
+                self[dataset][fx]['op_fit_maps'] = np.array(self[dataset][fx]['op_fit_maps'].data)
+                self[dataset][fx]['par_map'] = np.array(self[dataset][fx]['par_map'].data)    
+
     def depth(self, mua, mus, fx):
         """Function to calculate effective penetration depth based on diffusion approximation
     - mua, mus: vectors (1 x wv)
