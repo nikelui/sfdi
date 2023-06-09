@@ -61,15 +61,29 @@ ylim_b = [0, 4.5]
 ylim_mua = [0, 3]
 wound = 1
 for _i, col in enumerate(['C:G', 'M:Q', 'W:AA']):
-    df = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
-                       engine='openpyxl', sheet_name='Pig4 - wound{}'.format(wound),
-                       skiprows=41, nrows=2, usecols=col)
-    # df2 = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
+    # df = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
     #                    engine='openpyxl', sheet_name='Pig4 - wound{}'.format(wound),
-    #                    skiprows=125, nrows=1, usecols=col)
-    
+    #                    skiprows=41, nrows=2, usecols=col)
+    # df2 = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
+    #                     engine='openpyxl', sheet_name='Pig4 - wound{}'.format(wound),
+    #                     skiprows=125, nrows=1, usecols=col)
+    ## Average of control cases ## 
+    df = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
+                        engine='openpyxl', sheet_name='Pig3 - wound2',
+                        skiprows=41, nrows=2, usecols=col)
+    df2 = pd.read_excel(r'C:\Users\luibe59\OneDrive - Linköpings universitet\PhD project\Pig study\New Pig Data.xlsx',
+                        engine='openpyxl', sheet_name='Pig4 - wound1',
+                        skiprows=41, nrows=2, usecols=col)
     if False: # mus
         par_mat[:,:,_i] = np.array(df)
+        ## Combining controls
+        # x1 = np.array(df)
+        # x2 = np.array(df2)
+        
+        # par_mat[:2,:,_i] = ((x1 + x2)/2)[:2,:]  # combine mean
+        # par_mat[2:,:,_i] = np.sqrt((x1[2:,:]**2 + x2[2:,:]**2 +
+        #                             (x1[0:2,:]-par_mat[:2,:,_i])**2 +
+        #                             (x2[0:2,:]-par_mat[:2,:,_i])**2)/2)
         fig, ax = plt.subplots(1,2, figsize=(9,4.5), num=_i)
         cmap = plt.get_cmap(colors[_i])
         my_cmap = cmap(np.arange(0.2,0.7,0.1))
@@ -92,7 +106,16 @@ for _i, col in enumerate(['C:G', 'M:Q', 'W:AA']):
         plt.tight_layout()
     
     if True:  # mua
-        mua_mat[:,:,_i] = np.array(df)
+        # mua_mat[:,:,_i] = np.array(df)
+        ## Combining controls
+        x1 = np.array(df)
+        x2 = np.array(df2)
+        
+        mua_mat[0,:,_i] = ((x1 + x2)/2)[0,:]  # combine mean
+        mua_mat[1,:,_i] = np.sqrt((x1[1,:]**2 + x2[1,:]**2 +
+                                    (x1[0,:]-mua_mat[0,:,_i])**2 +
+                                    (x2[0,:]-mua_mat[0,:,_i])**2)/2)
+        
         # mua_norm[:,:,_i] = np.array(df2)
         fig, ax = plt.subplots(1,1, figsize=(6,4), num=_i)
         cmap = plt.get_cmap(colors[_i])
@@ -116,8 +139,9 @@ if False:  # mus
     # Normalized
     # axb[0].bar(x-0.25, par_mat[0,1,:]/par_norm[0,1,:], width=0.5)
     # axb[0].bar(x+0.25, par_mat[0,2,:]/par_norm[0,2,:], width=0.5)
-    axb[0].bar(x-0.25, par_mat[0,1,:], width=0.5, yerr=par_mat[2,1,:], ecolor='k', capsize=5)
-    axb[0].bar(x+0.25, par_mat[0,2,:], width=0.5, yerr=par_mat[2,2,:], ecolor='k', capsize=5)
+    neg_err = np.zeros(par_mat[2,1,:].shape)
+    axb[0].bar(x-0.25, par_mat[0,1,:], width=0.5, yerr=(neg_err,par_mat[2,1,:]), ecolor='k', capsize=5)
+    axb[0].bar(x+0.25, par_mat[0,2,:], width=0.5, yerr=(neg_err,par_mat[2,2,:]), ecolor='k', capsize=5)
     axb[0].set_yscale('log')
     # axb[0].set_ylabel('% (log scale)')
     axb[0].set_xticks(ticks=x)
@@ -140,9 +164,10 @@ if False:  # mus
     axb[1].set_axisbelow(True)
     axb[1].grid(True, axis='y', linestyle=':')
     figb.suptitle('PC{}'.format(wound))
+    # figb.suptitle('Neg. Control')
     plt.tight_layout()
     
-if True:  # mua  
+if True:  # mua
     figb, axb = plt.subplots(1,1, figsize=(6,4), num=66)
     x = np.array([0, 1.1, 2.2])
     X = list(f'week{x}' for x in range(3))
@@ -161,5 +186,6 @@ if True:  # mua
     axb.set_ylim(ylim_mua)
     axb.set_axisbelow(True)
     axb.grid(True, axis='y', linestyle=':')
-    figb.suptitle('PC{}'.format(wound))
+    # figb.suptitle('PC{}'.format(wound))
+    figb.suptitle('Neg. Control')
     plt.tight_layout()

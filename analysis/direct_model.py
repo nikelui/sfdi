@@ -55,7 +55,7 @@ with open('{}/overlaps_calibrated.csv'.format(par_path[0]), 'r') as channels:
 dz = 0.01  # resolution
 thick = np.array([0.125, 0.265, 0.51, 0.67, 1.17])  # thickness of thin phantoms batch3
 # thick = np.array([0.168, 0.196, 0.277, 0.479, 0.727])  # thickness of thin phantoms batch4
-# asd = loadmat(f'{data_path}/SFDS_8fx.mat')
+asd_sfds = loadmat(f'{data_path}/SFDS_8fx.mat')
 # asd_plus = loadmat(f'{data_path}/SFDS_8fx_plus5.mat')
 # asd_minus = loadmat(f'{data_path}/SFDS_8fx_minus5.mat')
 ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
@@ -129,9 +129,9 @@ alpha_dp1_plus = {}
 
 # Models of scattering
 mus_top = np.squeeze(asd_mean['TiObaseTop'][:,:,1]).T
-mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
+# mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
 mus_bot = np.squeeze(asd_mean['AlObaseTop'][:,:,1]).T
-mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
+# mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
 mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x] if 'Top' not in k}
 mus_std = {k:asd_std[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x] if 'Top' not in k}
 # mus_meas_plus = {k:asd_plus[k][:,:,1].T for k in [x for x in asd_plus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
@@ -211,7 +211,7 @@ mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO'
 # Performance metric - RMSE. Change the model to evaluate
 RMSE = np.zeros((len(mus_meas.keys()),mus_top.shape[1]))
 for _i, key in enumerate(mus_meas.keys()):
-    RMSE[_i] = np.sqrt(np.sum((mus_meas[key] - mus_model_diff[key])**2, axis=0) / mus_meas[key].shape[0])
+    RMSE[_i] = np.sqrt(np.sum((mus_meas[key] - mus_model_deltaP1[key])**2, axis=0) / mus_meas[key].shape[0])
 
 if False:  # piecewise continuous model
     phi2_diff = models.phi_2lp(thick, phi_diff['TiObaseTop'], phi_diff['AlObaseTop'], z)
@@ -234,7 +234,7 @@ if False:  # piecewise continuous model
 # %% Simulation
 lamb = 500  # nm
 # WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
-WV = 2
+WV = 4
 F = 0  # spatial frequency to plot
 
 # Plot fluence
@@ -520,9 +520,9 @@ if True:
         # Seo d-P1
         # ax.fill_between(fx, mus_meas_plus[key][:,WV], mus_meas_minus[key][:,WV],
         #                 alpha=0.25, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        ax.plot(fx, mus_model_diff[key][:,WV], linestyle='solid', color=colors[_i+1])  # Diffusion
-        ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='dotted', color=colors[_i+1])  # Seo
-        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='dashed', color=colors[_i+1])  # Luigi
+        # ax.plot(fx, mus_model_diff[key][:,WV], linestyle='solid', color=colors[_i+1])  # Diffusion
+        # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='solid', color=colors[_i+1])  # Seo
+        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='solid', color=colors[_i+1])  # Luigi
         # Measured
         ax.errorbar(fx, mus_meas[key][:,WV], yerr=mus_std[key][:,WV], marker=markers[_i],
                     color=colors[_i+1], markerfacecolor="None", linestyle="None",
@@ -530,8 +530,8 @@ if True:
         # ax.plot(fx, scale_meas[:,WV], 'o', color=colors[_i+1],  # Normalized
         #         label=r'{}'.format(key))
 
-    # ax.set_title(r'$\delta$-P1 [@{}nm]'.format(wv[WV]))
-    ax.set_title(r'3 models[@{}nm]'.format(wv[WV]))
+    ax.set_title(r'$\delta$-P1 [@{}nm]'.format(wv[WV]))
+    # ax.set_title(r'SDA[@{}nm]'.format(wv[WV]))
     ax.grid(True, linestyle=':')
     ax.set_xlabel(r'fx (mm$^{{-1}})$')
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
