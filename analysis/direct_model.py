@@ -129,9 +129,9 @@ alpha_dp1_plus = {}
 
 # Models of scattering
 mus_top = np.squeeze(asd_mean['TiObaseTop'][:,:,1]).T
-# mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
+mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
 mus_bot = np.squeeze(asd_mean['AlObaseTop'][:,:,1]).T
-# mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
+mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
 mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x] if 'Top' not in k}
 mus_std = {k:asd_std[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x] if 'Top' not in k}
 # mus_meas_plus = {k:asd_plus[k][:,:,1].T for k in [x for x in asd_plus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
@@ -211,7 +211,7 @@ mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO'
 # Performance metric - RMSE. Change the model to evaluate
 RMSE = np.zeros((len(mus_meas.keys()),mus_top.shape[1]))
 for _i, key in enumerate(mus_meas.keys()):
-    RMSE[_i] = np.sqrt(np.sum((mus_meas[key] - mus_model_deltaP1[key])**2, axis=0) / mus_meas[key].shape[0])
+    RMSE[_i] = np.sqrt(np.sum(((mus_meas[key] - mus_model_diff[key])/mus_meas[key])**2, axis=0) / mus_meas[key].shape[0]) * 100
 
 if False:  # piecewise continuous model
     phi2_diff = models.phi_2lp(thick, phi_diff['TiObaseTop'], phi_diff['AlObaseTop'], z)
