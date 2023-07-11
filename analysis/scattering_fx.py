@@ -106,19 +106,40 @@ else:
 
 
 # Post- processing
-data.mask_on()  # mask outliers
+# data.mask_on()  # mask outliers
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_op_sfds('TiO20ml', f=[0,1,2,3,4])
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
-# ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
-ret = data.singleROI('wound4', norm=None, fit="single", f=[0,1,2,3,4], I=2e3, zoom=3)
-ret['par_ave'] = ret['par_ave'].T
-ret['par_std'] = ret['par_std'].T
-temp = np.stack([ret['op_ave'][:,:,0],ret['op_std'][:,:,0],
-                 ret['op_ave'][:,:,1],ret['op_std'][:,:,1]], axis=2)  # for ease of copying
-temp2 = np.stack([ret['op_ave'][:,2,0],ret['op_std'][:,2,0]])
-# data.plot_op('wound4', f=[0,1,2])
+ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
+# ret = data.singleROI('wound2', norm=None, fit="single", f=[0,1,2,3,4], I=2e3, zoom=3)
+# ret['par_ave'] = ret['par_ave'].T
+# ret['par_std'] = ret['par_std'].T
+# temp = np.stack([ret['op_ave'][:,:,0],ret['op_std'][:,:,0],
+#                  ret['op_ave'][:,:,1],ret['op_std'][:,:,1]], axis=2)  # for ease of copying
+# temp2 = np.stack([ret['op_ave'][:,2,0],ret['op_std'][:,2,0]])
+# data.plot_op('wound4', f=[0])
 # data.plot_cal('wound4', data_path)
+#%% To save data
+from sfdi.processing.crop import crop
+from scipy.io import savemat, loadmat
+ROI = ret['ROI']
+keys = ['AlObaseTop', 'TiObaseTop', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml']
+FX = ['f{}'.format(x) for x in range(8)]
+out_data = {}
+
+for key in keys:
+    out_data[key] = {}
+    temp = np.zeros((len(FX), 5, 2))
+    stemp = np.zeros((len(FX), 5, 2))
+    for _f,F in enumerate(FX):
+        temp[_f,:,:] = np.mean(crop(data[key][F]['op_fit_maps'], ROI), axis=(0,1))
+        stemp[_f,:,:] = np.std(crop(data[key][F]['op_fit_maps'], ROI), axis=(0,1))
+    out_data[key]['mean'] = temp
+    out_data[key]['std'] = stemp
+
+savemat('{}/test/test.mat'.format(data_path), out_data)
+asd = loadmat('{}/test/test.mat'.format(data_path), struct_as_record=True, squeeze_me=True)
+
 #%% Add SDFS only
 if False:
     sfds_path = [x for x in os.listdir(data_path) if re.match(regex3, x)]  # should be only one

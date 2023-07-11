@@ -20,6 +20,7 @@ x   - phi_2lc: 2-layer model of fluence, continuous. phi = A*phi1 + (1-A)*phi2
     - phi_2lp: 2-layer model of fluence, piecewise continuous.
 """
 import numpy as np
+from cycler import cycler
 
 def phi_diff(z, mua, mus, fx, n=1.4, g=0.8):
     """Function to calculate fluence of light in depth based on the standard diffuse approximation.
@@ -232,10 +233,10 @@ if __name__ == '__main__':
     from matplotlib import cm
     import addcopyfighandler    
     
-    if False:
+    if True:
         dz = 0.001
         mua = np.array([[0.05]])
-        mus = np.array([[10]])
+        mus = np.array([[5]])*5
         z = np.arange(0,10,dz)
         fx = np.array([0, 0.1, 0.2, 0.3])
         
@@ -243,20 +244,26 @@ if __name__ == '__main__':
         phi2 = phi_deltaP1(z, mua, mus, fx)
         phi3 = phi_dP1(z, mua, mus, fx)
         
-        titles=['diffusion', r'$\delta-P1$ (Luigi)', r'$\delta-P1$ (Seo)']
+        titles=['SDA', r'$\delta-P1$', r'mod-$\delta-P1$']
+        cyc = (cycler(color=['tab:blue','tab:orange','tab:green','tab:red'])+
+               cycler(linestyle=['-', '--', '-.', ':']))
         
-        for _i, phi in enumerate([phi1, phi2, phi3]):
-            plt.figure(num=_i+1, figsize=(6,4))
-            plt.plot(z, np.squeeze(phi).T)
-            plt.legend([r'fx={}mm$^{{-1}}$'.format(x) for x in fx])
-            plt.title(titles[_i])
-            plt.xlabel('mm')
-            plt.ylabel(r'$\varphi$')
-            plt.grid(True, linestyle=':')
-            plt.tight_layout()
+        fig, ax = plt.subplots(1,3, figsize=(10,3.5))
+        for _i, phi in enumerate([phi1, phi3, phi2]):
+            ax[_i].plot(z, np.squeeze(phi).T/np.sum(np.squeeze(phi*dz), axis=-1))
+            plt.rc('axes', prop_cycle=cyc)
+            if _i == 0:
+                ax[_i].legend([r'fx={}mm$^{{-1}}$'.format(x) for x in fx])
+                ax[_i].set_ylabel(r'$\phi(z)$')
+            ax[_i].set_xlim([0, 3])
+            ax[_i].set_ylim([0, 2])
+            ax[_i].set_title(titles[_i])
+            ax[_i].set_xlabel('z (mm)')
+            ax[_i].grid(True, linestyle=':')
+        plt.tight_layout()
     
     
-    if True:
+    if False:
         dz = 0.001
         mua1 = np.array([[0.05]])
         mus1 = np.array([[5]])
