@@ -122,23 +122,32 @@ ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3
 #%% To save data
 from sfdi.processing.crop import crop
 from scipy.io import savemat, loadmat
+import os
 ROI = ret['ROI']
 keys = ['AlObaseTop', 'TiObaseTop', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml']
 FX = ['f{}'.format(x) for x in range(8)]
-out_data = {}
+out_mean = {}
+out_std = {}
 
 for key in keys:
-    out_data[key] = {}
+    out_mean[key] = {}
+    out_std[key] = {}
     temp = np.zeros((len(FX), 5, 2))
     stemp = np.zeros((len(FX), 5, 2))
     for _f,F in enumerate(FX):
         temp[_f,:,:] = np.mean(crop(data[key][F]['op_fit_maps'], ROI), axis=(0,1))
         stemp[_f,:,:] = np.std(crop(data[key][F]['op_fit_maps'], ROI), axis=(0,1))
-    out_data[key]['mean'] = temp
-    out_data[key]['std'] = stemp
+    out_mean[key] = temp
+    out_std[key] = stemp
 
-savemat('{}/test/test.mat'.format(data_path), out_data)
-asd = loadmat('{}/test/test.mat'.format(data_path), struct_as_record=True, squeeze_me=True)
+out_path = '{}/test/'.format(data_path)
+
+if not os.path.exists(out_path):
+    os.makedirs(out_path)
+
+# savemat('{}batch3_mean.mat'.format(out_path), out_mean)
+# savemat('{}batch3_std.mat'.format(out_path), out_std)
+# asd = loadmat('{}batch3_mean.mat'.format(out_path), struct_as_record=True, squeeze_me=True)
 
 #%% Add SDFS only
 if False:
