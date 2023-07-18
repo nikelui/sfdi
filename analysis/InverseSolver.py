@@ -104,7 +104,10 @@ data_path = getFile('Select data path')
 data = loadmat('{}'.format(data_path))
 
 #%%
-# Some lists of parameters
+##############################################
+## Some model parameters, change as needed  ##
+##############################################
+
 keys = [x for x in data.keys() if 'ml' in x]
 keys.sort()  # just in case they are not in order
 
@@ -116,7 +119,9 @@ Z = Z [np.newaxis,:]  # reshape, dimensions: (1 x Z)
 
 WV = np.array([458, 520, 536, 556, 626])  # wavelengths
 
-phi_mod = mod_dP1  # model to calculate fluence
+phi_mod = SDA  # model to calculate fluence
+
+##############################################
 
 # mus array: [D x FX x WV]
 mus_meas = np.zeros((len(keys), data[keys[0]].shape[0], data[keys[0]].shape[1]), dtype=float)
@@ -158,9 +163,35 @@ for _d, d in enumerate(d_real):  # loop over thickness
 
 #%% Plots
 from matplotlib import pyplot as plt
+from matplotlib import cm
+from cycler import cycler
+import addcopyfighandler
+
 W = 0  # wavelength index
 D = 0  # thickness index
 
+# cyc = (cycler(color=['tab:blue','tab:orange','tab:green','tab:red']))
+colors = ['tab:blue','tab:orange','tab:green','tab:red','tab:purple']
+
 # f_ax = np.arange(0,0.5,0.01)
-mus_mod = model_fun((ret_d[D, W], ret_must[D, W], ret_musb[D, W]),
-                    mua_meas[D,:,:], mus_meas[D,:,:], Z, FX)
+mus_fitted = np.zeros((5,8,5))
+mus_model = np.zeros((5,8,5))
+for _d in range(5):
+    for _w in range(5):
+        mus_model[_d,:,_w] = model_fun((d_real[_d], mus_top[_w], mus_bot[_w]),
+                                        mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1],
+                                        Z, FX, model=phi_mod).squeeze()
+        mus_fitted[_d,:,_w] = model_fun((ret_d[_d, _w], ret_must[_d, _w], ret_musb[_d, _w]),
+                                        mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1],
+                                        Z, FX, model=phi_mod).squeeze()
+
+fig, ax = plt.subplots(1,1, figsize=(7,4))
+for _d in range(len(d_real)):
+    ax.plot(FX, mus_meas[_d,:,W].T, '*', color=colors[_d])
+    ax.plot(FX, mus_model[_d,:,W].T, '-', color=colors[_d])
+    ax.plot(FX, mus_fitted[_d,:,W].T, '--', color=colors[_d])
+ax.set_xlabel('fx (mm$^{-1}$)', fontsize=12)
+ax.set_ylabel(r"$\mu'_s$ (mm$^{-1}$)", fontsize=12)
+ax.set_title('mod-$\delta$-P1 (@{} nm)'.format(WV[W]), fontsize=15)
+ax.grid(True, linestyle=':')
+plt.tight_layout()
