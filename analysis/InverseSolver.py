@@ -195,3 +195,16 @@ ax.set_ylabel(r"$\mu'_s$ (mm$^{-1}$)", fontsize=12)
 ax.set_title('mod-$\delta$-P1 (@{} nm)'.format(WV[W]), fontsize=15)
 ax.grid(True, linestyle=':')
 plt.tight_layout()
+
+colors=cm.get_cmap('Blues_r', 11)
+
+fig, ax = plt.subplots(1,1, figsize=(7,4), num=2)
+for _f in range(len(FX)):
+    ax.plot(d_real, mus_meas[:,_f,W], '*', color=colors(_f+2))
+    ax.plot(d_real, mus_model[:,_f,W], '-', color=colors(_f+2))
+    ax.plot(d_real, mus_fitted[:,_f,W], '--', color=colors(_f+2))
+ax.set_xlabel('d (mm)', fontsize=12)
+ax.set_ylabel(r"$\mu'_s$ (mm$^{-1}$)", fontsize=12)
+ax.set_title('mod-$\delta$-P1 (@{} nm)'.format(WV[W]), fontsize=15)
+ax.grid(True, linestyle=':')
+plt.tight_layout()
