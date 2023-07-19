@@ -119,7 +119,7 @@ Z = Z [np.newaxis,:]  # reshape, dimensions: (1 x Z)
 
 WV = np.array([458, 520, 536, 556, 626])  # wavelengths
 
-phi_mod = SDA  # model to calculate fluence
+phi_mod = mod_dP1  # model to calculate fluence
 
 ##############################################
 
@@ -140,7 +140,7 @@ mus_bot = data['AlObaseTop'][0,:,1]
 
 opt_ret = [[]]  # save all the results of optimization, for debug. Should be 2D [D x WW] array
 # bound = Bounds(lb=[0,0,0], ub=[10,20,20])  # Add some physical limits to problem
-bound = ([0,0,0], [10,20,20])  # Add some physical limits to problem
+bound = ([0,0,0], [20,20,20])  # Add some physical limits to problem
 
 # results array, for easy copy-paste to excel
 ret_d = np.zeros([5,5])
@@ -151,9 +151,9 @@ for _d, d in enumerate(d_real):  # loop over thickness
     if _d > 0:
         opt_ret.append([])
     for _w, w in enumerate(WV):  # loop over wavelengths
-        x0 = np.array([0.1, 1, 1])  # initial guess
+        x0 = np.array([.1, 1, 1])  # initial guess
         temp = least_squares(target_fun, x0, jac=jacob, bounds=bound, method='trf',
-                             x_scale=np.array([0.1,1,1]), loss='linear', max_nfev=1e3, verbose=1,
+                             x_scale=np.array([.1,1,1]), loss='huber', max_nfev=1e3, verbose=1,
                              args=(mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1], Z, FX),
                              kwargs={'model':phi_mod} )
         opt_ret[_d].append(temp)
@@ -185,7 +185,7 @@ for _d in range(5):
                                         mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1],
                                         Z, FX, model=phi_mod).squeeze()
 
-fig, ax = plt.subplots(1,1, figsize=(7,4))
+fig, ax = plt.subplots(1,1, figsize=(7,4), num=1)
 for _d in range(len(d_real)):
     ax.plot(FX, mus_meas[_d,:,W].T, '*', color=colors[_d])
     ax.plot(FX, mus_model[_d,:,W].T, '-', color=colors[_d])
@@ -199,12 +199,44 @@ plt.tight_layout()
 colors=cm.get_cmap('Blues_r', 11)
 
 fig, ax = plt.subplots(1,1, figsize=(7,4), num=2)
-for _f in range(len(FX)):
-    ax.plot(d_real, mus_meas[:,_f,W], '*', color=colors(_f+2))
-    ax.plot(d_real, mus_model[:,_f,W], '-', color=colors(_f+2))
-    ax.plot(d_real, mus_fitted[:,_f,W], '--', color=colors(_f+2))
+# for _f in range(len(FX)):
+    # ax.plot(d_real, mus_meas[:,_f,W], '*', color=colors(_f+2))
+    # ax.plot(d_real, mus_model[:,_f,W], '-', color=colors(_f+2))
+    # ax.plot(d_real, mus_fitted[:,_f,W], '--', color=colors(_f+2))
+ax.plot(d_real, mus_meas[:,:,W], '*')
+ax.set_prop_cycle(None)
+ax.plot(d_real, mus_model[:,:,W], '-')
+ax.set_prop_cycle(None)
+ax.plot(d_real, mus_fitted[:,:,W], '--')
 ax.set_xlabel('d (mm)', fontsize=12)
 ax.set_ylabel(r"$\mu'_s$ (mm$^{-1}$)", fontsize=12)
 ax.set_title('mod-$\delta$-P1 (@{} nm)'.format(WV[W]), fontsize=15)
 ax.grid(True, linestyle=':')
+plt.tight_layout()
+
+#%% Test for new fit
+
+al = 3 * d_real.reshape((1,-1))
+bet = 3.5 * FX.reshape((-1,1))
+
+mus_b = mus_bot[0]
+mus_t = mus_top[0]
+
+mus_m = mus_t - (mus_t - mus_b)*np.exp(-al * bet)
+
+plt.figure(figsize=(7,4), num=3)
+plt.plot(FX, mus_m)
+plt.gca().set_prop_cycle(None)
+plt.plot(FX, mus_meas[:,:,0].T, '*')
+plt.grid(True, linestyle=':')
+plt.ylim([0.9, 3.5])
+plt.tight_layout()
+
+
+plt.figure(figsize=(7,4), num=4)
+plt.plot(d_real, mus_m.T)
+plt.gca().set_prop_cycle(None)
+plt.plot(d_real, mus_meas[:,:,0], '*')
+plt.grid(True, linestyle=':')
+plt.ylim([0.9, 3.5])
 plt.tight_layout()
