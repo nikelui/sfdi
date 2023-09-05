@@ -119,7 +119,7 @@ Z = Z [np.newaxis,:]  # reshape, dimensions: (1 x Z)
 
 WV = np.array([458, 520, 536, 556, 626])  # wavelengths
 
-phi_mod = mod_dP1  # model to calculate fluence
+phi_mod = dP1  # model to calculate fluence
 
 ##############################################
 
@@ -151,9 +151,9 @@ for _d, d in enumerate(d_real):  # loop over thickness
     if _d > 0:
         opt_ret.append([])
     for _w, w in enumerate(WV):  # loop over wavelengths
-        x0 = np.array([.1, 1, 1])  # initial guess
+        x0 = np.array([.1, mus_meas[_d,-1,_w], mus_meas[_d,0,_w]])  # initial guess
         temp = least_squares(target_fun, x0, jac=jacob, bounds=bound, method='trf',
-                             x_scale=np.array([.1,1,1]), loss='huber', max_nfev=1e3, verbose=1,
+                             x_scale=np.array([.1,1,1]), loss='linear', max_nfev=1e3, verbose=1,
                              args=(mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1], Z, FX),
                              kwargs={'model':phi_mod} )
         opt_ret[_d].append(temp)

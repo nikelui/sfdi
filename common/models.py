@@ -245,17 +245,18 @@ if __name__ == '__main__':
         phi3 = phi_dP1(z, mua, mus, fx)
         
         titles=['SDA', r'$\delta-P1$', r'mod-$\delta-P1$']
-        cyc = (cycler(color=['tab:blue','tab:orange','tab:green','tab:red'])+
+        # cyc = (cycler(color=['tab:blue','tab:orange','tab:green','tab:red'])+
+        cyc = (cycler(color=['#133859','#6c5e74','#e67960','#e8c79e'])+
                cycler(linestyle=['-', '--', '-.', ':']))
         
         fig, ax = plt.subplots(1,3, figsize=(10,3.5))
         for _i, phi in enumerate([phi1, phi3, phi2]):
-            ax[_i].plot(z, np.squeeze(phi).T/np.sum(np.squeeze(phi*dz), axis=-1))
+            ax[_i].plot(z, np.squeeze(phi).T/np.sum(np.squeeze(phi*dz), axis=-1), linewidth=2)
             plt.rc('axes', prop_cycle=cyc)
             if _i == 0:
                 ax[_i].legend([r'fx={}mm$^{{-1}}$'.format(x) for x in fx])
                 ax[_i].set_ylabel(r'$\phi(z)$')
-            ax[_i].set_xlim([0, 3])
+            ax[_i].set_xlim([0, 2.5])
             ax[_i].set_ylim([0, 2])
             ax[_i].set_title(titles[_i])
             ax[_i].set_xlabel('z (mm)')
