@@ -16,6 +16,7 @@ dP1 = models.phi_dP1
 mod_dP1 = models.phi_deltaP1
 
 import numpy as np
+import time
 from scipy.io import loadmat, savemat
 from scipy.optimize import Bounds
 from scipy.optimize import least_squares
@@ -119,7 +120,7 @@ Z = Z [np.newaxis,:]  # reshape, dimensions: (1 x Z)
 
 WV = np.array([458, 520, 536, 556, 626])  # wavelengths
 
-phi_mod = dP1  # model to calculate fluence
+phi_mod = mod_dP1 # model to calculate fluence
 
 ##############################################
 
@@ -147,19 +148,47 @@ ret_d = np.zeros([5,5])
 ret_must = np.zeros([5,5])
 ret_musb = np.zeros([5,5])
 
+# initialize N random starting points
+N = 1000
+x0_array = list(zip(np.random.uniform(low=0, high=0.5, size=(N)),   # thickness
+                    np.random.uniform(low=0, high=5.0, size=(N)),   # mus_top
+                    np.random.uniform(low=0, high=5.0, size=(N))))  # mus_bot
+
+loss_fun = [[{}] * len(WV)] * len(d_real)
+
+start = time.time()
+
 for _d, d in enumerate(d_real):  # loop over thickness
     if _d > 0:
         opt_ret.append([])
     for _w, w in enumerate(WV):  # loop over wavelengths
-        x0 = np.array([.1, mus_meas[_d,-1,_w], mus_meas[_d,0,_w]])  # initial guess
-        temp = least_squares(target_fun, x0, jac=jacob, bounds=bound, method='trf',
-                             x_scale=np.array([.1,1,1]), loss='linear', max_nfev=1e3, verbose=1,
-                             args=(mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1], Z, FX),
-                             kwargs={'model':phi_mod} )
-        opt_ret[_d].append(temp)
-        ret_d[_d,_w] = temp['x'][0]
-        ret_must[_d,_w] = temp['x'][1]
-        ret_musb[_d,_w] = temp['x'][2]
+        best_ret = None  # To save best fit
+        for _x, x0 in enumerate(x0_array):
+            if _x % 100 == 0:
+                print("Initial guess #{}".format(_x))
+            x0 = np.array(x0)  # initial guess
+            temp = least_squares(target_fun, x0, jac=jacob, bounds=bound, method='trf',
+                                 x_scale=np.array([.1,1,1]), loss='linear', max_nfev=1e3, verbose=0,
+                                 args=(mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1], Z, FX),
+                                 kwargs={'model':phi_mod} )
+            # DEBUG
+            loss_fun[_d][_w][tuple(x0)] = temp.cost
+            # Check if solution has improved since previous initial guess
+            if best_ret is None:  # First iteration
+                best_ret = temp
+                opt_ret[_d].append(temp)
+                ret_d[_d,_w] = temp['x'][0]
+                ret_must[_d,_w] = temp['x'][1]
+                ret_musb[_d,_w] = temp['x'][2]
+            elif temp.cost < best_ret.cost:  
+                best_ret = temp
+                opt_ret[_d][_w] = temp
+                ret_d[_d,_w] = temp['x'][0]
+                ret_must[_d,_w] = temp['x'][1]
+                ret_musb[_d,_w] = temp['x'][2]
+
+end = time.time()
+print("Elapsed time: {:02d}:{:05.2f}".format(int((end-start)//60), (end-start) % 60))
 
 #%% Plots
 from matplotlib import pyplot as plt
