@@ -109,11 +109,12 @@ data = loadmat('{}'.format(data_path))
 ## Some model parameters, change as needed  ##
 ##############################################
 
-keys = [x for x in data.keys() if 'ml' in x]
+keys = [x for x in data.keys() if not x.startswith('_')]
 keys.sort()  # just in case they are not in order
 
-F = np.arange(0,0.55,0.05)
-FX = np.array([np.mean(F[x:x+4]) for x in range(8)])  # spatial frequency (average)
+# F = par['fx']
+F = [0, 0.03333333, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+FX = np.array([np.mean(F[x:x+4]) for x in range(len(F)-3)])  # spatial frequency (average)
 
 Z = np.arange(0,10,0.001)  # depth, micrometer resolution
 Z = Z [np.newaxis,:]  # reshape, dimensions: (1 x Z)
@@ -132,21 +133,22 @@ for _k, key in enumerate(keys):
     mua_meas[_k,:,:] = data[key][:,:,0]  # need it to calculate fluence
 
 # Phantom thickness (for evaluating performance)
-d_real = np.array([0.1295, 0.2685, 0.49, 0.675, 1.149])
-d_std = np.array([0.0035, 0.0136, 0.0216, 0.0401, 0.0655])
+# d_real = np.array([0.1295, 0.2685, 0.49, 0.675, 1.149])
+# d_std = np.array([0.0035, 0.0136, 0.0216, 0.0401, 0.0655])
 
 # Top and bottom layer scattering (for evaluating performance)
-mus_top = data['TiObaseTop'][0,:,1]
-mus_bot = data['AlObaseTop'][0,:,1]
+# mus_top = data['TiObaseTop'][0,:,1]
+# mus_bot = data['AlObaseTop'][0,:,1]
 
 opt_ret = [[]]  # save all the results of optimization, for debug. Should be 2D [D x WW] array
 # bound = Bounds(lb=[0,0,0], ub=[10,20,20])  # Add some physical limits to problem
 bound = ([0,0,0], [20,20,20])  # Add some physical limits to problem
 
-# results array, for easy copy-paste to excel
-ret_d = np.zeros([5,5])
-ret_must = np.zeros([5,5])
-ret_musb = np.zeros([5,5])
+## results array, for easy copy-paste to excel
+ret_d = np.zeros([6,5])
+ret_must = np.zeros([6,5])
+ret_musb = np.zeros([6,5])
+
 
 # initialize N random starting points
 N = 1000
@@ -154,18 +156,18 @@ x0_array = list(zip(np.random.uniform(low=0, high=0.5, size=(N)),   # thickness
                     np.random.uniform(low=0, high=5.0, size=(N)),   # mus_top
                     np.random.uniform(low=0, high=5.0, size=(N))))  # mus_bot
 
-loss_fun = [[{}] * len(WV)] * len(d_real)
+loss_fun = [[{}] * len(WV)] * len(keys)
 
 start = time.time()
 
-for _d, d in enumerate(d_real):  # loop over thickness
+for _d, d in enumerate(keys):  # loop over thickness / datasets
     if _d > 0:
         opt_ret.append([])
     for _w, w in enumerate(WV):  # loop over wavelengths
         best_ret = None  # To save best fit
         for _x, x0 in enumerate(x0_array):
             if _x % 100 == 0:
-                print("Initial guess #{}".format(_x))
+                print("Dataset {} of {} - Initial guess #{}".format(_d+1, len(keys), _x))
             x0 = np.array(x0)  # initial guess
             temp = least_squares(target_fun, x0, jac=jacob, bounds=bound, method='trf',
                                  x_scale=np.array([.1,1,1]), loss='linear', max_nfev=1e3, verbose=0,
