@@ -142,7 +142,7 @@ for _k, key in enumerate(keys):
 
 opt_ret = [[]]  # save all the results of optimization, for debug. Should be 2D [D x WW] array
 # bound = Bounds(lb=[0,0,0], ub=[10,20,20])  # Add some physical limits to problem
-bound = ([0,0,0], [20,20,20])  # Add some physical limits to problem
+bound = ([0,0,0], [9.9,20,20])  # Add some physical limits to problem
 
 ## results array, for easy copy-paste to excel
 ret_d = np.zeros([6,5])
@@ -156,7 +156,8 @@ x0_array = list(zip(np.random.uniform(low=0, high=0.5, size=(N)),   # thickness
                     np.random.uniform(low=0, high=5.0, size=(N)),   # mus_top
                     np.random.uniform(low=0, high=5.0, size=(N))))  # mus_bot
 
-loss_fun = [[{}] * len(WV)] * len(keys)
+loss_fun = [[{}] * len(WV)] * len(keys)  # initial guess
+loss_fun2 = [[{}] * len(WV)] * len(keys)  # final solution
 
 start = time.time()
 
@@ -175,6 +176,7 @@ for _d, d in enumerate(keys):  # loop over thickness / datasets
                                  kwargs={'model':phi_mod} )
             # DEBUG
             loss_fun[_d][_w][tuple(x0)] = temp.cost
+            loss_fun2[_d][_w][tuple(temp.x)] = temp.cost
             # Check if solution has improved since previous initial guess
             if best_ret is None:  # First iteration
                 best_ret = temp
@@ -191,6 +193,49 @@ for _d, d in enumerate(keys):  # loop over thickness / datasets
 
 end = time.time()
 print("Elapsed time: {:02d}:{:05.2f}".format(int((end-start)//60), (end-start) % 60))
+#%% 3D plot of loss function
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import addcopyfighandler
+fig1 = plt.figure()
+fig2 = plt.figure()
+ax1 = fig1.add_subplot(111, projection='3d')
+ax2 = fig2.add_subplot(111, projection='3d')
+
+D = 0
+WV = 0
+
+x,y,z = np.zeros((3,N))
+c = np.zeros((N))
+for _k,key in enumerate(loss_fun[D][WV].keys()):
+    x[_k], y[_k], z[_k] = key
+    c[_k] = loss_fun[D][WV][key]
+
+img1 = ax1.scatter(x, y, z, c=c, cmap=plt.magma())
+fig1.colorbar(img1)
+ax1.set_xlabel('d')
+ax1.set_ylabel('mus_bot')
+ax1.set_zlabel('mus_top')
+ax1.set_title('Loss function vs initial guess')
+plt.show()
+plt.tight_layout()
+
+x,y,z = np.zeros((3,len(loss_fun2[D][WV].keys())))
+c = np.zeros((len(loss_fun2[D][WV].keys())))
+for _k,key in enumerate(loss_fun2[D][WV].keys()):
+    x[_k], y[_k], z[_k] = key
+    c[_k] = loss_fun2[D][WV][key]
+
+# img2 = ax2.scatter(x[::10], y[::10], z[::10], c=c[::10], cmap=plt.magma(), vmax=1e-2)
+img2 = ax2.scatter(x, y, z, c=c, cmap=plt.magma(), vmax=1e-2)
+fig2.colorbar(img2)
+ax2.set_xlabel('d')
+ax2.set_ylabel('mus_bot')
+ax2.set_zlabel('mus_top')
+ax2.set_title('Loss function vs solution')
+plt.show()
+plt.tight_layout()
+
 
 #%% Plots
 from matplotlib import pyplot as plt

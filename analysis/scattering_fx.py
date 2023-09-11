@@ -149,8 +149,8 @@ out_path = '{}/test/'.format(data_path)
 if not os.path.exists(out_path):
     os.makedirs(out_path)
 
-savemat('{}exVivo_mean.mat'.format(out_path), out_mean)
-savemat('{}exVivo_std.mat'.format(out_path), out_std)
+# savemat('{}exVivo_mean.mat'.format(out_path), out_mean)
+# savemat('{}exVivo_std.mat'.format(out_path), out_std)
 # asd = loadmat('{}batch3_mean.mat'.format(out_path), struct_as_record=True, squeeze_me=True)
 
 #%% Add SDFS only
