@@ -463,7 +463,3 @@ if False:
             for fx in ['f0', 'f1', 'f2', 'f3', 'f4']:
                 print('{} -> A: {:.2f}\tB:{:.4f}'.format(fx, data[key][fx]['sfds']['par'][0], data[key][fx]['sfds']['par'][1]))
 
-
-#%% Statistics
-from scipi.stats import ttest_ind  # independent t-test
-from scipi.io import savemat, loadmat
