@@ -66,7 +66,7 @@ if path:  # check for empty path
     ##############################################################################
     ##  Define the folders to process here. Leave empty for interactive prompt  ##
     ##############################################################################
-    toProcess = ['K1', 'K2', 'SC1', 'SC2', 'CTL1', 'CTL2']
+    toProcess = ['CLS1', 'CLS2']
     if(not toProcess):  # In case you define by hand
         regex = input('Input base name to match (end with empty line): ').lower()  # only process matching directories
         while (regex != ''):  # End with an empty name

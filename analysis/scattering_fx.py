@@ -149,17 +149,19 @@ if False:  # select ROI and save cropped data
         savemat('{}pig_data.mat'.format(out_path), {'PD2_w1':temp})  # create new dict
     
     
-if False:  # select ROI and save mean/std for each dataset
+if True:  # select ROI and save mean/std for each dataset
     from sfdi.processing.crop import crop
     from scipy.io import savemat, loadmat
     import os
     # ROI = ret['ROI']
     # keys = ['AlObaseTop', 'TiObaseTop', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml']
     # keys = ['SC1', 'SC2', 'SC3', 'K1', 'K2', 'CTL1', 'CTL2', 'CTL3', 'CTL4']
-    keys = ['K1', 'K2', 'SC1', 'SC2', 'CTL1', 'CTL2']
+    # keys = ['K1', 'K2', 'SC1', 'SC2', 'CTL1', 'CTL2', 'CLS1', 'CLS2']
+    keys = ['CLS1']
     FX = ['f{}'.format(x) for x in range(5)]
     out_mean = {}
     out_std = {}
+    out_path = '{}/test/'.format(data_path)
     
     for key in keys:
         ret = data.singleROI(key, norm=None, fit='single', f=[0,1,2,3], I=2e3)
@@ -173,12 +175,22 @@ if False:  # select ROI and save mean/std for each dataset
             stemp[_f,:,:] = np.std(crop(data[key][F]['op_fit_maps'], ROI), axis=(0,1))
         out_mean[key] = temp
         out_std[key] = stemp
-    
-    out_path = '{}/test/'.format(data_path)
-    
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
-
+        
+        ## Use this part to append to an existing file, or overwrite old data
+        if not os.path.exists(out_path):  # If out_path doesn't exist
+            os.makedirs(out_path)
+        if os.path.exists('{}exVivo_mean.mat'.format(out_path)):  # append the data to existing dict
+            temp_dict = loadmat('{}exVivo_mean.mat'.format(out_path))  # load existing
+            temp_dict[key] = temp  # append
+            savemat('{}exVivo_mean.mat'.format(out_path), temp_dict)  # overwrite
+            # Same for STD
+            temp_dict = loadmat('{}exVivo_std.mat'.format(out_path))  # load existing
+            temp_dict[key] = stemp  # append
+            savemat('{}exVivo_std.mat'.format(out_path), temp_dict)  # overwrite
+        else:
+            savemat('{}exVivo_std.mat'.format(out_path), {key:temp})  # create new dict
+        ################## END of file append ##################
+        
 # savemat('{}exVivo_mean.mat'.format(out_path), out_mean)
 # savemat('{}exVivo_std.mat'.format(out_path), out_std)
 # asd = loadmat('{}batch3_mean.mat'.format(out_path), struct_as_record=True, squeeze_me=True)

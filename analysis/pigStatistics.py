@@ -179,3 +179,173 @@ ts, ps = ttest_ind(B_stem_w1, B_stem_w2, axis=0, equal_var=False, nan_policy='om
 t0, p0 = ttest_ind(B_stem_w0[:,0], B_stem_w0[:,1], axis=0, equal_var=False, nan_policy='omit')
 t1, p1 = ttest_ind(B_stem_w1[:,0], B_stem_w1[:,1], axis=0, equal_var=False, nan_policy='omit')
 t2, p2 = ttest_ind(B_stem_w2[:,0], B_stem_w2[:,1], axis=0, equal_var=False, nan_policy='omit')
+
+
+#%% BoxPlots
+from matplotlib import pyplot as plt
+
+## mua, control
+fig,ax = plt.subplots(nrows=1, ncols=1, num=0, figsize=(5,3.5))
+ax.boxplot(mua_control_w0, positions=[1,2], widths=0.8, sym="")
+ax.boxplot(mua_control_w1, positions=[4,5], widths=0.8, sym="")
+ax.boxplot(mua_control_w2, positions=[7,8], widths=0.8, sym="")
+plt.xlim([0, 9])
+plt.ylim([-.1, 3])
+ax.set_xticks([1.5, 4.5, 7.5])
+ax.set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax.set_ylabel(r"mm$^{-1}$", fontsize=12)
+ax.set_title(r"$\mu_a$ (530nm)", fontsize=10)
+# ax.grid(True, axis="y", linestyle=':')
+fig.suptitle("Neg. Control")
+
+## mua, stem cells
+fig,ax = plt.subplots(nrows=1, ncols=1, num=1, figsize=(5,3.5))
+# plt.hold(True)
+ax.boxplot(mua_stem_w0, positions=[1,2], widths=0.8, sym="")
+ax.boxplot(mua_stem_w1, positions=[4,5], widths=0.8, sym="")
+ax.boxplot(mua_stem_w2, positions=[7,8], widths=0.8, sym="")
+plt.xlim([0, 9])
+plt.ylim([-.1, 3])
+ax.set_xticks([1.5, 4.5, 7.5])
+ax.set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax.set_ylabel(r"mm$^{-1}$", fontsize=12)
+ax.set_title(r"$\mu_a$ (530nm)", fontsize=10)
+# ax.grid(True, axis="y", linestyle=':')
+fig.suptitle("pAD-MSCs")
+
+
+## mus (A, B), control
+fig, ax = plt.subplots(nrows=1, ncols=2, num=2, figsize=(8,3.5))
+ax[0].boxplot((A_control_w0), positions=[1,2], widths=0.9, sym="")
+ax[0].boxplot((A_control_w1), positions=[4,5], widths=0.9, sym="")
+ax[0].boxplot((A_control_w2), positions=[7,8], widths=0.9, sym="")
+plt.xlim([0, 9])
+ax[0].set_yscale("log")
+ax[0].set_ylim([1e-19, 1e11])
+ax[0].set_xticks([1.5, 4.5, 7.5])
+ax[0].set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax[0].set_title("Amplitude", fontsize=10)
+
+ax[1].boxplot((B_control_w0), positions=[1,2], widths=0.9, sym="")
+ax[1].boxplot((B_control_w1), positions=[4,5], widths=0.9, sym="")
+ax[1].boxplot((B_control_w2), positions=[7,8], widths=0.9, sym="")
+plt.xlim([0, 9])
+plt.ylim([-3, 7])
+ax[1].set_xticks([1.5, 4.5, 7.5])
+ax[1].set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax[1].set_title("Slope", fontsize=10)
+fig.suptitle("Neg. Control")
+
+## mus (A, B), stem cells
+fig, ax = plt.subplots(nrows=1, ncols=2, num=3, figsize=(8,3.5))
+ax[0].boxplot((A_stem_w0), positions=[1,2], widths=0.9, sym="")
+ax[0].boxplot((A_stem_w1), positions=[4,5], widths=0.9, sym="")
+ax[0].boxplot((A_stem_w2), positions=[7,8], widths=0.9, sym="")
+plt.xlim([0, 9])
+ax[0].set_yscale("log")
+ax[0].set_ylim([1e-19, 1e11])
+ax[0].set_xticks([1.5, 4.5, 7.5])
+ax[0].set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax[0].set_title("Amplitude", fontsize=10)
+
+ax[1].boxplot((B_stem_w0), positions=[1,2], widths=0.9, sym="")
+ax[1].boxplot((B_stem_w1), positions=[4,5], widths=0.9, sym="")
+ax[1].boxplot((B_stem_w2), positions=[7,8], widths=0.9, sym="")
+plt.xlim([0, 9])
+plt.ylim([-3, 7])
+ax[1].set_xticks([1.5, 4.5, 7.5])
+ax[1].set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax[1].set_title("Slope", fontsize=10)
+fig.suptitle("pAD-MSCs")
+
+#%% Histograms
+from matplotlib import pyplot as plt
+
+## mua, control
+fig,ax = plt.subplots(nrows=1, ncols=1, num=0, figsize=(5,3.5))
+ax.bar(np.array([-0.5, 0.5])+1.5, np.mean(mua_control_w0, axis=0), yerr=np.std(mua_control_w0, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax.bar(np.array([-0.5, 0.5])+3.7, np.mean(mua_control_w1, axis=0), yerr=np.std(mua_control_w1, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax.bar(np.array([-0.5, 0.5])+5.9, np.mean(mua_control_w2, axis=0), yerr=np.std(mua_control_w2, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+plt.ylim([0, 3])
+ax.set_xticks([1.5, 3.7, 5.9])
+ax.set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax.set_ylabel(r"mm$^{-1}$", fontsize=12)
+ax.set_title(r"$\mu_a$ (530nm)", fontsize=10)
+fig.suptitle("Neg. Control")
+
+## mua, stem cells
+fig,ax = plt.subplots(nrows=1, ncols=1, num=1, figsize=(5,3.5))
+ax.bar(np.array([-0.5, 0.5])+1.5, np.mean(mua_stem_w0, axis=0), yerr=np.std(mua_stem_w0, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax.bar(np.array([-0.5, 0.5])+3.7, np.mean(mua_stem_w1, axis=0), yerr=np.std(mua_stem_w1, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax.bar(np.array([-0.5, 0.5])+5.9, np.mean(mua_stem_w2, axis=0), yerr=np.std(mua_stem_w2, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+plt.ylim([0, 3])
+ax.set_xticks([1.5, 3.7, 5.9])
+ax.set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax.set_ylabel(r"mm$^{-1}$", fontsize=12)
+ax.set_title(r"$\mu_a$ (530nm)", fontsize=10)
+fig.suptitle("pAD-MSCs")
+
+
+## mus (A, B), control
+fig, ax = plt.subplots(nrows=1, ncols=2, num=2, figsize=(8,3.5))
+ax[0].bar(np.array([-0.5, 0.5])+1.5, np.mean(np.log(A_control_w0), axis=0),
+          yerr=np.std(np.log(A_control_w0), axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax[0].bar(np.array([-0.5, 0.5])+3.7, np.mean(np.log(A_control_w1), axis=0),
+          yerr=np.std(np.log(A_control_w1), axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax[0].bar(np.array([-0.5, 0.5])+5.9, np.mean(np.log(A_control_w2), axis=0),
+          yerr=np.std(np.log(A_control_w2), axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+# ax[0].set_yscale("log")
+# plt.ylim([1e20, 1e54])
+ax[0].set_xticks([1.5, 3.7, 5.9])
+ax[0].set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax[0].set_title("Amplitude", fontsize=10)
+
+ax[1].bar(np.array([-0.5, 0.5])+1.5, np.mean(B_control_w0, axis=0), yerr=np.std(B_control_w0, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax[1].bar(np.array([-0.5, 0.5])+3.7, np.mean(B_control_w1, axis=0), yerr=np.std(B_control_w1, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax[1].bar(np.array([-0.5, 0.5])+5.9, np.mean(B_control_w2, axis=0), yerr=np.std(B_control_w2, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+plt.ylim([-1.8, 5.2])
+ax[1].set_xticks([1.5, 3.7, 5.9])
+ax[1].set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax[1].set_title("Slope", fontsize=10)
+fig.suptitle("Neg. Control")
+
+## mus (A, B), stem cells
+fig, ax = plt.subplots(nrows=1, ncols=2, num=4, figsize=(8,3.5))
+ax[0].bar(np.array([-0.5, 0.5])+1.5, np.mean(np.log(A_stem_w0), axis=0),
+          yerr=np.std(np.log(A_stem_w0), axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax[0].bar(np.array([-0.5, 0.5])+3.7, np.mean(np.log(A_stem_w1), axis=0),
+          yerr=np.std(np.log(A_stem_w1), axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax[0].bar(np.array([-0.5, 0.5])+5.9, np.mean(np.log(A_stem_w2), axis=0),
+          yerr=np.std(np.log(A_stem_w2), axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+# ax[0].set_yscale("log")
+# plt.ylim([1e20, 1e54])
+ax[0].set_xticks([1.5, 3.7, 5.9])
+ax[0].set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax[0].set_title("Amplitude", fontsize=10)
+
+ax[1].bar(np.array([-0.5, 0.5])+1.5, np.mean(B_stem_w0, axis=0), yerr=np.std(B_stem_w0, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax[1].bar(np.array([-0.5, 0.5])+3.7, np.mean(B_stem_w1, axis=0), yerr=np.std(B_stem_w1, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+ax[1].bar(np.array([-0.5, 0.5])+5.9, np.mean(B_stem_w2, axis=0), yerr=np.std(B_stem_w2, axis=0),
+       width=1, color=["#6facc5", "#c1413c"], capsize=5)
+plt.ylim([-1.8, 5.2])
+ax[1].set_xticks([1.5, 3.7, 5.9])
+ax[1].set_xticklabels(['day-0', 'day-7', 'day-14'], fontsize=12)
+ax[1].set_title("Slope", fontsize=10)
+fig.suptitle("pAD-MSCs")

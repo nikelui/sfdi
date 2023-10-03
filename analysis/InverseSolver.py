@@ -109,11 +109,13 @@ data = loadmat('{}'.format(data_path))
 ## Some model parameters, change as needed  ##
 ##############################################
 
-keys = [x for x in data.keys() if not x.startswith('_')]
+# keys = [x for x in data.keys() if not x.startswith('_')]
+keys = [x for x in data.keys() if (not x.startswith('_') and not x.endswith("Top")) ]
 keys.sort()  # just in case they are not in order
 
 # F = par['fx']
 F = [0, 0.03333333, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+# F = np.arange(0,0.51, 0.05)
 FX = np.array([np.mean(F[x:x+4]) for x in range(len(F)-3)])  # spatial frequency (average)
 
 Z = np.arange(0,10,0.001)  # depth, micrometer resolution
@@ -142,22 +144,22 @@ for _k, key in enumerate(keys):
 
 opt_ret = [[]]  # save all the results of optimization, for debug. Should be 2D [D x WW] array
 # bound = Bounds(lb=[0,0,0], ub=[10,20,20])  # Add some physical limits to problem
-bound = ([0,0,0], [9.9,20,20])  # Add some physical limits to problem
+bound = ([0,0,0], [5,10,10])  # Add some physical limits to problem
 
 ## results array, for easy copy-paste to excel
-ret_d = np.zeros([6,5])
-ret_must = np.zeros([6,5])
-ret_musb = np.zeros([6,5])
+ret_d = np.zeros([8,5])
+ret_must = np.zeros([8,5])
+ret_musb = np.zeros([8,5])
 
 
 # initialize N random starting points
 N = 1000
-x0_array = list(zip(np.random.uniform(low=0, high=0.5, size=(N)),   # thickness
+x0_array = list(zip(np.random.uniform(low=0, high=1, size=(N)),   # thickness
                     np.random.uniform(low=0, high=5.0, size=(N)),   # mus_top
                     np.random.uniform(low=0, high=5.0, size=(N))))  # mus_bot
 
-loss_fun = [[{}] * len(WV)] * len(keys)  # initial guess
-loss_fun2 = [[{}] * len(WV)] * len(keys)  # final solution
+loss_fun = [[{} for a in range(len(WV))] for b in range(len(keys))] # initial guess
+loss_fun2 = [[{} for a in range(len(WV))] for b in range(len(keys))]  # final solution
 
 start = time.time()
 
@@ -172,10 +174,13 @@ for _d, d in enumerate(keys):  # loop over thickness / datasets
             x0 = np.array(x0)  # initial guess
             temp = least_squares(target_fun, x0, jac=jacob, bounds=bound, method='trf',
                                  x_scale=np.array([.1,1,1]), loss='linear', max_nfev=1e3, verbose=0,
+                                 ftol=1e-9, gtol=1e-9, xtol=1e-9,  # increase convergence requirements
                                  args=(mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1], Z, FX),
                                  kwargs={'model':phi_mod} )
             # DEBUG
-            loss_fun[_d][_w][tuple(x0)] = temp.cost
+            aaa = target_fun(x0, mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1], Z, FX, model=phi_mod)  # diff
+            
+            loss_fun[_d][_w][tuple(x0)] = 0.5*np.sum(aaa**2)  # sum of squares
             loss_fun2[_d][_w][tuple(temp.x)] = temp.cost
             # Check if solution has improved since previous initial guess
             if best_ret is None:  # First iteration
@@ -193,6 +198,20 @@ for _d, d in enumerate(keys):  # loop over thickness / datasets
 
 end = time.time()
 print("Elapsed time: {:02d}:{:05.2f}".format(int((end-start)//60), (end-start) % 60))
+
+import pickle
+with open("savedData/loss_function_exvivo_brute", "wb") as fp:
+    pickle.dump(loss_fun, fp)
+    
+with open("savedData/loss_function_exvivo_converged", "wb") as fp:
+    pickle.dump(loss_fun2, fp)
+    
+# with open("C:/Users/luibe59/Documents/sfdi/analysis/savedData/loss_function_10000points", "rb") as fp:
+#     loss_fun = pickle.load(fp)
+    
+# with open("C:/Users/luibe59/Documents/sfdi/analysis/savedData/loss_function_10000points_brute", "rb") as fp:
+#     loss_fun2 = pickle.load(fp)
+
 #%% 3D plot of loss function
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -203,22 +222,27 @@ ax1 = fig1.add_subplot(111, projection='3d')
 ax2 = fig2.add_subplot(111, projection='3d')
 
 D = 0
-WV = 0
+WV = 2
 
-x,y,z = np.zeros((3,N))
-c = np.zeros((N))
-for _k,key in enumerate(loss_fun[D][WV].keys()):
-    x[_k], y[_k], z[_k] = key
-    c[_k] = loss_fun[D][WV][key]
+# x,y,z = np.zeros((3,len(loss_fun[D][WV].keys())))
+# c = np.zeros((len(loss_fun[D][WV].keys())))
+# for _k,key in enumerate(loss_fun[D][WV].keys()):
+#     x[_k], y[_k], z[_k] = key
+#     c[_k] = loss_fun[D][WV][key]
 
-img1 = ax1.scatter(x, y, z, c=c, cmap=plt.magma())
-fig1.colorbar(img1)
-ax1.set_xlabel('d')
-ax1.set_ylabel('mus_bot')
-ax1.set_zlabel('mus_top')
-ax1.set_title('Loss function vs initial guess')
-plt.show()
-plt.tight_layout()
+# idx = np.where(c<=.4)
+# img1 = ax1.scatter(x[idx], y[idx], z[idx], c=c[idx], cmap=plt.magma(), vmax=.4)
+# fig1.colorbar(img1)
+# ax1.set_xlabel('d')
+# ax1.set_ylabel('mus_top')
+# ax1.set_zlabel('mus_bot')
+# ax1.set_title('Loss function vs initial guess')
+# ax1.set_xlim([0, 1])
+# ax1.set_ylim([0, 5])
+# ax1.set_zlim([1.2, 2.8])
+# plt.show()
+# plt.tight_layout()
+
 
 x,y,z = np.zeros((3,len(loss_fun2[D][WV].keys())))
 c = np.zeros((len(loss_fun2[D][WV].keys())))
@@ -226,12 +250,13 @@ for _k,key in enumerate(loss_fun2[D][WV].keys()):
     x[_k], y[_k], z[_k] = key
     c[_k] = loss_fun2[D][WV][key]
 
+idx = np.where(c<=100)
 # img2 = ax2.scatter(x[::10], y[::10], z[::10], c=c[::10], cmap=plt.magma(), vmax=1e-2)
-img2 = ax2.scatter(x, y, z, c=c, cmap=plt.magma(), vmax=1e-2)
+img2 = ax2.scatter(x[idx], y[idx], z[idx], c=np.log10(c[idx]), cmap=plt.magma(), vmax=-1.5)
 fig2.colorbar(img2)
 ax2.set_xlabel('d')
-ax2.set_ylabel('mus_bot')
-ax2.set_zlabel('mus_top')
+ax2.set_ylabel('mus_top')
+ax2.set_zlabel('mus_bot')
 ax2.set_title('Loss function vs solution')
 plt.show()
 plt.tight_layout()
