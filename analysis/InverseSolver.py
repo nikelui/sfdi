@@ -221,27 +221,27 @@ fig2 = plt.figure()
 ax1 = fig1.add_subplot(111, projection='3d')
 ax2 = fig2.add_subplot(111, projection='3d')
 
-D = 0
+D = 4
 WV = 2
 
-# x,y,z = np.zeros((3,len(loss_fun[D][WV].keys())))
-# c = np.zeros((len(loss_fun[D][WV].keys())))
-# for _k,key in enumerate(loss_fun[D][WV].keys()):
-#     x[_k], y[_k], z[_k] = key
-#     c[_k] = loss_fun[D][WV][key]
+x,y,z = np.zeros((3,len(loss_fun[D][WV].keys())))
+c = np.zeros((len(loss_fun[D][WV].keys())))
+for _k,key in enumerate(loss_fun[D][WV].keys()):
+    x[_k], y[_k], z[_k] = key
+    c[_k] = loss_fun[D][WV][key]
 
-# idx = np.where(c<=.4)
-# img1 = ax1.scatter(x[idx], y[idx], z[idx], c=c[idx], cmap=plt.magma(), vmax=.4)
-# fig1.colorbar(img1)
-# ax1.set_xlabel('d')
-# ax1.set_ylabel('mus_top')
-# ax1.set_zlabel('mus_bot')
-# ax1.set_title('Loss function vs initial guess')
-# ax1.set_xlim([0, 1])
-# ax1.set_ylim([0, 5])
-# ax1.set_zlim([1.2, 2.8])
-# plt.show()
-# plt.tight_layout()
+idx = np.where(c<=100)
+img1 = ax1.scatter(x[idx], y[idx], z[idx], c=c[idx], cmap=plt.magma(), vmax=.4)
+fig1.colorbar(img1)
+ax1.set_xlabel('d')
+ax1.set_ylabel('mus_top')
+ax1.set_zlabel('mus_bot')
+ax1.set_title('Loss function vs initial guess')
+ax1.set_xlim([0, 1])
+ax1.set_ylim([0, 5])
+ax1.set_zlim([0, 5])
+plt.show()
+plt.tight_layout()
 
 
 x,y,z = np.zeros((3,len(loss_fun2[D][WV].keys())))
@@ -252,7 +252,7 @@ for _k,key in enumerate(loss_fun2[D][WV].keys()):
 
 idx = np.where(c<=100)
 # img2 = ax2.scatter(x[::10], y[::10], z[::10], c=c[::10], cmap=plt.magma(), vmax=1e-2)
-img2 = ax2.scatter(x[idx], y[idx], z[idx], c=np.log10(c[idx]), cmap=plt.magma(), vmax=-1.5)
+img2 = ax2.scatter(x[idx], y[idx], z[idx], c=np.log10(c[idx]), cmap=plt.magma(), vmax=-1.2)
 fig2.colorbar(img2)
 ax2.set_xlabel('d')
 ax2.set_ylabel('mus_top')
