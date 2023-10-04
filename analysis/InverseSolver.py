@@ -200,48 +200,50 @@ end = time.time()
 print("Elapsed time: {:02d}:{:05.2f}".format(int((end-start)//60), (end-start) % 60))
 
 import pickle
-with open("savedData/loss_function_exvivo_brute", "wb") as fp:
-    pickle.dump(loss_fun, fp)
+# with open("savedData/loss_function_exvivo_brute", "wb") as fp:
+#     pickle.dump(loss_fun, fp)
     
-with open("savedData/loss_function_exvivo_converged", "wb") as fp:
-    pickle.dump(loss_fun2, fp)
+# with open("savedData/loss_function_exvivo_converged", "wb") as fp:
+#     pickle.dump(loss_fun2, fp)
     
-# with open("C:/Users/luibe59/Documents/sfdi/analysis/savedData/loss_function_10000points", "rb") as fp:
-#     loss_fun = pickle.load(fp)
+with open("savedData/loss_function_exvivo_brute", "rb") as fp:
+    loss_fun = pickle.load(fp)
     
-# with open("C:/Users/luibe59/Documents/sfdi/analysis/savedData/loss_function_10000points_brute", "rb") as fp:
-#     loss_fun2 = pickle.load(fp)
+with open("savedData/loss_function_exvivo_converged", "rb") as fp:
+    loss_fun2 = pickle.load(fp)
 
 #%% 3D plot of loss function
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib as mp
 import matplotlib.pyplot as plt
 import addcopyfighandler
-fig1 = plt.figure()
-fig2 = plt.figure()
-ax1 = fig1.add_subplot(111, projection='3d')
-ax2 = fig2.add_subplot(111, projection='3d')
+# fig1 = plt.figure()
+# fig2 = plt.figure()
+# ax1 = fig1.add_subplot(111, projection='3d')
+# ax2 = fig2.add_subplot(111, projection='3d')
 
-D = 4
+D = 5
 WV = 2
 
-x,y,z = np.zeros((3,len(loss_fun[D][WV].keys())))
-c = np.zeros((len(loss_fun[D][WV].keys())))
-for _k,key in enumerate(loss_fun[D][WV].keys()):
-    x[_k], y[_k], z[_k] = key
-    c[_k] = loss_fun[D][WV][key]
+# x,y,z = np.zeros((3,len(loss_fun[D][WV].keys())))
+# c = np.zeros((len(loss_fun[D][WV].keys())))
+# for _k,key in enumerate(loss_fun[D][WV].keys()):
+#     x[_k], y[_k], z[_k] = key
+#     c[_k] = loss_fun[D][WV][key]
 
-idx = np.where(c<=100)
-img1 = ax1.scatter(x[idx], y[idx], z[idx], c=c[idx], cmap=plt.magma(), vmax=.4)
-fig1.colorbar(img1)
-ax1.set_xlabel('d')
-ax1.set_ylabel('mus_top')
-ax1.set_zlabel('mus_bot')
-ax1.set_title('Loss function vs initial guess')
-ax1.set_xlim([0, 1])
-ax1.set_ylim([0, 5])
-ax1.set_zlim([0, 5])
-plt.show()
-plt.tight_layout()
+# idx = np.where(c<=100)
+# img1 = ax1.scatter(x[idx], y[idx], z[idx], c=c[idx], cmap=plt.magma(), vmax=1e1,
+#                    norm=mp.colors.LogNorm())
+# cb = fig1.colorbar(img1)
+# cb.set_label("Cost function (log scale)")
+# ax1.set_xlabel('d (mm)')
+# ax1.set_ylabel(r'${\mu}\'s_{top}$ (mm$^{-1}$)')
+# ax1.set_zlabel(r'${\mu}\'s_{bot}$ (mm$^{-1}$)')
+# ax1.set_title('Soution convergence')
+# ax1.set_xlim([0, 1])
+# ax1.set_ylim([0, 5])
+# ax1.set_zlim([0, 5])
+# plt.show()
 
 
 x,y,z = np.zeros((3,len(loss_fun2[D][WV].keys())))
@@ -250,17 +252,51 @@ for _k,key in enumerate(loss_fun2[D][WV].keys()):
     x[_k], y[_k], z[_k] = key
     c[_k] = loss_fun2[D][WV][key]
 
-idx = np.where(c<=100)
-# img2 = ax2.scatter(x[::10], y[::10], z[::10], c=c[::10], cmap=plt.magma(), vmax=1e-2)
-img2 = ax2.scatter(x[idx], y[idx], z[idx], c=np.log10(c[idx]), cmap=plt.magma(), vmax=-1.2)
-fig2.colorbar(img2)
-ax2.set_xlabel('d')
-ax2.set_ylabel('mus_top')
-ax2.set_zlabel('mus_bot')
-ax2.set_title('Loss function vs solution')
-plt.show()
-plt.tight_layout()
+# isolate minimum value => converged solution
+idx = np.where(c == min(c))[0][0]
 
+fig2 = plt.figure(figsize=(9,6), num=5)
+ax2 = np.empty((2,2), dtype=object)
+ax2[0,0] = fig2.add_subplot(2,2,1, projection="3d")
+ax2[0,1] = fig2.add_subplot(2,2,2)
+ax2[1,0] = fig2.add_subplot(2,2,3)
+ax2[1,1] = fig2.add_subplot(2,2,4)
+fig2.suptitle('Solution convergence')
+
+vmax = 3e-3
+# img2 = ax2.scatter(x[::10], y[::10], z[::10], c=c[::10], cmap=plt.magma(), vmax=1e-2)
+img2 = ax2[0,0].scatter(x, y, z, c=c, cmap=plt.magma(),
+                   norm=mp.colors.LogNorm(vmax=vmax))
+# cb = fig2.colorbar(img2, ax=ax2[1,1])
+# cb.set_label("Cost function")
+ax2[0,0].set_xlabel('d (mm)')
+ax2[0,0].set_ylabel(r'${\mu}\'s_{top}$ (mm$^{-1}$)')
+ax2[0,0].set_zlabel(r'${\mu}\'s_{bot}$ (mm$^{-1}$)')
+
+
+ax2[0,1].scatter(x, y, c=c, cmap=plt.magma(),
+                   norm=mp.colors.LogNorm(vmax=vmax))
+ax2[0,1].plot(x[idx],y[idx], '*', markersize=15, markerfacecolor="#0F0")
+ax2[0,1].set_xlabel('d (mm)')
+ax2[0,1].set_ylabel(r'${\mu}\'s_{top}$ (mm$^{-1}$)')
+ax2[0,1].grid(True, linestyle=':')
+
+
+ax2[1,1].scatter(x, z, c=c, cmap=plt.magma(),
+                   norm=mp.colors.LogNorm(vmax=vmax))
+ax2[1,1].plot(x[idx],z[idx], '*', markersize=15, markerfacecolor="#0F0")
+ax2[1,1].set_xlabel('d (mm)')
+ax2[1,1].set_ylabel(r'${\mu}\'s_{bot}$ (mm$^{-1}$)')
+ax2[1,1].grid(True, linestyle=':')
+
+
+ax2[1,0].scatter(y, z, c=c, cmap=plt.magma(),
+                   norm=mp.colors.LogNorm(vmax=vmax))
+ax2[1,0].plot(y[idx],z[idx], '*', markersize=15, markerfacecolor="#0F0")
+ax2[1,0].set_xlabel(r'${\mu}\'s_{top}$ (mm$^{-1}$)')
+ax2[1,0].set_ylabel(r'${\mu}\'s_{bot}$ (mm$^{-1}$)')
+ax2[1,0].grid(True, linestyle=':')
+plt.tight_layout()
 
 #%% Plots
 from matplotlib import pyplot as plt
