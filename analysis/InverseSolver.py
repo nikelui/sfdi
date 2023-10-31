@@ -206,10 +206,10 @@ import pickle
 # with open("savedData/loss_function_exvivo_converged", "wb") as fp:
 #     pickle.dump(loss_fun2, fp)
     
-with open("savedData/loss_function_exvivo_brute", "rb") as fp:
+with open("savedData/loss_function_phantoms_brute", "rb") as fp:
     loss_fun = pickle.load(fp)
     
-with open("savedData/loss_function_exvivo_converged", "rb") as fp:
+with open("savedData/loss_function_phantoms_converged", "rb") as fp:
     loss_fun2 = pickle.load(fp)
 
 #%% 3D plot of loss function
@@ -222,7 +222,7 @@ import addcopyfighandler
 # ax1 = fig1.add_subplot(111, projection='3d')
 # ax2 = fig2.add_subplot(111, projection='3d')
 
-D = 5
+D = 0
 WV = 2
 
 # x,y,z = np.zeros((3,len(loss_fun[D][WV].keys())))
@@ -263,7 +263,7 @@ ax2[1,0] = fig2.add_subplot(2,2,3)
 ax2[1,1] = fig2.add_subplot(2,2,4)
 fig2.suptitle('Solution convergence')
 
-vmax = 3e-3
+vmax = 1e-3
 # img2 = ax2.scatter(x[::10], y[::10], z[::10], c=c[::10], cmap=plt.magma(), vmax=1e-2)
 img2 = ax2[0,0].scatter(x, y, z, c=c, cmap=plt.magma(),
                    norm=mp.colors.LogNorm(vmax=vmax))
