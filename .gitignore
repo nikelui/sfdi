@@ -112,3 +112,4 @@ temp.py
 *.npz
 transform.txt
 *.bat
+analysis/savedData/

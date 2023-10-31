@@ -129,9 +129,9 @@ alpha_dp1_plus = {}
 
 # Models of scattering
 mus_top = np.squeeze(asd_mean['TiObaseTop'][:,:,1]).T
-# mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
+mus_top[:,:] = mus_top[0,:]  # To fix mus to a single value (f0)
 mus_bot = np.squeeze(asd_mean['AlObaseTop'][:,:,1]).T
-# mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
+mus_bot[:,:] = mus_bot[0,:]  # To fix mus to a single value (f0)
 mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x] if 'Top' not in k}
 mus_std = {k:asd_std[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO' in x] if 'Top' not in k}
 # mus_meas_plus = {k:asd_plus[k][:,:,1].T for k in [x for x in asd_plus.keys() if 'TiO' in x or 'AlObase' in x] if 'Top' not in k}
@@ -211,7 +211,7 @@ mus_meas = {k:asd_mean[k][:,:,1].T for k in [x for x in asd_mean.keys() if 'TiO'
 # Performance metric - RMSE. Change the model to evaluate
 RMSE = np.zeros((len(mus_meas.keys()),mus_top.shape[1]))
 for _i, key in enumerate(mus_meas.keys()):
-    RMSE[_i] = np.sqrt(np.sum((mus_meas[key] - mus_model_deltaP1[key])**2, axis=0) / mus_meas[key].shape[0])
+    RMSE[_i] = np.sqrt(np.sum(((mus_meas[key] - mus_model_diff[key])/mus_meas[key])**2, axis=0) / mus_meas[key].shape[0]) * 100
 
 if False:  # piecewise continuous model
     phi2_diff = models.phi_2lp(thick, phi_diff['TiObaseTop'], phi_diff['AlObaseTop'], z)
@@ -234,7 +234,7 @@ if False:  # piecewise continuous model
 # %% Simulation
 lamb = 500  # nm
 # WV = np.where(asd['wv'][:,0] >= lamb)[0][0]
-WV = 4
+WV = 2
 F = 0  # spatial frequency to plot
 
 # Plot fluence
@@ -494,7 +494,8 @@ if True:
     # plt.rcParams["axes.prop_cycle"] = plt.cycler("color", cm.Reds(np.linspace(1, 0.2, len(fx))))
     cmap = cm.get_cmap('Dark2')
     # colors = [cmap(x) for x in np.linspace(0,1,len(mus_meas)+2)]
-    colors = ['lime', 'yellowgreen', 'sandybrown', 'skyblue', 'mediumorchid', 'gold' , 'orangered']
+    colors = ['#f0d6b1','#375175','#6d5e75','#a06168','#dd6f5d','#e7a378','#0b1f36']  # Lipari colormap
+    # colors = ['lime', 'yellowgreen', 'sandybrown', 'skyblue', 'mediumorchid', 'gold' , 'orangered']
     markers = ['o', 'v', '^', 's', 'd']
     
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7,4), num=1)
@@ -520,21 +521,23 @@ if True:
         # Seo d-P1
         # ax.fill_between(fx, mus_meas_plus[key][:,WV], mus_meas_minus[key][:,WV],
         #                 alpha=0.25, edgecolor=colors[_i+1], facecolor=colors[_i+1])
-        # ax.plot(fx, mus_model_diff[key][:,WV], linestyle='solid', color=colors[_i+1])  # Diffusion
-        # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='solid', color=colors[_i+1])  # Seo
-        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='solid', color=colors[_i+1])  # Luigi
+        # ax.plot(fx, mus_model_diff[key][:,WV], linestyle='--', color=colors[_i+1])  # Diffusion
+        # ax.plot(fx, mus_model_dp1[key][:,WV], linestyle='--', color=colors[_i+1])  # Seo
+        ax.plot(fx, mus_model_deltaP1[key][:,WV], linestyle='--', color=colors[_i+1])  # Luigi
         # Measured
         ax.errorbar(fx, mus_meas[key][:,WV], yerr=mus_std[key][:,WV], marker=markers[_i],
-                    color=colors[_i+1], markerfacecolor="None", linestyle="None",
-                    capsize=5, label=r'{}'.format(key), markeredgewidth=1.5)
+                    color=colors[_i+1], markerfacecolor=colors[_i+1], linestyle="None",
+                    capsize=5, label=r'{}'.format(key), markeredgewidth=1.5, markersize=7)
         # ax.plot(fx, scale_meas[:,WV], 'o', color=colors[_i+1],  # Normalized
         #         label=r'{}'.format(key))
 
-    ax.set_title(r'$\delta$-P1 [@{}nm]'.format(wv[WV]))
+    # ax.set_title(r'$\delta$-P1 [@{}nm]'.format(wv[WV]))
     # ax.set_title(r'SDA[@{}nm]'.format(wv[WV]))
+    # ax.set_title(r'2-layer phantoms [@{}nm]'.format(wv[WV]), fontsize=15)
     ax.grid(True, linestyle=':')
-    ax.set_xlabel(r'fx (mm$^{{-1}})$')
+    ax.set_xlabel(r'fx (mm$^{{-1}})$', fontsize=13)
     ax.set_ylabel(r"$\mu'_s$", fontsize=14)
+    ax.tick_params(axis='both', which='major', labelsize=12)
     fig.tight_layout()
     
     # # get handles to remove errorbars from legend
@@ -545,7 +548,7 @@ if True:
     # # use them in the legend
     # ax.legend(handles, labels, framealpha=1, ncol=4)
 
-    # # ax.legend(framealpha=1, ncol=1)
+    # ax.legend(framealpha=1, ncol=1)
     # ax.set_axis_off()
 
 # Plot mus(lambda) at a single fx

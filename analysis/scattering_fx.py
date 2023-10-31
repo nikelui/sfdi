@@ -106,19 +106,95 @@ else:
 
 
 # Post- processing
-data.mask_on()  # mask outliers
+# data.mask_on()  # mask outliers
 # data.plot_cal('AlO05ml', data_path)
 # data.plot_op_sfds('TiO20ml', f=[0,1,2,3,4])
 # ret = data.singleROI('TiObase', norm=-1, fit='single', f=[0,1,2,3,4])
-# ret = data.singleROI('TiObaseTop', norm=None, fit='single', f=[0,1,2,3,4], I=2e3)
-ret = data.singleROI('wound4', norm=None, fit="single", f=[0,1,2,3,4], I=2e3, zoom=3)
-ret['par_ave'] = ret['par_ave'].T
-ret['par_std'] = ret['par_std'].T
-temp = np.stack([ret['op_ave'][:,:,0],ret['op_std'][:,:,0],
-                 ret['op_ave'][:,:,1],ret['op_std'][:,:,1]], axis=2)  # for ease of copying
-temp2 = np.stack([ret['op_ave'][:,2,0],ret['op_std'][:,2,0]])
-# data.plot_op('wound4', f=[0,1,2])
+# ret = data.singleROI('SC1', norm=None, fit='single', f=[0,1,2,3], I=2e3)
+# ret = data.singleROI('wound2', norm=None, fit="single", f=[0,1,2,3,4], I=2e3, zoom=3)
+# ret['par_ave'] = ret['par_ave'].T
+# ret['par_std'] = ret['par_std'].T
+# temp = np.stack([ret['op_ave'][:,:,0],ret['op_std'][:,:,0],
+#                  ret['op_ave'][:,:,1],ret['op_std'][:,:,1]], axis=2)  # for ease of copying
+# temp2 = np.stack([ret['op_ave'][:,2,0],ret['op_std'][:,2,0]])
+# data.plot_op('wound4', f=[0])
 # data.plot_cal('wound4', data_path)
+#%% To save data
+if False:  # select ROI and save cropped data
+    from sfdi.processing.crop import crop
+    from scipy.io import savemat, loadmat
+    import numpy.ma as ma
+    import os
+    
+    out_path = '{}/pigManuscript/'.format('/'.join(data_path.split('/')[:-1]))
+    data.mask_on()
+    
+    key = 'wound1'
+    FX = ['f{}'.format(x) for x in range(8)]
+    ret = data.singleROI(key, norm=None, fit='single', f=[0,1,2,3], I=2e3)
+    ROI = ret['ROI']
+    
+    temp = np.zeros((ROI[3], ROI[2], len(FX), len(wv), 2))
+    for _f, F in enumerate(FX):
+        temp[:,:,_f,:,:] = ma.filled(crop(data[key][F]['op_fit_maps'], ROI), np.nan)  # ignore masked values
+    temp = np.reshape(temp, (-1,len(FX),len(wv),2))
+    
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+    if os.path.exists('{}pig_data.mat'.format(out_path)):  # append the data to existing dict
+        temp_dict = loadmat('{}pig_data.mat'.format(out_path))  # load existing
+        temp_dict['PC1_w2'] = temp  # append
+        savemat('{}pig_data.mat'.format(out_path), temp_dict)  # overwrite
+    else:
+        savemat('{}pig_data.mat'.format(out_path), {'PD2_w1':temp})  # create new dict
+    
+    
+if True:  # select ROI and save mean/std for each dataset
+    from sfdi.processing.crop import crop
+    from scipy.io import savemat, loadmat
+    import os
+    # ROI = ret['ROI']
+    # keys = ['AlObaseTop', 'TiObaseTop', 'TiO05ml', 'TiO10ml', 'TiO15ml', 'TiO20ml', 'TiO30ml']
+    # keys = ['SC1', 'SC2', 'SC3', 'K1', 'K2', 'CTL1', 'CTL2', 'CTL3', 'CTL4']
+    # keys = ['K1', 'K2', 'SC1', 'SC2', 'CTL1', 'CTL2', 'CLS1', 'CLS2']
+    keys = ['CLS1']
+    FX = ['f{}'.format(x) for x in range(5)]
+    out_mean = {}
+    out_std = {}
+    out_path = '{}/test/'.format(data_path)
+    
+    for key in keys:
+        ret = data.singleROI(key, norm=None, fit='single', f=[0,1,2,3], I=2e3)
+        ROI = ret['ROI']
+        out_mean[key] = {}
+        out_std[key] = {}
+        temp = np.zeros((len(FX), 5, 2))
+        stemp = np.zeros((len(FX), 5, 2))
+        for _f,F in enumerate(FX):
+            temp[_f,:,:] = np.mean(crop(data[key][F]['op_fit_maps'], ROI), axis=(0,1))
+            stemp[_f,:,:] = np.std(crop(data[key][F]['op_fit_maps'], ROI), axis=(0,1))
+        out_mean[key] = temp
+        out_std[key] = stemp
+        
+        ## Use this part to append to an existing file, or overwrite old data
+        if not os.path.exists(out_path):  # If out_path doesn't exist
+            os.makedirs(out_path)
+        if os.path.exists('{}exVivo_mean.mat'.format(out_path)):  # append the data to existing dict
+            temp_dict = loadmat('{}exVivo_mean.mat'.format(out_path))  # load existing
+            temp_dict[key] = temp  # append
+            savemat('{}exVivo_mean.mat'.format(out_path), temp_dict)  # overwrite
+            # Same for STD
+            temp_dict = loadmat('{}exVivo_std.mat'.format(out_path))  # load existing
+            temp_dict[key] = stemp  # append
+            savemat('{}exVivo_std.mat'.format(out_path), temp_dict)  # overwrite
+        else:
+            savemat('{}exVivo_std.mat'.format(out_path), {key:temp})  # create new dict
+        ################## END of file append ##################
+        
+# savemat('{}exVivo_mean.mat'.format(out_path), out_mean)
+# savemat('{}exVivo_std.mat'.format(out_path), out_std)
+# asd = loadmat('{}batch3_mean.mat'.format(out_path), struct_as_record=True, squeeze_me=True)
+
 #%% Add SDFS only
 if False:
     sfds_path = [x for x in os.listdir(data_path) if re.match(regex3, x)]  # should be only one
@@ -398,3 +474,4 @@ if False:
             print(key)
             for fx in ['f0', 'f1', 'f2', 'f3', 'f4']:
                 print('{} -> A: {:.2f}\tB:{:.4f}'.format(fx, data[key][fx]['sfds']['par'][0], data[key][fx]['sfds']['par'][1]))
+
