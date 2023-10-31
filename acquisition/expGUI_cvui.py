@@ -40,6 +40,7 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.wname = wname # name of the pattern window
         self.n_acq = 0 # counter, n. of acquisitions
         self.correction = correction # gamma correction array
+        self.screen = "ref"  # NEW: what to project in the main window. Can be ("ref", "b", "g", "r")
         # Since bool() does not work very well with strings
         if self.par['blueboost'] in ['False','false',0,'0','None','none','No','no','']:
             self.blueboost = False
@@ -52,18 +53,27 @@ syntax: gui = expGUI_cvui(cam,[window])
         self.cam.setExposure(self.explist[self.exposure[0]])  # in ms
         
     def reference(self,xRes,yRes):
-        """Use this function to control the brightness level of the three channels"""
+        """Use this function to control the brightness level of the three channels.
+    NEW:
+        depending on the content of self.screen, project a RGB, B, G or R background
+        """
         ## Triple reference -> 3 horizontal stripes with B,G,R values. Control intensities below
         ## New approach: multiple stripes
-        self.h = 30
-        self.rowb = [x for x in range(yRes) if x % (self.h*3) < self.h]
-        self.rowg = [x for x in range(yRes) if x % (self.h*3) >= self.h and x % (self.h*3) < self.h*2]
-        self.rowr = [x for x in range(yRes) if x % (self.h*3) >= self.h*2]
         self.ref = np.zeros((yRes,xRes,3),dtype='uint8')
-        self.ref[self.rowb,:,0] = 255 # BLUE stripe
-        self.ref[self.rowg,:,1] = 255 # GREEN stripe
-        self.ref[self.rowr,:,2] = 255 # RED stripe
-        
+        if self.screen == "ref":
+            self.h = 30
+            self.rowb = [x for x in range(yRes) if x % (self.h*3) < self.h]
+            self.rowg = [x for x in range(yRes) if x % (self.h*3) >= self.h and x % (self.h*3) < self.h*2]
+            self.rowr = [x for x in range(yRes) if x % (self.h*3) >= self.h*2]
+            self.ref[self.rowb,:,0] = 255 # BLUE stripe
+            self.ref[self.rowg,:,1] = 255 # GREEN stripe
+            self.ref[self.rowr,:,2] = 255 # RED stripe
+        elif self.screen == "b":
+            self.ref[:,:,0] = 255 # BLUE screen
+        elif self.screen == "g":
+            self.ref[:,:,1] = 255 # GREEN screen
+        elif self.screen == "r":
+            self.ref[:,:,2] = 255 # RED screen
         cvui.imshow(self.wname,self.ref)         
         
     def start(self):
@@ -86,10 +96,10 @@ syntax: gui = expGUI_cvui(cam,[window])
         # limit exposure based on framerate
         self.explist = self.explist[np.where(self.explist <= expMax + 0.1)[0]]
         
-        ## Create and show reference picture
-        self.reference(xRes=self.par['xres'],yRes=self.par['yres'])
-        
         while(True):
+            ## Create and show reference picture
+            self.reference(xRes=self.par['xres'],yRes=self.par['yres'])
+            
             ## Calibration loop
             ## Capture image from camera
             for i in range(10): # number of retries
@@ -124,12 +134,23 @@ syntax: gui = expGUI_cvui(cam,[window])
             ## Check invalid values
             if (self.n[0] < 0):
                 self.n[0] = 0
-
+            
+            ## Buttons to change reference BG
+            cvui.text(self.bg, 700, 150, 'Background')
+            if cvui.button(self.bg, 700, 170, "RGB"):
+                self.screen = "ref"
+            if cvui.button(self.bg, 700, 200, " B "):
+                self.screen = "b"
+            if cvui.button(self.bg, 700, 230, " G "):
+                self.screen = "g"
+            if cvui.button(self.bg, 700, 260, " R "):
+                self.screen = "r"
+            
             ## Draw main window
             cvui.imshow('gui',self.bg)
 
             ## Update pattern
-            cvui.imshow(self.wname,self.ref)
+            cvui.imshow(self.wname, self.ref)
             
             ## calculate RGB histograms
             if frame.shape[-1] == 3:
