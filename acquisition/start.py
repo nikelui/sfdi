@@ -37,14 +37,14 @@ from numpy import genfromtxt, array
 
 from sfdi.acquisition.setWindow import setWindow
 from sfdi.acquisition.expGUI_cvui import expGUI_cvui
-from sfdi.camera.pointGrey import PointGrey as Camera  # Change this as appropriate
-# from sfdi.camera.DummyCam import DummyCam as Camera
+# from sfdi.camera.pointGrey import PointGrey as Camera  # Change this as appropriate
+from sfdi.camera.DummyCam import DummyCam as Camera
 # from sfdi.camera.xiCam import XiCam as Camera
 from sfdi.common.readParams import readParams
-from sfdi.acquisition import __path__ as par_path
+# from sfdi.acquisition import __path__ as par_path
 
 ## Read parameters from .ini file
-par = readParams('{}/parameters.ini'.format(par_path[0]))
+par = readParams('parameters.ini')
 ## Load gamma correction array
 if par['cpath']:
     par['gamma'] = genfromtxt(par['cpath'], delimiter=',')
