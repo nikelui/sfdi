@@ -114,8 +114,8 @@ keys = [x for x in data.keys() if (not x.startswith('_') and not x.endswith("Top
 keys.sort()  # just in case they are not in order
 
 # F = par['fx']
-F = [0, 0.03333333, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-# F = np.arange(0,0.51, 0.05)
+# F = [0, 0.03333333, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+F = np.arange(0,0.51, 0.05)
 FX = np.array([np.mean(F[x:x+4]) for x in range(len(F)-3)])  # spatial frequency (average)
 
 Z = np.arange(0,10,0.001)  # depth, micrometer resolution
@@ -135,12 +135,12 @@ for _k, key in enumerate(keys):
     mua_meas[_k,:,:] = data[key][:,:,0]  # need it to calculate fluence
 
 # Phantom thickness (for evaluating performance)
-# d_real = np.array([0.1295, 0.2685, 0.49, 0.675, 1.149])
+d_real = np.array([0.1295, 0.2685, 0.49, 0.675, 1.149])
 # d_std = np.array([0.0035, 0.0136, 0.0216, 0.0401, 0.0655])
 
 # Top and bottom layer scattering (for evaluating performance)
-# mus_top = data['TiObaseTop'][0,:,1]
-# mus_bot = data['AlObaseTop'][0,:,1]
+mus_top = data['TiObaseTop'][0,:,1]
+mus_bot = data['AlObaseTop'][0,:,1]
 
 opt_ret = [[]]  # save all the results of optimization, for debug. Should be 2D [D x WW] array
 # bound = Bounds(lb=[0,0,0], ub=[10,20,20])  # Add some physical limits to problem
@@ -206,11 +206,11 @@ import pickle
 # with open("savedData/loss_function_exvivo_converged", "wb") as fp:
 #     pickle.dump(loss_fun2, fp)
     
-with open("savedData/loss_function_phantoms_brute", "rb") as fp:
-    loss_fun = pickle.load(fp)
+# with open("savedData/loss_function_phantoms_brute", "rb") as fp:
+#     loss_fun = pickle.load(fp)
     
-with open("savedData/loss_function_phantoms_converged", "rb") as fp:
-    loss_fun2 = pickle.load(fp)
+# with open("savedData/loss_function_phantoms_converged", "rb") as fp:
+#     loss_fun2 = pickle.load(fp)
 
 #%% 3D plot of loss function
 from mpl_toolkits.mplot3d import Axes3D
@@ -304,11 +304,12 @@ from matplotlib import cm
 from cycler import cycler
 import addcopyfighandler
 
-W = 0  # wavelength index
+W = 2  # wavelength index
 D = 0  # thickness index
 
 # cyc = (cycler(color=['tab:blue','tab:orange','tab:green','tab:red']))
-colors = ['tab:blue','tab:orange','tab:green','tab:red','tab:purple']
+# colors = ['tab:blue','tab:orange','tab:green','tab:red','tab:purple']
+colors = ["#375175","#6d5e75","#a06168","#dd6f5d","#e7a378"]
 
 # f_ax = np.arange(0,0.5,0.01)
 mus_fitted = np.zeros((5,8,5))
@@ -322,15 +323,20 @@ for _d in range(5):
                                         mua_meas[_d,:,_w:_w+1], mus_meas[_d,:,_w:_w+1],
                                         Z, FX, model=phi_mod).squeeze()
 
-fig, ax = plt.subplots(1,1, figsize=(7,4), num=1)
+fig, ax = plt.subplots(1,1, figsize=(6,4), num=1)
 for _d in range(len(d_real)):
     ax.plot(FX, mus_meas[_d,:,W].T, '*', color=colors[_d])
-    ax.plot(FX, mus_model[_d,:,W].T, '-', color=colors[_d])
+    # ax.plot(FX, mus_model[_d,:,W].T, '-', color=colors[_d])
     ax.plot(FX, mus_fitted[_d,:,W].T, '--', color=colors[_d])
+# Plot top / bottom mus
+ax.plot(FX, [mus_top[W]]*len(FX), '-', color="#f0d5af")
+ax.plot(FX, [mus_bot[W]]*len(FX), '-', color="#000d26")
+
 ax.set_xlabel('fx (mm$^{-1}$)', fontsize=12)
 ax.set_ylabel(r"$\mu'_s$ (mm$^{-1}$)", fontsize=12)
 ax.set_title('mod-$\delta$-P1 (@{} nm)'.format(WV[W]), fontsize=15)
-ax.grid(True, linestyle=':')
+# ax.set_title('SDA (@{} nm)'.format(WV[W]), fontsize=15)
+# ax.grid(True, linestyle=':')
 plt.tight_layout()
 
 colors=cm.get_cmap('Blues_r', 11)
